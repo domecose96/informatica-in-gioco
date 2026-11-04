@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Archivio Ombra: un mistero italiano da risolvere con vere query SQL.">
+  <meta name="theme-color" content="#08191c">
+  <title>Archivio Ombra — SQL Mystery</title>
+  <link rel="preload" href="assets/archivio-noir.png" as="image">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="Archivio Ombra, torna all'inizio">
+      <span class="brand-mark">AO</span>
+      <span><strong>ARCHIVIO OMBRA</strong><small>SQL MYSTERY · CASO 01</small></span>
+    </a>
+    <div class="top-actions">
+      <button class="text-button" id="schemaBtn" type="button">Schema database</button>
+      <button class="icon-button" id="soundBtn" type="button" aria-label="Disattiva effetti sonori" title="Effetti sonori">♪</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="intro" id="intro">
+      <div class="intro-copy">
+        <p class="eyebrow">COMUNE DI VALDORA · 1 NOVEMBRE 2026</p>
+        <h1>Il fascicolo<br><em>scomparso</em></h1>
+        <p class="lede">Nella notte, qualcuno è entrato nell’Archivio Civico e ha sottratto il fascicolo F-204. Le tracce sono tutte nel database comunale. Il tuo strumento d’indagine è SQL.</p>
+        <div class="difficulty"><span>CASO PER PRINCIPIANTI</span><i></i><i></i><i class="off"></i></div>
+        <button class="primary" id="startBtn" type="button">Apri il caso <span>→</span></button>
+        <p class="privacy-note">Nessun account. Le query vengono eseguite sul tuo dispositivo.</p>
+      </div>
+      <aside class="case-card" aria-label="Fascicolo del caso">
+        <div class="paperclip"></div>
+        <p class="stamp">RISERVATO</p>
+        <p class="file-label">FASCICOLO</p>
+        <strong>F–204</strong>
+        <div class="red-line"></div>
+        <dl>
+          <div><dt>Luogo</dt><dd>Archivio Civico</dd></div>
+          <div><dt>Evento</dt><dd>Furto documenti</dd></div>
+          <div><dt>Stato</dt><dd class="danger">IRRISOLTO</dd></div>
+        </dl>
+      </aside>
+    </section>
+
+    <section class="workspace hidden" id="workspace" aria-label="Area investigativa">
+      <aside class="briefing">
+        <div class="case-progress"><span id="stepCount">INDIZIO 1 DI 8</span><span id="progressPercent">12%</span></div>
+        <div class="progress-track"><span id="progressBar"></span></div>
+        <p class="eyebrow" id="missionSkill">SELECT · WHERE</p>
+        <h2 id="missionTitle">Ricostruisci l’allarme</h2>
+        <p class="mission-text" id="missionText"></p>
+        <div class="objective">
+          <span>OBIETTIVO</span>
+          <p id="missionObjective"></p>
+        </div>
+        <div class="table-chips" id="tableChips"></div>
+        <button class="hint-button" id="hintBtn" type="button">＋ Richiedi un suggerimento</button>
+        <div class="hint-box hidden" id="hintBox" aria-live="polite"></div>
+      </aside>
+
+      <section class="terminal-panel">
+        <div class="terminal-head">
+          <div class="terminal-lights" aria-hidden="true"><i></i><i></i><i></i></div>
+          <span>query_indagine.sql</span>
+          <button id="resetQueryBtn" type="button">Ripristina</button>
+        </div>
+        <div class="editor-wrap">
+          <div class="line-number">1</div>
+          <textarea id="sqlEditor" aria-label="Editor query SQL" spellcheck="false" autocapitalize="off" autocomplete="off">SELECT *
+FROM eventi
+WHERE data = '2026-10-31';</textarea>
+        </div>
+        <div class="run-row">
+          <span>⌘/Ctrl + Invio per eseguire</span>
+          <button class="run-button" id="runBtn" type="button"><span>▶</span> Esegui query</button>
+        </div>
+        <div class="feedback" id="feedback" role="status" aria-live="polite">Il database è pronto. Interroga le tabelle per trovare il primo indizio.</div>
+        <div class="results-wrap">
+          <div class="results-head"><span>RISULTATI</span><span id="rowCount">0 righe</span></div>
+          <div class="table-scroll" id="results"><div class="empty-state">I risultati della query appariranno qui.</div></div>
+        </div>
+      </section>
+    </section>
+
+    <section class="completion hidden" id="completion">
+      <div class="seal">✓</div>
+      <p class="eyebrow">CASO 01 · RISOLTO</p>
+      <h2>Hai fatto parlare i dati.</h2>
+      <p>Le prove indicano <strong>Marco Riva</strong> come autore del furto e <strong>Laura Neri</strong> come complice. Hai usato filtri, ordinamenti, JOIN e sottoquery per ricostruire la notte.</p>
+      <div class="stats"><div><strong>8</strong><span>indizi</span></div><div><strong id="queryStat">0</strong><span>query eseguite</span></div><div><strong>100%</strong><span>caso risolto</span></div></div>
+      <button class="primary" id="replayBtn" type="button">Rigioca il caso <span>↻</span></button>
+    </section>
+  </main>
+
+  <footer><span>ARCHIVIO OMBRA</span><span>Un prototipo originale in italiano · SQLite nel browser</span></footer>
+
+  <dialog id="schemaDialog">
+    <div class="dialog-head"><div><p class="eyebrow">DATABASE COMUNALE</p><h2>Schema delle tabelle</h2></div><button id="closeSchemaBtn" aria-label="Chiudi schema" type="button">×</button></div>
+    <p>Usa le chiavi evidenziate per collegare le tabelle con <code>JOIN</code>.</p>
+    <div class="schema-grid" id="schemaGrid"></div>
+  </dialog>
+
+  <script src="vendor/sql-wasm.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
