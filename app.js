@@ -1,24 +1,25 @@
 /* Archivio Ombra — original educational prototype */
 const missions = [
-  { skill:'SELECT · WHERE', title:'Ricostruisci l’allarme', text:'Il sistema di sicurezza ha registrato molti eventi nella notte del 31 ottobre. Isola l’allarme scattato all’Archivio Civico.', objective:'Trova l’evento di tipo “allarme” del 31 ottobre 2026.', tables:['eventi'], starter:"SELECT *\nFROM eventi\nWHERE data = '2026-10-31';", hints:["Aggiungi una seconda condizione con AND.","Filtra la colonna tipo usando il valore 'allarme'.","SELECT * FROM eventi\nWHERE data = '2026-10-31' AND tipo = 'allarme';"], validate: rows => has(rows,'id',4) || includes(rows,'descrizione','F-204') },
-  { skill:'JOIN · ORDER BY', title:'Chi era nell’archivio?', text:'L’allarme è scattato alle 22:14. Incrocia gli accessi del varco con l’anagrafe e scopri chi ha usato il badge poco prima.', objective:'Mostra nome, cognome e ora dei badge accettati dopo le 21:45.', tables:['accessi_archivio','cittadini'], starter:"SELECT c.nome, c.cognome, a.ora_badge\nFROM accessi_archivio a\nJOIN cittadini c ON c.id = a.cittadino_id\nWHERE a.data = '2026-10-31';", hints:["Filtra esito = 'accettato' e un orario maggiore di '21:45'.","Ordina per ora_badge per ricostruire la sequenza.","SELECT c.nome, c.cognome, a.ora_badge\nFROM accessi_archivio a\nJOIN cittadini c ON c.id = a.cittadino_id\nWHERE a.data='2026-10-31' AND a.esito='accettato'\nAND a.ora_badge > '21:45'\nORDER BY a.ora_badge;"], validate: rows => includes(rows,null,'Marco') && includes(rows,null,'Sara') },
-  { skill:'WHERE · ORDER BY', title:'Segui l’auto in fuga', text:'Una telecamera su Via del Portico ha ripreso un veicolo pochi minuti dopo l’allarme. Cerca i passaggi diretti verso la tangenziale.', objective:'Trova la targa ripresa dopo le 22:14 in direzione “tangenziale”.', tables:['telecamere'], starter:"SELECT ora, targa, direzione\nFROM telecamere\nWHERE data = '2026-10-31';", hints:["Confronta la colonna ora con '22:14'.","Aggiungi direzione = 'tangenziale'.","SELECT ora, targa, direzione FROM telecamere\nWHERE data='2026-10-31' AND ora > '22:14'\nAND direzione='tangenziale' ORDER BY ora;"], validate: rows => includes(rows,null,'TO-314-XR') },
-  { skill:'JOIN', title:'Identifica il proprietario', text:'La targa TO-314-XR è la prima traccia concreta. Collegala al registro dei veicoli e poi all’anagrafe comunale.', objective:'Trova nome, cognome e professione del proprietario della targa.', tables:['veicoli','cittadini'], starter:"SELECT c.nome, c.cognome, c.professione\nFROM veicoli v\nJOIN cittadini c ON c.id = v.cittadino_id\nWHERE v.targa = 'TO-314-XR';", hints:["La relazione è veicoli.cittadino_id = cittadini.id.","La query iniziale è già completa: eseguila.","SELECT c.nome, c.cognome, c.professione FROM veicoli v JOIN cittadini c ON c.id=v.cittadino_id WHERE v.targa='TO-314-XR';"], validate: rows => includes(rows,null,'Marco') && includes(rows,null,'Riva') },
-  { skill:'NULL · JOIN', title:'Il prestito mai chiuso', text:'Essere proprietario dell’auto non basta. Controlla il registro dei prestiti: qualcuno aveva già richiesto proprio il fascicolo sottratto.', objective:'Trova chi ha preso F-204 e non lo ha mai restituito.', tables:['prestiti_documenti','cittadini'], starter:"SELECT c.nome, c.cognome, p.codice_fascicolo, p.data_restituzione\nFROM prestiti_documenti p\nJOIN cittadini c ON c.id = p.cittadino_id", hints:["Un valore mancante si cerca con IS NULL, non con = NULL.","Filtra codice_fascicolo = 'F-204' e data_restituzione IS NULL.","SELECT c.nome,c.cognome,p.codice_fascicolo FROM prestiti_documenti p JOIN cittadini c ON c.id=p.cittadino_id WHERE p.codice_fascicolo='F-204' AND p.data_restituzione IS NULL;"], validate: rows => includes(rows,null,'Marco') && includes(rows,null,'F-204') },
-  { skill:'JOIN MULTIPLA', title:'La chiamata prima del colpo', text:'Poco prima dell’ingresso, Marco ha telefonato a qualcuno. Incrocia due volte l’anagrafe con i tabulati per identificare il destinatario.', objective:'Trova chi ha ricevuto una chiamata da Marco Riva tra le 21:30 e le 22:00.', tables:['telefonate','cittadini'], starter:"SELECT dest.nome, dest.cognome, t.ora, t.durata_sec\nFROM telefonate t\nJOIN cittadini mitt ON mitt.id = t.mittente_id\nJOIN cittadini dest ON dest.id = t.destinatario_id", hints:["Filtra mitt.nome='Marco' e mitt.cognome='Riva'.","Usa t.ora BETWEEN '21:30' AND '22:00'.","SELECT dest.nome,dest.cognome,t.ora FROM telefonate t JOIN cittadini mitt ON mitt.id=t.mittente_id JOIN cittadini dest ON dest.id=t.destinatario_id WHERE mitt.nome='Marco' AND mitt.cognome='Riva' AND t.ora BETWEEN '21:30' AND '22:00';"], validate: rows => includes(rows,null,'Laura') && includes(rows,null,'Neri') },
-  { skill:'SOTTOQUERY · COUNT', title:'Verifica l’alibi', text:'Laura sostiene di non conoscere l’archivio. Ma il registro telefonico può mostrare quante volte ha contattato dipendenti dell’Archivio Civico nell’ultima settimana.', objective:'Conta le chiamate di Laura verso persone con professione “archivista”.', tables:['telefonate','cittadini'], starter:"SELECT COUNT(*) AS contatti_archivio\nFROM telefonate t\nJOIN cittadini dest ON dest.id = t.destinatario_id\nWHERE t.mittente_id = (\n  SELECT id FROM cittadini WHERE nome='Laura' AND cognome='Neri'\n);", hints:["Aggiungi un filtro sulla professione del destinatario.","Usa AND dest.professione = 'archivista'.","SELECT COUNT(*) AS contatti_archivio FROM telefonate t JOIN cittadini dest ON dest.id=t.destinatario_id WHERE t.mittente_id=(SELECT id FROM cittadini WHERE nome='Laura' AND cognome='Neri') AND dest.professione='archivista';"], validate: rows => Number(valueOf(rows,'contatti_archivio')) === 3 },
-  { skill:'VERDETTO', title:'Firma il rapporto', text:'Auto, prestito e tabulati raccontano la stessa storia. Restituisci in una sola riga i nomi completi del colpevole e della complice.', objective:'Crea le colonne “colpevole” e “complice” con i due nomi completi.', tables:['cittadini'], starter:"SELECT 'Marco Riva' AS colpevole,\n       'Laura Neri' AS complice;", hints:["Puoi selezionare direttamente due stringhe e assegnare loro un alias.","Gli alias richiesti sono colpevole e complice.","SELECT 'Marco Riva' AS colpevole, 'Laura Neri' AS complice;"], validate: rows => includes(rows,'colpevole','Marco Riva') && includes(rows,'complice','Laura Neri') }
+  { skill:'SELECT · WHERE', title:'Ricostruisci l’allarme', text:'Il sistema di sicurezza ha registrato molti eventi nella notte del 31 ottobre. Isola l’allarme scattato all’Archivio Civico.', objective:'Trova l’evento di tipo “allarme” del 31 ottobre 2026.', tables:['eventi'], starter:"SELECT *\nFROM eventi\nWHERE data = '2026-10-31'", hints:["Aggiungi una seconda condizione con AND.","Filtra la colonna tipo usando il valore 'allarme'.","SELECT * FROM eventi\nWHERE data = '2026-10-31' AND tipo = 'allarme';"], validate: rows => rows.length === 1 && (has(rows,'id',4) || includes(rows,'descrizione','F-204')) },
+  { skill:'JOIN · ORDER BY', title:'Chi era nell’archivio?', text:'L’allarme è scattato alle 22:14. Incrocia gli accessi del varco con l’anagrafe e scopri chi ha usato il badge poco prima.', objective:'Mostra nome, cognome e ora dei badge accettati dopo le 21:45.', tables:['accessi_archivio','cittadini'], starter:"SELECT c.nome, c.cognome, a.ora_badge\nFROM accessi_archivio a\nJOIN cittadini c ON c.id = a.cittadino_id\nWHERE a.data = '2026-10-31'", hints:["Filtra esito = 'accettato' e un orario maggiore di '21:45'.","Ordina per ora_badge per ricostruire la sequenza.","SELECT c.nome, c.cognome, a.ora_badge\nFROM accessi_archivio a\nJOIN cittadini c ON c.id = a.cittadino_id\nWHERE a.data='2026-10-31' AND a.esito='accettato'\nAND a.ora_badge > '21:45'\nORDER BY a.ora_badge;"], validate: rows => rows.length === 3 && ['21:51','22:02','22:19'].every(t=>includes(rows,null,t)) },
+  { skill:'WHERE · ORDER BY', title:'Segui l’auto in fuga', text:'Una telecamera su Via del Portico ha ripreso un veicolo pochi minuti dopo l’allarme. Cerca i passaggi diretti verso la tangenziale.', objective:'Trova la targa ripresa dopo le 22:14 in direzione “tangenziale”.', tables:['telecamere'], starter:"SELECT ora, targa, direzione\nFROM telecamere\nWHERE data = '2026-10-31'", hints:["Confronta la colonna ora con '22:14'.","Aggiungi direzione = 'tangenziale'.","SELECT ora, targa, direzione FROM telecamere\nWHERE data='2026-10-31' AND ora > '22:14'\nAND direzione='tangenziale' ORDER BY ora;"], validate: rows => rows.length > 0 && rows.length <= 2 && rows.every(r=>Object.values(r).some(v=>String(v)==='TO-314-XR')) },
+  { skill:'JOIN', title:'Identifica il proprietario', text:'La targa TO-314-XR è la prima traccia concreta. Collegala al registro dei veicoli e poi all’anagrafe comunale.', objective:'Trova nome, cognome e professione del proprietario della targa.', tables:['veicoli','cittadini'], starter:"SELECT c.nome, c.cognome, c.professione\nFROM veicoli v\nJOIN cittadini c ON c.id = v.cittadino_id\nWHERE v.targa = '';", hints:["La relazione è veicoli.cittadino_id = cittadini.id.","Copia dal taccuino la targa trovata: TO-314-XR.","SELECT c.nome, c.cognome, c.professione FROM veicoli v JOIN cittadini c ON c.id=v.cittadino_id WHERE v.targa='TO-314-XR';"], validate: rows => rows.length === 1 && includes(rows,null,'Marco') && includes(rows,null,'Riva') && includes(rows,null,'geometra comunale') },
+  { skill:'NULL · JOIN', title:'Il prestito mai chiuso', text:'Essere proprietario dell’auto non basta. Controlla il registro dei prestiti: qualcuno aveva già richiesto proprio il fascicolo sottratto.', objective:'Trova chi ha preso F-204 e non lo ha mai restituito.', tables:['prestiti_documenti','cittadini'], starter:"SELECT c.nome, c.cognome, p.codice_fascicolo, p.data_restituzione\nFROM prestiti_documenti p\nJOIN cittadini c ON c.id = p.cittadino_id", hints:["Un valore mancante si cerca con IS NULL, non con = NULL.","Filtra codice_fascicolo = 'F-204' e data_restituzione IS NULL.","SELECT c.nome,c.cognome,p.codice_fascicolo FROM prestiti_documenti p JOIN cittadini c ON c.id=p.cittadino_id WHERE p.codice_fascicolo='F-204' AND p.data_restituzione IS NULL;"], validate: rows => rows.length === 1 && includes(rows,null,'Marco') && includes(rows,null,'F-204') },
+  { skill:'JOIN MULTIPLA', title:'La chiamata prima del colpo', text:'Poco prima dell’ingresso, Marco ha telefonato a qualcuno. Incrocia due volte l’anagrafe con i tabulati per identificare il destinatario.', objective:'Trova chi ha ricevuto una chiamata da Marco Riva tra le 21:30 e le 22:00.', tables:['telefonate','cittadini'], starter:"SELECT dest.nome, dest.cognome, t.ora, t.durata_sec\nFROM telefonate t\nJOIN cittadini mitt ON mitt.id = t.mittente_id\nJOIN cittadini dest ON dest.id = t.destinatario_id", hints:["Filtra mitt.nome='Marco' e mitt.cognome='Riva'.","Usa t.ora BETWEEN '21:30' AND '22:00'.","SELECT dest.nome,dest.cognome,t.ora FROM telefonate t JOIN cittadini mitt ON mitt.id=t.mittente_id JOIN cittadini dest ON dest.id=t.destinatario_id WHERE mitt.nome='Marco' AND mitt.cognome='Riva' AND t.ora BETWEEN '21:30' AND '22:00';"], validate: rows => rows.length === 1 && includes(rows,null,'Laura') && includes(rows,null,'Neri') && includes(rows,null,'21:48') },
+  { skill:'SOTTOQUERY · COUNT', title:'Verifica l’alibi', text:'Laura sostiene di non conoscere l’archivio. Ma il registro telefonico può mostrare quante volte ha contattato dipendenti dell’Archivio Civico nell’ultima settimana.', objective:'Conta le chiamate di Laura verso persone con professione “archivista”.', tables:['telefonate','cittadini'], starter:"SELECT COUNT(*) AS contatti_archivio\nFROM telefonate t\nJOIN cittadini dest ON dest.id = t.destinatario_id\nWHERE t.mittente_id = (\n  SELECT id FROM cittadini WHERE nome='Laura' AND cognome='Neri'\n)", hints:["Aggiungi un filtro sulla professione del destinatario.","Usa AND dest.professione = 'archivista'.","SELECT COUNT(*) AS contatti_archivio FROM telefonate t JOIN cittadini dest ON dest.id=t.destinatario_id WHERE t.mittente_id=(SELECT id FROM cittadini WHERE nome='Laura' AND cognome='Neri') AND dest.professione='archivista';"], validate: rows => Number(valueOf(rows,'contatti_archivio')) === 3 },
+  { skill:'VERDETTO', title:'Firma il rapporto', text:'Auto, prestito e tabulati raccontano la stessa storia. Restituisci in una sola riga i nomi completi del colpevole e della complice.', objective:'Crea le colonne “colpevole” e “complice” con i due nomi completi.', tables:['cittadini'], starter:"SELECT '' AS colpevole,\n       '' AS complice;", hints:["Rileggi tutti gli indizi nel taccuino e inserisci i due nomi fra gli apici.","Gli alias richiesti sono colpevole e complice.","SELECT 'Marco Riva' AS colpevole, 'Laura Neri' AS complice;"], validate: rows => rows.length === 1 && includes(rows,'colpevole','Marco Riva') && includes(rows,'complice','Laura Neri') }
 ];
 
-const schema = {
-  cittadini:['id INTEGER PK','nome TEXT','cognome TEXT','professione TEXT','via TEXT','civico INTEGER'],
-  eventi:['id INTEGER PK','data TEXT','ora TEXT','tipo TEXT','luogo TEXT','descrizione TEXT'],
-  accessi_archivio:['id INTEGER PK','cittadino_id INTEGER FK','data TEXT','ora_badge TEXT','varco TEXT','esito TEXT'],
-  telecamere:['id INTEGER PK','data TEXT','ora TEXT','luogo TEXT','targa TEXT','direzione TEXT'],
-  veicoli:['targa TEXT PK','cittadino_id INTEGER FK','modello TEXT','colore TEXT'],
-  prestiti_documenti:['id INTEGER PK','cittadino_id INTEGER FK','codice_fascicolo TEXT','data_prestito TEXT','data_restituzione TEXT'],
-  telefonate:['id INTEGER PK','mittente_id INTEGER FK','destinatario_id INTEGER FK','data TEXT','ora TEXT','durata_sec INTEGER']
-};
+const clueTexts = [
+  'L’allarme del fascicolo F-204 è scattato alle 22:14.',
+  'Marco Riva è entrato alle 21:51; Sara Conti alle 22:02.',
+  'L’auto in fuga verso la tangenziale aveva targa TO-314-XR.',
+  'La targa TO-314-XR appartiene a Marco Riva, geometra comunale.',
+  'Marco Riva aveva preso in prestito F-204 senza restituirlo.',
+  'Marco Riva ha chiamato Laura Neri alle 21:48.',
+  'Laura Neri ha contattato tre diversi archivisti.',
+  'Verdetto: Marco Riva è il colpevole e Laura Neri la complice.'
+];
 
 const seed = `
 CREATE TABLE cittadini (id INTEGER PRIMARY KEY, nome TEXT, cognome TEXT, professione TEXT, via TEXT, civico INTEGER);
@@ -34,10 +35,10 @@ INSERT INTO veicoli VALUES ('TO-314-XR',1,'Fiat Tipo','grigio'),('FI-091-NN',5,'
 CREATE TABLE prestiti_documenti (id INTEGER PRIMARY KEY, cittadino_id INTEGER, codice_fascicolo TEXT, data_prestito TEXT, data_restituzione TEXT);
 INSERT INTO prestiti_documenti VALUES (1,7,'A-117','2026-09-11','2026-09-18'),(2,1,'F-204','2026-10-12',NULL),(3,3,'G-881','2026-10-20','2026-10-27'),(4,5,'B-044','2026-10-02','2026-10-03');
 CREATE TABLE telefonate (id INTEGER PRIMARY KEY, mittente_id INTEGER, destinatario_id INTEGER, data TEXT, ora TEXT, durata_sec INTEGER);
-INSERT INTO telefonate VALUES (1,1,3,'2026-10-31','21:48',92),(2,3,2,'2026-10-26','11:20',145),(3,3,4,'2026-10-28','16:02',61),(4,3,6,'2026-10-30','09:14',203),(5,2,4,'2026-10-31','18:11',34),(6,5,7,'2026-10-31','20:05',180),(7,1,3,'2026-10-31','22:27',18);
+INSERT INTO telefonate VALUES (1,1,3,'2026-10-31','21:48',92),(2,3,2,'2026-10-26','11:20',145),(3,3,4,'2026-10-28','16:02',61),(4,3,6,'2026-10-30','09:14',203),(5,2,4,'2026-10-31','18:11',34),(6,5,7,'2026-10-31','20:05',180),(7,1,3,'2026-10-31','22:27',18),(8,3,7,'2026-10-29','12:05',51);
 `;
 
-let db, step = 0, hintLevel = 0, queryCount = 0, soundOn = true;
+let db, step = 0, hintLevel = 0, queryCount = 0, soundOn = true, solvedCurrent = false, collectedClues = [];
 const $ = id => document.getElementById(id);
 const els = {intro:$('intro'),workspace:$('workspace'),completion:$('completion'),editor:$('sqlEditor'),results:$('results'),feedback:$('feedback')};
 
@@ -50,49 +51,99 @@ function beep(freq=540,duration=.06){ if(!soundOn) return; try{const ctx=new (wi
 async function initDb(){
   const SQL = await initSqlJs({locateFile:file=>`vendor/${file}`});
   db = new SQL.Database(); db.run(seed);
-  $('runBtn').disabled=false;
+  $('runBtn').disabled=false;$('startBtn').disabled=false;$('startBtn').innerHTML='Inizia il caso <span>→</span>';$('dbStatus').className='db-status ready';$('dbStatus').innerHTML='<i></i><span>Database pronto</span>';
 }
 
 function renderMission(){
-  const m=missions[step]; hintLevel=0;
+  const m=missions[step]; hintLevel=0; solvedCurrent=false;
   $('stepCount').textContent=`INDIZIO ${step+1} DI ${missions.length}`;$('progressPercent').textContent=`${Math.round((step+1)/missions.length*100)}%`;$('progressBar').style.width=`${(step+1)/missions.length*100}%`;
   $('missionSkill').textContent=m.skill;$('missionTitle').textContent=m.title;$('missionText').textContent=m.text;$('missionObjective').textContent=m.objective;els.editor.value=m.starter;
-  $('nextAction').textContent=step===0 ? "Nell’editor a destra aggiungi AND tipo = 'allarme' dopo il filtro sulla data. Poi premi Esegui e verifica." : "Modifica la query già iniziata usando l’obiettivo come guida, poi premi Esegui e verifica. Se ti blocchi, apri un suggerimento.";
+  $('nextAction').textContent=step===0 ? "Esegui la query iniziale, osserva le righe ottenute e prova a restringere la ricerca fino a isolare un solo evento." : "Modifica la query già iniziata usando l’obiettivo come guida, poi premi Esegui e verifica. Se ti blocchi, apri un suggerimento.";
   $('tableChips').innerHTML=m.tables.map(t=>`<button type="button" data-table="${t}">${t}</button>`).join('');
   $('hintBox').classList.add('hidden');$('hintBox').textContent='';$('hintBtn').textContent='＋ Richiedi un suggerimento';
-  els.results.innerHTML='<div class="empty-state">I risultati della query appariranno qui.</div>';$('rowCount').textContent='0 righe';setFeedback(step===0 ? "Prima prova: completa il filtro come indicato a sinistra, poi premi il pulsante rosso." : "Completa la query seguendo l’obiettivo, poi eseguila.");
+  $('foundClue').classList.add('hidden');$('runBtn').disabled=!db;els.editor.readOnly=false;
+  $('clueInput').value='';$('continueBtn').disabled=true;$('clueInputHelp').textContent='Scrivi con parole tue ciò che potrà servirti dopo.';$('clueInputHelp').className='';
+  els.results.innerHTML='<div class="empty-state">I risultati della query appariranno qui.</div>';$('rowCount').textContent='0 righe';setFeedback(step===0 ? "Prima prova: esegui la query così com’è, studia il risultato e poi rendila più precisa." : "Completa la query seguendo l’obiettivo, poi eseguila.");
   document.querySelectorAll('[data-table]').forEach(b=>b.onclick=()=>{els.editor.value=`SELECT *\nFROM ${b.dataset.table}\nLIMIT 20;`;els.editor.focus()});
+}
+
+function renderNotebook(){
+  $('clueCount').textContent=`${collectedClues.length} / ${missions.length}`;
+  $('clueList').innerHTML=collectedClues.length
+    ? collectedClues.map((clue,i)=>`<p class="clue-note"><b>${i+1}.</b> ${escapeHtml(clue)}</p>`).join('')
+    : '<p class="notebook-empty">Le prove corrette verranno annotate qui e resteranno disponibili per gli enigmi successivi.</p>';
 }
 
 function setFeedback(text,type=''){ els.feedback.textContent=text;els.feedback.className=`feedback ${type}`; }
 function escapeHtml(v){return String(v??'NULL').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
-function renderResults(result){
-  if(!result.length){els.results.innerHTML='<div class="empty-state">Query eseguita: nessuna riga restituita.</div>';$('rowCount').textContent='0 righe';return;}
-  const r=result[result.length-1]; $('rowCount').textContent=`${r.values.length} ${r.values.length===1?'riga':'righe'}`;
+function renderResults(result,elapsed=0){
+  if(!result.length){els.results.innerHTML='<div class="empty-state">Query eseguita: nessuna riga restituita.</div>';$('rowCount').textContent=`0 righe · ${elapsed} ms`;return;}
+  const r=result[result.length-1]; $('rowCount').textContent=`${r.values.length} ${r.values.length===1?'riga':'righe'} · ${elapsed} ms`;
   els.results.innerHTML=`<table><thead><tr>${r.columns.map(c=>`<th>${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>${r.values.map(row=>`<tr>${row.map(v=>`<td>${escapeHtml(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
 
+function inspectSql(sql){
+  const withoutComments=sql.replace(/--.*$/gm,' ').replace(/\/\*[\s\S]*?\*\//g,' ').trim();
+  const singleStatement=withoutComments.replace(/;\s*$/,'').trim();
+  if(singleStatement.length>4000)return 'La query è troppo lunga.';
+  if(singleStatement.includes(';'))return 'Esegui una sola istruzione SQL alla volta.';
+  if(!/^(select|with|explain)\b/i.test(singleStatement))return 'Sono consentite soltanto query di lettura.';
+  if(/\b(insert|update|delete|drop|alter|create|replace|attach|detach|vacuum|pragma)\b/i.test(singleStatement))return 'Il database del caso è in sola lettura.';
+  return '';
+}
+
+function usesRequiredTables(sql,tables){return tables.every(table=>new RegExp(`\\b${table}\\b`,'i').test(sql));}
+
 function runQuery(){
+  if(!db)return setFeedback('Il database si sta ancora caricando. Attendi un istante e riprova.','error');
+  if(solvedCurrent)return;
   const sql=els.editor.value.trim(); if(!sql)return setFeedback('Scrivi prima una query.','error');
-  if(!/^(select|with|pragma|explain)\b/i.test(sql)) return setFeedback('Per proteggere le prove, in questo caso sono consentite solo query di lettura.','error');
+  const inspectionError=inspectSql(sql);if(inspectionError)return setFeedback(inspectionError,'error');
   try{
-    const result=db.exec(sql);queryCount++;renderResults(result);const rows=rowsFrom(result);
-    if(missions[step].validate(rows)){
-      beep(740,.11);setFeedback(step===missions.length-1?'Rapporto corretto. Caso risolto!':'Indizio confermato. Ottimo lavoro: il fascicolo si arricchisce.','success');
-      $('runBtn').disabled=true;setTimeout(()=>{ if(step===missions.length-1){finish()}else{step++;renderMission();$('runBtn').disabled=false} },1100);
-    } else { beep(230,.08);setFeedback(`Query valida: ${rows.length} righe trovate, ma manca ancora la prova richiesta. Controlla l’obiettivo.`, ''); }
+    const started=performance.now();const result=db.exec(sql);const elapsed=Math.max(1,Math.round(performance.now()-started));queryCount++;renderResults(result,elapsed);const rows=rowsFrom(result);const structureOk=step===missions.length-1||usesRequiredTables(sql,missions[step].tables);
+    if(structureOk&&missions[step].validate(rows)){
+      solvedCurrent=true;beep(740,.11);setFeedback('Query corretta. Prima di continuare, osserva con calma le righe ottenute: contengono una prova che servirà nell’indagine.','success');
+      $('foundClueText').textContent=clueTexts[step];$('foundClue').classList.remove('hidden');
+      $('continueBtn').textContent=step===missions.length-1?'Salva e firma il rapporto →':'Salva e continua →';
+      $('runBtn').disabled=true;els.editor.readOnly=true;$('foundClue').scrollIntoView({behavior:'smooth',block:'nearest'});
+    } else { beep(230,.08);setFeedback(structureOk?`La query è valida e i ${rows.length} ${rows.length===1?'risultato è visibile':'risultati sono visibili'} qui sotto, ma non contengono ancora la prova richiesta. Modifica la query e riprova: non perdi nulla.`:'La query è valida, ma per questo indizio devi interrogare tutte le tabelle indicate a sinistra. I risultati restano visibili per aiutarti a correggerla.', ''); }
   }catch(err){beep(180,.12);setFeedback(`Errore SQL: ${err.message.replace('Error: ','')}`,'error')}
 }
 
-function finish(){els.workspace.classList.add('hidden');els.completion.classList.remove('hidden');$('queryStat').textContent=queryCount;window.scrollTo({top:0,behavior:'smooth'});}
-function startGame(showGuide=true){els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.workspace.classList.remove('hidden');step=0;queryCount=0;renderMission();window.scrollTo({top:0,behavior:'smooth'});if(showGuide)$('helpDialog').showModal();}
-function renderSchema(){ $('schemaGrid').innerHTML=Object.entries(schema).map(([name,cols])=>`<article class="schema-table"><h3>${name}</h3><ul>${cols.map(c=>`<li>${c.replace(' PK',' <b>PK</b>').replace(' FK',' <em>FK</em>')}</li>`).join('')}</ul></article>`).join(''); }
+function finish(){document.body.classList.remove('game-active');els.workspace.classList.add('hidden');els.completion.classList.remove('hidden');$('queryStat').textContent=queryCount;window.scrollTo({top:0,behavior:'smooth'});}
+function startGame(showGuide=true){document.body.classList.add('game-active');els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.workspace.classList.remove('hidden');step=0;queryCount=0;collectedClues=[];renderNotebook();renderMission();window.scrollTo({top:0,behavior:'smooth'});if(showGuide)$('helpDialog').showModal();}
+function renderSchema(){ $('schemaGrid').innerHTML=`
+<svg viewBox="0 0 1000 520" role="img" aria-labelledby="erTitle erDesc" preserveAspectRatio="xMidYMid meet">
+  <title id="erTitle">Modello entità-relazioni del database comunale</title><desc id="erDesc">Cittadini è collegata uno a molti ad accessi, veicoli, prestiti e telefonate. Eventi e telecamere sono fonti di prova indipendenti.</desc>
+  <g aria-hidden="true">
+    <path class="er-link" d="M370 190 C335 190 330 106 290 106"/><text class="er-cardinality" x="348" y="179">1</text><text class="er-cardinality" x="299" y="96">N</text><text class="er-relation-label" x="300" y="145">USA BADGE</text>
+    <path class="er-link" d="M370 250 C330 250 330 300 290 300"/><text class="er-cardinality" x="347" y="239">1</text><text class="er-cardinality" x="299" y="291">N</text><text class="er-relation-label" x="303" y="268">POSSIEDE</text>
+    <path class="er-link" d="M630 190 C670 190 670 82 710 82"/><text class="er-cardinality" x="640" y="179">1</text><text class="er-cardinality" x="695" y="73">N</text><text class="er-relation-label" x="645" y="126">MITTENTE</text>
+    <path class="er-link-secondary" d="M630 215 C680 215 680 145 710 145"/><text class="er-cardinality" x="640" y="228">1</text><text class="er-cardinality" x="695" y="160">N</text><text class="er-relation-label" x="638" y="196">DESTINATARIO</text>
+    <path class="er-link" d="M630 255 C670 255 670 302 710 302"/><text class="er-cardinality" x="640" y="245">1</text><text class="er-cardinality" x="695" y="293">N</text><text class="er-relation-label" x="641" y="277">PRENDE</text>
+  </g>
+  ${erCard(370,110,260,190,'cittadini',['id  INTEGER  PK','nome  TEXT','cognome  TEXT','professione  TEXT','via  TEXT','civico  INTEGER'],true)}
+  ${erCard(30,35,260,145,'accessi_archivio',['id  INTEGER  PK','cittadino_id  INTEGER  FK','data · ora_badge · varco','esito  TEXT'])}
+  ${erCard(30,235,260,130,'veicoli',['targa  TEXT  PK','cittadino_id  INTEGER  FK','modello · colore'])}
+  ${erCard(710,30,260,165,'telefonate',['id  INTEGER  PK','mittente_id  INTEGER  FK','destinatario_id  INTEGER  FK','data · ora · durata_sec'])}
+  ${erCard(710,235,260,145,'prestiti_documenti',['id  INTEGER  PK','cittadino_id  INTEGER  FK','codice_fascicolo  TEXT','data_prestito · restituzione'])}
+  <text class="er-independent" x="370" y="397">FONTI DI PROVA INDIPENDENTI</text>
+  ${erCard(370,410,250,95,'eventi',['id  INTEGER  PK','data · ora · tipo · luogo'])}
+  ${erCard(650,410,300,95,'telecamere',['id  INTEGER  PK','data · ora · targa · direzione'])}
+</svg>`; }
+
+function erCard(x,y,w,h,title,fields,main=false){
+  const rows=fields.map((field,i)=>{const cls=field.includes(' PK')?'er-field er-pk':field.includes(' FK')?'er-field er-fk':'er-field';return `<text class="${cls}" x="${x+14}" y="${y+55+i*22}">${field}</text>`}).join('');
+  return `<g><rect class="${main?'er-card-main':'er-card'}" x="${x}" y="${y}" width="${w}" height="${h}" rx="4"/><path class="er-header" d="M${x+4} ${y+4}h${w-8}v32h-${w-8}z"/><text class="er-title" x="${x+14}" y="${y+26}">${title}</text>${rows}</g>`;
+}
 
 $('startBtn').onclick=()=>startGame(true);$('replayBtn').onclick=()=>startGame(false);$('runBtn').onclick=runQuery;$('runBtn').disabled=true;
 $('resetQueryBtn').onclick=()=>{els.editor.value=missions[step].starter;els.editor.focus()};
 $('hintBtn').onclick=()=>{const m=missions[step];const level=Math.min(hintLevel,m.hints.length-1);$('hintBox').textContent=(level===2?'SOLUZIONE POSSIBILE\n':'SUGGERIMENTO\n')+m.hints[level];$('hintBox').classList.remove('hidden');hintLevel++;$('hintBtn').textContent=hintLevel>=3?'↻ Rileggi la soluzione':'＋ Altro suggerimento';};
+$('clueInput').addEventListener('input',()=>{const valid=$('clueInput').value.trim().length>=8;$('continueBtn').disabled=!valid;$('clueInputHelp').textContent=valid?'Pronto per essere aggiunto al taccuino.':'Scrivi almeno una breve frase con ciò che hai scoperto.';$('clueInputHelp').className=valid?'':'input-error'});
+$('continueBtn').onclick=()=>{if(!solvedCurrent)return;const note=$('clueInput').value.trim();if(note.length<8){$('clueInputHelp').textContent='Scrivi prima l’indizio con parole tue.';$('clueInputHelp').className='input-error';return}if(!collectedClues[step])collectedClues.push(note);renderNotebook();if(step===missions.length-1){finish()}else{step++;renderMission();window.scrollTo({top:0,behavior:'smooth'})}};
 $('schemaBtn').onclick=()=>$('schemaDialog').showModal();$('closeSchemaBtn').onclick=()=>$('schemaDialog').close();
 $('helpBtn').onclick=()=>$('helpDialog').showModal();$('closeHelpBtn').onclick=()=>$('helpDialog').close();$('beginBtn').onclick=()=>{$('helpDialog').close();els.editor.focus()};
 $('soundBtn').onclick=()=>{soundOn=!soundOn;$('soundBtn').textContent=soundOn?'♪':'×';$('soundBtn').ariaLabel=soundOn?'Disattiva effetti sonori':'Attiva effetti sonori'};
 els.editor.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();runQuery()}if(e.key==='Tab'){e.preventDefault();const s=e.target.selectionStart;e.target.value=e.target.value.slice(0,s)+'  '+e.target.value.slice(e.target.selectionEnd);e.target.selectionStart=e.target.selectionEnd=s+2}});
-renderSchema();initDb().catch(err=>setFeedback('Impossibile avviare SQLite: '+err.message,'error'));
+renderSchema();initDb().catch(err=>{$('dbStatus').className='db-status error';$('dbStatus').innerHTML='<i></i><span>Database non disponibile</span>';$('startBtn').innerHTML='Errore caricamento <span>!</span>';setFeedback('Impossibile avviare SQLite: '+err.message,'error')});
