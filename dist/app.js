@@ -57,9 +57,10 @@ function renderMission(){
   const m=missions[step]; hintLevel=0;
   $('stepCount').textContent=`INDIZIO ${step+1} DI ${missions.length}`;$('progressPercent').textContent=`${Math.round((step+1)/missions.length*100)}%`;$('progressBar').style.width=`${(step+1)/missions.length*100}%`;
   $('missionSkill').textContent=m.skill;$('missionTitle').textContent=m.title;$('missionText').textContent=m.text;$('missionObjective').textContent=m.objective;els.editor.value=m.starter;
+  $('nextAction').textContent=step===0 ? "Nell’editor a destra aggiungi AND tipo = 'allarme' dopo il filtro sulla data. Poi premi Esegui e verifica." : "Modifica la query già iniziata usando l’obiettivo come guida, poi premi Esegui e verifica. Se ti blocchi, apri un suggerimento.";
   $('tableChips').innerHTML=m.tables.map(t=>`<button type="button" data-table="${t}">${t}</button>`).join('');
   $('hintBox').classList.add('hidden');$('hintBox').textContent='';$('hintBtn').textContent='＋ Richiedi un suggerimento';
-  els.results.innerHTML='<div class="empty-state">I risultati della query appariranno qui.</div>';$('rowCount').textContent='0 righe';setFeedback('Scrivi una query e avvia l’indagine.');
+  els.results.innerHTML='<div class="empty-state">I risultati della query appariranno qui.</div>';$('rowCount').textContent='0 righe';setFeedback(step===0 ? "Prima prova: completa il filtro come indicato a sinistra, poi premi il pulsante rosso." : "Completa la query seguendo l’obiettivo, poi eseguila.");
   document.querySelectorAll('[data-table]').forEach(b=>b.onclick=()=>{els.editor.value=`SELECT *\nFROM ${b.dataset.table}\nLIMIT 20;`;els.editor.focus()});
 }
 
@@ -84,13 +85,14 @@ function runQuery(){
 }
 
 function finish(){els.workspace.classList.add('hidden');els.completion.classList.remove('hidden');$('queryStat').textContent=queryCount;window.scrollTo({top:0,behavior:'smooth'});}
-function startGame(){els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.workspace.classList.remove('hidden');step=0;queryCount=0;renderMission();window.scrollTo({top:0,behavior:'smooth'});}
+function startGame(showGuide=true){els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.workspace.classList.remove('hidden');step=0;queryCount=0;renderMission();window.scrollTo({top:0,behavior:'smooth'});if(showGuide)$('helpDialog').showModal();}
 function renderSchema(){ $('schemaGrid').innerHTML=Object.entries(schema).map(([name,cols])=>`<article class="schema-table"><h3>${name}</h3><ul>${cols.map(c=>`<li>${c.replace(' PK',' <b>PK</b>').replace(' FK',' <em>FK</em>')}</li>`).join('')}</ul></article>`).join(''); }
 
-$('startBtn').onclick=startGame;$('replayBtn').onclick=startGame;$('runBtn').onclick=runQuery;$('runBtn').disabled=true;
+$('startBtn').onclick=()=>startGame(true);$('replayBtn').onclick=()=>startGame(false);$('runBtn').onclick=runQuery;$('runBtn').disabled=true;
 $('resetQueryBtn').onclick=()=>{els.editor.value=missions[step].starter;els.editor.focus()};
 $('hintBtn').onclick=()=>{const m=missions[step];const level=Math.min(hintLevel,m.hints.length-1);$('hintBox').textContent=(level===2?'SOLUZIONE POSSIBILE\n':'SUGGERIMENTO\n')+m.hints[level];$('hintBox').classList.remove('hidden');hintLevel++;$('hintBtn').textContent=hintLevel>=3?'↻ Rileggi la soluzione':'＋ Altro suggerimento';};
 $('schemaBtn').onclick=()=>$('schemaDialog').showModal();$('closeSchemaBtn').onclick=()=>$('schemaDialog').close();
+$('helpBtn').onclick=()=>$('helpDialog').showModal();$('closeHelpBtn').onclick=()=>$('helpDialog').close();$('beginBtn').onclick=()=>{$('helpDialog').close();els.editor.focus()};
 $('soundBtn').onclick=()=>{soundOn=!soundOn;$('soundBtn').textContent=soundOn?'♪':'×';$('soundBtn').ariaLabel=soundOn?'Disattiva effetti sonori':'Attiva effetti sonori'};
 els.editor.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();runQuery()}if(e.key==='Tab'){e.preventDefault();const s=e.target.selectionStart;e.target.value=e.target.value.slice(0,s)+'  '+e.target.value.slice(e.target.selectionEnd);e.target.selectionStart=e.target.selectionEnd=s+2}});
 renderSchema();initDb().catch(err=>setFeedback('Impossibile avviare SQLite: '+err.message,'error'));
