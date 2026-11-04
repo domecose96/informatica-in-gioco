@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="10" fill="#08191c"/>
+  <rect x="10" y="9" width="44" height="46" rx="3" fill="none" stroke="#d2a254" stroke-width="2" transform="rotate(-2 32 32)"/>
+  <text x="32" y="39" text-anchor="middle" fill="#eee5cf" font-family="Georgia,serif" font-size="22" letter-spacing="2">AO</text>
+</svg>

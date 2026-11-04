@@ -20,4 +20,14 @@ Poi apri `http://localhost:8080`. Non aprire direttamente `index.html`: WebAssem
 - `dist/vendor/`: runtime SQLite locale
 - `dist/assets/`: grafica originale
 
-Il caso contiene otto missioni e copre `SELECT`, `WHERE`, `ORDER BY`, `JOIN`, `NULL`, sottoquery e aggregazioni.
+Il caso contiene otto missioni e copre `SELECT`, `WHERE`, `ORDER BY`, `JOIN`, `NULL`, sottoquery e aggregazioni. Ogni soluzione corretta resta visibile e deve essere rielaborata dal giocatore in un taccuino, così gli indizi raccolti possono essere riutilizzati nelle missioni successive.
+
+## Controlli automatici
+
+Per verificare che nessuna query iniziale completi accidentalmente una missione e che tutte le soluzioni siano riconosciute:
+
+```bash
+node tests/validate-game.cjs
+```
+
+Il gioco blocca istruzioni SQL distruttive e query multiple: il database del caso è interrogabile in sola lettura.
