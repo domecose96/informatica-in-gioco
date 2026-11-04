@@ -128,16 +128,21 @@ WHERE data = '2026-10-31';</textarea>
   </dialog>
 
   <dialog id="helpDialog" class="help-dialog">
-    <div class="dialog-head"><div><p class="eyebrow">GUIDA RAPIDA · 30 SECONDI</p><h2>Come si gioca</h2></div><button id="closeHelpBtn" aria-label="Chiudi guida" type="button">×</button></div>
-    <p class="help-lede">Non devi inventare tutto da zero: per ogni indizio trovi una query già iniziata. Devi soltanto completarla usando l’obiettivo come guida.</p>
-    <div class="help-steps">
-      <article><b>1</b><div><h3>Leggi l’obiettivo</h3><p>Esempio: “Trova l’evento di tipo allarme”. Ti dice quali righe devono apparire.</p></div></article>
-      <article><b>2</b><div><h3>Modifica il codice</h3><p>Nell’editor trovi già <code>SELECT</code>, <code>FROM</code> e una parte del filtro.</p></div></article>
-      <article><b>3</b><div><h3>Scrivi ciò che scopri</h3><p>Quando la query è corretta, leggi il risultato e annota con parole tue l’indizio nel taccuino.</p></div></article>
+    <div class="dialog-head help-head"><div><p class="eyebrow">BRIEFING DELL’INVESTIGATORE</p><h2>Indaga in tre mosse</h2><p>Il codice è già iniziato. A te il compito di trasformare i dati in prove.</p></div><button id="closeHelpBtn" aria-label="Chiudi guida" type="button">×</button></div>
+    <div class="help-layout">
+      <div class="help-steps" aria-label="Le tre fasi del gioco">
+        <article><b>01</b><div><span>OSSERVA</span><h3>Leggi la missione</h3><p>L’obiettivo ti dice quale informazione devi far emergere dal database.</p></div></article>
+        <article><b>02</b><div><span>INTERROGA</span><h3>Completa la query</h3><p>Modifica il codice e premi <strong>Esegui</strong>. Un tentativo errato mostra comunque risultati utili.</p></div></article>
+        <article><b>03</b><div><span>DEDUCI</span><h3>Annota la prova</h3><p>Quando trovi la risposta, scrivila con parole tue: resterà nel taccuino.</p></div></article>
+      </div>
+      <div class="help-demo" aria-label="Esempio di indagine SQL">
+        <div class="demo-bar"><i></i><i></i><i></i><span>prova_01.sql</span></div>
+        <div class="demo-code"><span>1</span><code><em>SELECT</em> ora, descrizione<br><em>FROM</em> eventi<br><em>WHERE</em> tipo = <mark>'allarme'</mark>;</code></div>
+        <div class="demo-result"><span>RISULTATO</span><strong>22:14 · Fondo Riservato F-204</strong></div>
+        <div class="demo-note"><span>✓</span><div><small>TACCUINO</small><p>L’allarme è scattato alle 22:14.</p></div></div>
+      </div>
     </div>
-    <div class="query-example"><span>ESEMPIO</span><code>SELECT * FROM eventi<br>WHERE tipo = 'allarme';</code><p>Significa: «mostrami tutti gli eventi che sono allarmi».</p></div>
-    <p class="help-note">Se ti blocchi, premi <strong>Richiedi un suggerimento</strong>: al terzo clic compare una soluzione possibile.</p>
-    <button class="primary" id="beginBtn" type="button">Ho capito, iniziamo <span>→</span></button>
+    <div class="help-footer"><p><span>?</span>Se ti blocchi, usa i suggerimenti progressivi: la soluzione completa arriva solo al terzo aiuto.</p><button class="primary" id="beginBtn" type="button">Apri il caso <span>→</span></button></div>
   </dialog>
 
   <script src="vendor/sql-wasm.js"></script>
