@@ -8,7 +8,7 @@
   <title>Archivio Ombra — SQL Mystery</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/archivio-noir.png" as="image">
-  <link rel="stylesheet" href="styles.css?v=12">
+  <link rel="stylesheet" href="styles.css?v=13">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -127,8 +127,8 @@ WHERE data = '2026-10-31';</textarea>
       <span><i class="pk-dot"></i> Chiave primaria</span>
       <span><i class="fk-dot"></i> Chiave esterna</span>
       <span><i class="crow-foot-icon"></i> Molti (N)</span>
-      <span><i class="rel-line required"></i> Lato obbligatorio · 1..1</span>
-      <span><i class="rel-line optional"></i> Lato facoltativo · 0..N</span>
+      <span><i class="rel-line required"></i> Lato obbligatorio · 1</span>
+      <span><i class="rel-line optional"></i> Lato facoltativo · N</span>
     </div>
     <p class="er-legend-note">Ogni associazione parte da un punto distinto di <strong>cittadini</strong> e termina sulla relativa <strong>FK</strong>.</p>
     <div class="er-diagram" id="schemaGrid"></div>
@@ -153,6 +153,6 @@ WHERE data = '2026-10-31';</textarea>
   </dialog>
 
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js?v=12"></script>
+  <script src="app.js?v=13"></script>
 </body>
 </html>

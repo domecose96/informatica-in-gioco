@@ -120,27 +120,27 @@ function renderConceptualSchema(){ $('schemaGrid').innerHTML=`
     <!-- ACCESSO — USA BADGE — CITTADINO -->
     <path class="er-link required" d="M255 115 H270"/><path class="er-link optional" d="M360 115 H370 V190 H380"/>
     ${erAssociation(315,115,90,54,'USA','BADGE')}
-    <text class="er-cardinality er-many-label" x="364" y="178">0..N</text><text class="er-cardinality er-one-label" x="259" y="106">1..1</text>
+    <text class="er-cardinality er-many-label" x="364" y="178">N</text><text class="er-cardinality er-one-label" x="259" y="106">1</text>
 
     <!-- VEICOLO — POSSIEDE — CITTADINO -->
     <path class="er-link required" d="M255 370 H270"/><path class="er-link optional" d="M360 370 H370 V270 H380"/>
     ${erAssociation(315,370,90,54,'POSSIEDE','')}
-    <text class="er-cardinality er-many-label" x="364" y="286">0..N</text><text class="er-cardinality er-one-label" x="259" y="360">1..1</text>
+    <text class="er-cardinality er-many-label" x="364" y="286">N</text><text class="er-cardinality er-one-label" x="259" y="360">1</text>
 
     <!-- CITTADINO — EFFETTUA — TELEFONATA: ruolo mittente -->
     <path class="er-link optional" d="M620 185 H638 V105 H645"/><path class="er-link required" d="M735 105 H745 V95"/>
     ${erAssociation(690,105,90,54,'EFFETTUA','MITTENTE')}
-    <text class="er-cardinality er-many-label" x="625" y="178">0..N</text><text class="er-cardinality er-one-label" x="738" y="87">1..1</text>
+    <text class="er-cardinality er-many-label" x="625" y="178">N</text><text class="er-cardinality er-one-label" x="738" y="87">1</text>
 
     <!-- CITTADINO — RICEVE — TELEFONATA: ruolo destinatario -->
     <path class="er-link optional" d="M620 230 H638 V245 H645"/><path class="er-link required" d="M735 245 H745 V145"/>
     ${erAssociation(690,245,90,54,'RICEVE','DESTINATARIO')}
-    <text class="er-cardinality er-many-label" x="625" y="224">0..N</text><text class="er-cardinality er-one-label" x="738" y="157">1..1</text>
+    <text class="er-cardinality er-many-label" x="625" y="224">N</text><text class="er-cardinality er-one-label" x="738" y="157">1</text>
 
     <!-- CITTADINO — PRENDE — PRESTITO -->
     <path class="er-link optional" d="M620 280 H635 V370 H645"/><path class="er-link required" d="M735 370 H745"/>
     ${erAssociation(690,370,90,54,'PRENDE','')}
-    <text class="er-cardinality er-many-label" x="625" y="294">0..N</text><text class="er-cardinality er-one-label" x="738" y="360">1..1</text>
+    <text class="er-cardinality er-many-label" x="625" y="294">N</text><text class="er-cardinality er-one-label" x="738" y="360">1</text>
   </g>
   ${erEntity(380,155,240,150,'CITTADINO',['id  · identificatore','nome · cognome','professione','via · civico'],true)}
   ${erEntity(35,55,220,120,'ACCESSO ARCHIVIO',['id  · identificatore','data · ora_badge','varco · esito'])}
@@ -173,23 +173,23 @@ function renderRelationalSchema(){ $('schemaGrid').innerHTML=`
   <g aria-hidden="true">
     <!-- cittadini.id → accessi_archivio.cittadino_id -->
     <path class="er-link required" d="M360 150 H330 V150 H324"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M324 150 V112 H300"/>
-    <circle class="er-fk-anchor" cx="280" cy="112" r="3"/><text class="er-cardinality er-one-label" x="334" y="146">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="300" y="99">0..N</text><text class="er-relation-label" text-anchor="end" x="319" y="137">USA BADGE</text>
+    <circle class="er-fk-anchor" cx="280" cy="112" r="3"/><text class="er-cardinality er-one-label" x="334" y="146">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="300" y="99">N</text><text class="er-relation-label" text-anchor="end" x="319" y="137">USA BADGE</text>
 
     <!-- cittadini.id → veicoli.cittadino_id -->
     <path class="er-link required" d="M360 250 H340"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M340 250 V312 H300"/>
-    <circle class="er-fk-anchor" cx="280" cy="312" r="3"/><text class="er-cardinality er-one-label" x="342" y="265">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="300" y="299">0..N</text><text class="er-relation-label" text-anchor="end" x="329" y="285">POSSIEDE</text>
+    <circle class="er-fk-anchor" cx="280" cy="312" r="3"/><text class="er-cardinality er-one-label" x="342" y="265">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="300" y="299">N</text><text class="er-relation-label" text-anchor="end" x="329" y="285">POSSIEDE</text>
 
     <!-- cittadini.id → telefonate.mittente_id -->
     <path class="er-link required" d="M600 145 H622 V92 H650"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M650 92 V107 H720"/>
-    <circle class="er-fk-anchor er-fk-sender" cx="740" cy="107" r="3"/><text class="er-cardinality er-one-label" x="626" y="137">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="720" y="96">0..N</text><text class="er-phone-role" x="658" y="82">MITTENTE</text>
+    <circle class="er-fk-anchor er-fk-sender" cx="740" cy="107" r="3"/><text class="er-cardinality er-one-label" x="626" y="137">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="720" y="96">N</text><text class="er-phone-role" x="658" y="82">MITTENTE</text>
 
     <!-- cittadini.id → telefonate.destinatario_id -->
     <path class="er-link required" d="M600 195 H640 V177 H666"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M666 177 V129 H720"/>
-    <circle class="er-fk-anchor er-fk-recipient" cx="740" cy="129" r="3"/><text class="er-cardinality er-one-label" x="644" y="210">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="720" y="148">0..N</text><text class="er-phone-role" x="668" y="196">DESTINATARIO</text>
+    <circle class="er-fk-anchor er-fk-recipient" cx="740" cy="129" r="3"/><text class="er-cardinality er-one-label" x="644" y="210">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="720" y="148">N</text><text class="er-phone-role" x="668" y="196">DESTINATARIO</text>
 
     <!-- cittadini.id → prestiti_documenti.cittadino_id -->
     <path class="er-link required" d="M600 265 H635"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M635 265 V312 H720"/>
-    <circle class="er-fk-anchor" cx="740" cy="312" r="3"/><text class="er-cardinality er-one-label" x="606" y="280">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="720" y="299">0..N</text><text class="er-relation-label" x="662" y="282">PRENDE</text>
+    <circle class="er-fk-anchor" cx="740" cy="312" r="3"/><text class="er-cardinality er-one-label" x="606" y="280">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="720" y="299">N</text><text class="er-relation-label" x="662" y="282">PRENDE</text>
 
     <circle class="er-pk-anchor" cx="360" cy="150" r="3"/><circle class="er-pk-anchor" cx="360" cy="250" r="3"/>
     <circle class="er-pk-anchor" cx="600" cy="145" r="3"/><circle class="er-pk-anchor" cx="600" cy="195" r="3"/><circle class="er-pk-anchor" cx="600" cy="265" r="3"/>
