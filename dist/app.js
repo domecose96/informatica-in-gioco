@@ -112,6 +112,7 @@ function runQuery(){
 
 function finish(){document.body.classList.remove('game-active');els.workspace.classList.add('hidden');els.completion.classList.remove('hidden');$('queryStat').textContent=queryCount;window.scrollTo({top:0,behavior:'smooth'});}
 function startGame(showGuide=true){document.body.classList.add('game-active');els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.workspace.classList.remove('hidden');step=0;queryCount=0;collectedClues=[];renderNotebook();renderMission();window.scrollTo({top:0,behavior:'smooth'});if(showGuide)$('helpDialog').showModal();}
+function goHome(){document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());document.body.classList.remove('game-active');els.workspace.classList.add('hidden');els.completion.classList.add('hidden');els.intro.classList.remove('hidden');window.scrollTo(0,0);}
 function renderConceptualSchema(){ $('schemaGrid').innerHTML=`
 <svg viewBox="0 0 1000 510" role="img" aria-labelledby="erConceptTitle erConceptDesc" preserveAspectRatio="xMidYMid meet">
   <title id="erConceptTitle">Modello entità-relazioni concettuale del database comunale</title>
@@ -220,6 +221,7 @@ function erRelationTag(cx,cy,w,label){
 }
 
 $('startBtn').onclick=()=>startGame(true);$('replayBtn').onclick=()=>startGame(false);$('runBtn').onclick=runQuery;$('runBtn').disabled=true;
+$('homeBtn').onclick=goHome;document.querySelector('.brand').onclick=e=>{e.preventDefault();goHome()};
 $('resetQueryBtn').onclick=()=>{els.editor.value=missions[step].starter;els.editor.focus()};
 $('hintBtn').onclick=()=>{const m=missions[step];const level=Math.min(hintLevel,m.hints.length-1);$('hintBox').textContent=(level===2?'SOLUZIONE POSSIBILE\n':'SUGGERIMENTO\n')+m.hints[level];$('hintBox').classList.remove('hidden');hintLevel++;$('hintBtn').textContent=hintLevel>=3?'↻ Rileggi la soluzione':'＋ Altro suggerimento';};
 $('clueInput').addEventListener('input',()=>{const valid=$('clueInput').value.trim().length>=8;$('continueBtn').disabled=!valid;$('clueInputHelp').textContent=valid?'Pronto per essere aggiunto al taccuino.':'Scrivi almeno una breve frase con ciò che hai scoperto.';$('clueInputHelp').className=valid?'':'input-error'});
