@@ -7,9 +7,12 @@ button { cursor:pointer; }
 button:focus-visible,textarea:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--amber);outline-offset:3px}button:disabled{cursor:not-allowed}
 .ambient { position:fixed; inset:0; pointer-events:none; background:radial-gradient(circle at 80% 10%,rgba(27,94,93,.17),transparent 35%),linear-gradient(rgba(0,0,0,.2),rgba(0,0,0,.2)); z-index:-1; }
 .topbar { height:78px; padding:0 clamp(22px,5vw,72px); display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line); background:rgba(6,21,23,.86); backdrop-filter:blur(16px); position:relative; z-index:5; }
-.brand { display:flex; gap:12px; align-items:center; color:inherit; text-decoration:none; letter-spacing:.1em; }
-.brand-mark { display:grid; place-items:center; width:38px; height:38px; border:1px solid var(--amber); color:var(--amber); font-family:"DM Mono"; font-size:13px; transform:rotate(-2deg); }
+.brand { display:flex; gap:12px; align-items:center; color:inherit; text-decoration:none; letter-spacing:.1em; transition:color .2s ease; }
+.brand-mark { display:grid; place-items:center; width:38px; height:38px; border:1px solid var(--amber); color:var(--amber); font-family:"DM Mono"; font-size:13px; transform:rotate(-2deg); transition:background-color .2s ease,color .2s ease,box-shadow .2s ease; }
 .brand strong,.brand small { display:block; }.brand strong{font-size:12px}.brand small{font-size:8px;color:var(--muted);margin-top:4px}
+body.game-active .brand:hover,body.game-active .brand:focus-visible{color:var(--amber)}
+body.game-active .brand:hover .brand-mark,body.game-active .brand:focus-visible .brand-mark{background:var(--amber);color:var(--ink);box-shadow:0 0 24px rgba(210,162,84,.2)}
+body.game-active .brand:hover small,body.game-active .brand:focus-visible small{color:#cbb98f}
 .top-actions{display:flex;align-items:center;gap:14px}.text-button,.icon-button{color:var(--cream);background:transparent;border:0}.text-button{font-size:12px;border-bottom:1px solid var(--amber);padding:7px 1px}.icon-button{border:1px solid var(--line);border-radius:50%;width:34px;height:34px}.db-status{display:flex;align-items:center;gap:7px;color:var(--muted);font:9px "DM Mono";letter-spacing:.05em}.db-status i{width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 4px rgba(210,162,84,.1)}.db-status.ready{color:#a9cbbf}.db-status.ready i{background:var(--ok);box-shadow:0 0 0 4px rgba(111,184,157,.1)}.db-status.error{color:#e1ada6}.db-status.error i{background:var(--red)}
 main{min-height:calc(100vh - 130px)}
 .intro{min-height:calc(100vh - 130px);display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,380px);align-items:center;gap:9vw;padding:70px clamp(24px,8vw,120px);background:linear-gradient(90deg,rgba(4,17,19,.98) 0%,rgba(4,17,19,.85) 38%,rgba(4,17,19,.22) 70%),url('assets/archivio-noir.png') center/cover no-repeat;position:relative;overflow:hidden}
