@@ -8,7 +8,7 @@
   <title>Archivio Ombra — SQL Mystery</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/archivio-noir.png" as="image">
-  <link rel="stylesheet" href="styles.css?v=23">
+  <link rel="stylesheet" href="styles.css?v=26">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -32,10 +32,10 @@
         <p class="eyebrow">COMUNE DI VALDORA · 1 NOVEMBRE 2026</p>
         <h1>Il fascicolo<br><em>scomparso</em></h1>
         <p class="lede">Nella notte, qualcuno è entrato nell’Archivio Civico e ha sottratto il fascicolo F-204. Le tracce sono tutte nel database comunale. Il tuo strumento d’indagine è SQL.</p>
-        <div class="how-it-works" aria-label="Come funziona il gioco">
-          <div><b>1</b><span><strong>Leggi l’obiettivo</strong><small>Ogni indizio ti dice cosa cercare.</small></span></div>
-          <div><b>2</b><span><strong>Completa la query</strong><small>Parti dal codice già preparato.</small></span></div>
-          <div><b>3</b><span><strong>Interpreta e annota</strong><small>Trasforma il risultato in un indizio.</small></span></div>
+        <div class="how-it-works home-steps" aria-label="Come funziona il gioco">
+          <article><b>01</b><div><span>OSSERVA</span><strong>Leggi l’obiettivo</strong><small>Ogni indizio ti dice cosa cercare.</small></div></article>
+          <article><b>02</b><div><span>INTERROGA</span><strong>Completa la query</strong><small>Parti dal codice già preparato.</small></div></article>
+          <article><b>03</b><div><span>DEDUCI</span><strong>Interpreta e annota</strong><small>Trasforma il risultato in un indizio.</small></div></article>
         </div>
         <div class="difficulty"><span>CASO PER PRINCIPIANTI</span><i></i><i></i><i class="off"></i></div>
         <button class="case-cta case-cta-main" id="startBtn" type="button" disabled><span class="case-cta-copy"><small>ARCHIVIO OMBRA</small><strong>Preparazione database…</strong></span><span class="case-cta-seal" aria-hidden="true">···</span></button>
@@ -154,6 +154,6 @@ WHERE data = '2026-10-31';</textarea>
   </dialog>
 
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js?v=23"></script>
+  <script src="app.js?v=25"></script>
 </body>
 </html>
