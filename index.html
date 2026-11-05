@@ -8,7 +8,7 @@
   <title>Archivio Ombra — SQL Mystery</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/archivio-noir.png" as="image">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -127,9 +127,10 @@ WHERE data = '2026-10-31';</textarea>
       <span><i class="pk-dot"></i> Chiave primaria</span>
       <span><i class="fk-dot"></i> Chiave esterna</span>
       <span><i class="crow-foot-icon"></i> Molti (N)</span>
-      <span><i class="rel-line required"></i> Obbligatoria</span>
-      <span><i class="rel-line optional"></i> Facoltativa</span>
+      <span><i class="rel-line required"></i> Lato obbligatorio · 1..1</span>
+      <span><i class="rel-line optional"></i> Lato facoltativo · 0..N</span>
     </div>
+    <p class="er-legend-note">Ogni linea parte dalla PK <strong>cittadini.id</strong> e termina sulla FK assegnata.</p>
     <div class="er-diagram" id="schemaGrid"></div>
   </dialog>
 
@@ -152,6 +153,6 @@ WHERE data = '2026-10-31';</textarea>
   </dialog>
 
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
