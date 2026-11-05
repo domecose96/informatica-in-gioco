@@ -182,14 +182,14 @@ function renderRelationalSchema(){ $('schemaGrid').innerHTML=`
     <circle class="er-fk-anchor" cx="230" cy="312" r="3"/><text class="er-cardinality er-one-label" text-anchor="middle" x="377" y="305">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="258" y="305">N</text>
 
     <!-- cittadini.id → telefonate.mittente_id -->
-    <path class="er-link required" d="M610 112 H655"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M745 112 H770"/>
-    ${erRelationTag(700,112,90,'MITTENTE')}
-    <circle class="er-fk-anchor er-fk-sender" cx="790" cy="112" r="3"/><text class="er-cardinality er-one-label" text-anchor="middle" x="623" y="105">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="758" y="105">N</text>
+    <path class="er-link required" d="M610 95 H655"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M745 95 H770"/>
+    ${erRelationTag(700,95,90,'MITTENTE')}
+    <circle class="er-fk-anchor er-fk-sender" cx="790" cy="95" r="3"/><text class="er-cardinality er-one-label" text-anchor="middle" x="623" y="88">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="758" y="88">N</text>
 
     <!-- cittadini.id → telefonate.destinatario_id -->
-    <path class="er-link required" d="M610 134 H650"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M750 134 H770"/>
-    ${erRelationTag(700,134,100,'DESTINATARIO')}
-    <circle class="er-fk-anchor er-fk-recipient" cx="790" cy="134" r="3"/><text class="er-cardinality er-one-label" text-anchor="middle" x="623" y="148">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="758" y="148">N</text>
+    <path class="er-link required" d="M610 125 H650"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M750 125 H770"/>
+    ${erRelationTag(700,125,100,'DESTINATARIO')}
+    <circle class="er-fk-anchor er-fk-recipient" cx="790" cy="125" r="3"/><text class="er-cardinality er-one-label" text-anchor="middle" x="623" y="139">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="758" y="139">N</text>
 
     <!-- cittadini.id → prestiti_documenti.cittadino_id -->
     <path class="er-link required" d="M610 312 H665"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M735 312 H770"/>
@@ -197,20 +197,21 @@ function renderRelationalSchema(){ $('schemaGrid').innerHTML=`
     <circle class="er-fk-anchor" cx="790" cy="312" r="3"/><text class="er-cardinality er-one-label" text-anchor="middle" x="623" y="305">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="758" y="305">N</text>
 
     <circle class="er-pk-anchor" cx="390" cy="112" r="3"/><circle class="er-pk-anchor" cx="390" cy="312" r="3"/>
-    <circle class="er-pk-anchor" cx="610" cy="112" r="3"/><circle class="er-pk-anchor" cx="610" cy="134" r="3"/><circle class="er-pk-anchor" cx="610" cy="312" r="3"/>
+    <circle class="er-pk-anchor" cx="610" cy="95" r="3"/><circle class="er-pk-anchor" cx="610" cy="125" r="3"/><circle class="er-pk-anchor" cx="610" cy="312" r="3"/>
   </g>
-  ${erCard(390,80,220,232,'cittadini',['id  INTEGER  PK','nome  TEXT','cognome  TEXT','professione  TEXT','via  TEXT','civico  INTEGER'],true)}
+  ${erCard(390,80,220,260,'cittadini',['id  INTEGER  PK','nome  TEXT','cognome  TEXT','professione  TEXT','via  TEXT','civico  INTEGER'],true)}
   ${erCard(10,35,220,145,'accessi_archivio',['id  INTEGER  PK','cittadino_id  INTEGER  FK','data · ora_badge · varco','esito  TEXT'])}
   ${erCard(10,235,220,130,'veicoli',['targa  TEXT  PK','cittadino_id  INTEGER  FK','modello · colore'])}
-  ${erCard(790,35,200,190,'telefonate',['id  INTEGER  PK','mittente_id  INTEGER  FK','destinatario_id  INTEGER  FK','data  TEXT','ora  TEXT','durata_sec  INTEGER'])}
+  ${erCard(790,10,200,220,'telefonate',['id  INTEGER  PK','mittente_id  INTEGER  FK','destinatario_id  INTEGER  FK','data  TEXT','ora  TEXT','durata_sec  INTEGER'],false,30)}
   ${erCard(790,235,200,145,'prestiti_documenti',['id  INTEGER  PK','cittadino_id  INTEGER  FK','codice_fascicolo  TEXT','data_prestito · restituzione'])}
-  <text class="er-independent" x="390" y="397">FONTI DI PROVA INDIPENDENTI</text>
+  <path class="er-section-divider" d="M10 397 H365 M635 397 H990"/>
+  <text class="er-independent" text-anchor="middle" x="500" y="400">FONTI DI PROVA INDIPENDENTI</text>
   ${erCard(390,410,230,95,'eventi',['id  INTEGER  PK','data · ora · tipo · luogo'])}
   ${erCard(650,410,320,95,'telecamere',['id  INTEGER  PK','data · ora · targa · direzione'])}
 </svg>`; }
 
-function erCard(x,y,w,h,title,fields,main=false){
-  const rows=fields.map((field,i)=>{const cls=field.includes(' PK')?'er-field er-pk':field.includes(' FK')?'er-field er-fk':'er-field';return `<text class="${cls}" x="${x+14}" y="${y+55+i*22}">${field}</text>`}).join('');
+function erCard(x,y,w,h,title,fields,main=false,rowGap=22){
+  const rows=fields.map((field,i)=>{const cls=field.includes(' PK')?'er-field er-pk':field.includes(' FK')?'er-field er-fk':'er-field';return `<text class="${cls}" x="${x+14}" y="${y+55+i*rowGap}">${field}</text>`}).join('');
   return `<g><rect class="${main?'er-card-main':'er-card'}" x="${x}" y="${y}" width="${w}" height="${h}" rx="4"/><path class="er-header" d="M${x+4} ${y+4}h${w-8}v32h-${w-8}z"/><text class="er-title" x="${x+14}" y="${y+26}">${title}</text>${rows}</g>`;
 }
 
