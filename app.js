@@ -197,7 +197,7 @@ function renderRelationalSchema(){ $('schemaGrid').innerHTML=`
   ${erCard(360,110,240,190,'cittadini',['id  INTEGER  PK','nome  TEXT','cognome  TEXT','professione  TEXT','via  TEXT','civico  INTEGER'],true)}
   ${erCard(30,35,250,145,'accessi_archivio',['id  INTEGER  PK','cittadino_id  INTEGER  FK','data · ora_badge · varco','esito  TEXT'])}
   ${erCard(30,235,250,130,'veicoli',['targa  TEXT  PK','cittadino_id  INTEGER  FK','modello · colore'])}
-  ${erCard(740,30,230,165,'telefonate',['id  INTEGER  PK','mittente_id  INTEGER  FK','destinatario_id  INTEGER  FK','data · ora · durata_sec'])}
+  ${erCard(740,30,230,190,'telefonate',['id  INTEGER  PK','mittente_id  INTEGER  FK','destinatario_id  INTEGER  FK','data  TEXT','ora  TEXT','durata_sec  INTEGER'])}
   ${erCard(740,235,230,145,'prestiti_documenti',['id  INTEGER  PK','cittadino_id  INTEGER  FK','codice_fascicolo  TEXT','data_prestito · restituzione'])}
   <text class="er-independent" x="360" y="397">FONTI DI PROVA INDIPENDENTI</text>
   ${erCard(360,410,250,95,'eventi',['id  INTEGER  PK','data · ora · tipo · luogo'])}
