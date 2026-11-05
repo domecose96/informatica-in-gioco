@@ -8,7 +8,7 @@
   <title>Archivio Ombra — SQL Mystery</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/archivio-noir.png" as="image">
-  <link rel="stylesheet" href="styles.css?v=34">
+    <link rel="stylesheet" href="styles.css?v=39">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -56,8 +56,14 @@
 
     <section class="workspace hidden" id="workspace" aria-label="Area investigativa">
       <aside class="briefing">
-        <p class="panel-step"><b>01</b> LEGGI QUI COSA CERCARE</p>
-        <div class="case-progress"><span id="stepCount">INDIZIO 1 DI 8</span><span id="progressPercent">12%</span></div>
+        <div class="briefing-topline">
+          <p class="panel-step"><b>01</b> LEGGI QUI COSA CERCARE</p>
+          <div class="investigation-tools" aria-label="Strumenti dell’investigatore">
+            <button class="notebook-toggle" id="notebookBtn" type="button" aria-label="Apri il taccuino: 0 indizi su 8" title="Taccuino" aria-expanded="false" aria-controls="notebookDrawer"><span class="notebook-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M7 4.5h10.5a2 2 0 0 1 2 2v13H7z"/><path d="M4.5 6.5H7v13H6.5a2 2 0 0 1-2-2zM10 8h6M10 11h6M10 14h4"/><path d="M5.5 9h2M5.5 13h2M5.5 17h2"/></svg></span><b id="notebookButtonCount">0 / 8</b></button>
+            <button class="hint-button" id="hintBtn" type="button" aria-label="Apri gli indizi" title="Indizi" aria-expanded="false" aria-controls="hintBox"><span class="clue-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m14.6 14.6 4.4 4.4M8.3 10.7l1.5 1.5 3-3.2M18 4v3M16.5 5.5h3"/></svg></span></button>
+          </div>
+        </div>
+        <div class="case-progress"><span id="stepCount">INDIZIO 1 DI 8</span><span id="progressPercent">0%</span></div>
         <div class="progress-track"><span id="progressBar"></span></div>
         <p class="eyebrow" id="missionSkill">SELECT · WHERE</p>
         <h2 id="missionTitle">Ricostruisci l’allarme</h2>
@@ -67,11 +73,17 @@
           <p id="missionObjective"></p>
         </div>
         <div class="next-action"><span>PROSSIMA AZIONE</span><p id="nextAction"></p></div>
-        <div class="table-chips" id="tableChips"></div>
-        <button class="hint-button" id="hintBtn" type="button">＋ Richiedi un suggerimento</button>
-        <div class="hint-box hidden" id="hintBox" aria-live="polite"></div>
-        <details class="notebook" aria-label="Taccuino degli indizi" open>
-          <summary class="notebook-title"><span>TACCUINO INDIZI</span><b id="clueCount">0 / 8</b></summary>
+        <div class="hint-box hidden" id="hintBox" aria-live="polite">
+          <div class="hint-box-head"><span><i aria-hidden="true">✦</i> INDIZI DELL’INVESTIGATORE</span><button id="hintCloseBtn" type="button" aria-label="Chiudi indizi">×</button></div>
+          <p id="hintText"></p>
+          <div class="hint-navigation"><button id="hintPrevBtn" type="button" aria-label="Indizio precedente"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 4.5-5 5.5 5 5.5"/></svg></button><span id="hintCounter">1 / 3</span><button id="hintNextBtn" type="button" aria-label="Indizio successivo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 4.5 5 5.5-5 5.5"/></svg></button></div>
+        </div>
+        <section class="notebook-drawer hidden" id="notebookDrawer" role="dialog" aria-modal="false" aria-labelledby="notebookTitle">
+          <div class="notebook-drawer-head">
+            <div><span>STRUMENTI DELL’INVESTIGATORE</span><h3 id="notebookTitle">Taccuino degli indizi</h3></div>
+            <button id="notebookCloseBtn" type="button" aria-label="Chiudi taccuino">×</button>
+          </div>
+          <div class="notebook-meta"><span>CASO F–204</span><b id="clueCount">0 / 8</b></div>
           <div class="notebook-paper">
             <div class="found-clue hidden" id="foundClue" aria-live="polite">
               <div class="clue-discovery"><span>✓ PROVA TROVATA</span><strong id="foundClueText"></strong><small>Osserva la tabella: cosa hai scoperto?</small></div>
@@ -83,11 +95,17 @@
             </div>
             <div id="clueList"><p class="notebook-empty">Le prove corrette verranno annotate qui e resteranno disponibili per gli enigmi successivi.</p></div>
           </div>
-        </details>
+        </section>
       </aside>
 
       <section class="terminal-panel">
-        <p class="panel-step"><b>02</b> COMPLETA LA QUERY QUI SOTTO</p>
+        <div class="query-topline">
+          <p class="panel-step"><b>02</b> COMPLETA LA QUERY QUI SOTTO</p>
+          <div class="data-shortcuts" aria-label="Tabelle disponibili">
+            <span>ESPLORA I DATI</span>
+            <div class="table-chips" id="tableChips"></div>
+          </div>
+        </div>
         <div class="terminal-head">
           <div class="terminal-lights" aria-hidden="true"><i></i><i></i><i></i></div>
           <span>query_indagine.sql</span>
@@ -155,6 +173,6 @@ WHERE data = '2026-10-31';</textarea>
   </dialog>
 
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js?v=28"></script>
+  <script src="app.js?v=31"></script>
 </body>
 </html>
