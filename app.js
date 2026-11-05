@@ -51,7 +51,7 @@ function beep(freq=540,duration=.06){ if(!soundOn) return; try{const ctx=new (wi
 async function initDb(){
   const SQL = await initSqlJs({locateFile:file=>`vendor/${file}`});
   db = new SQL.Database(); db.run(seed);
-  $('runBtn').disabled=false;$('startBtn').disabled=false;$('startBtn').innerHTML='Inizia il caso <span>→</span>';$('dbStatus').className='db-status ready';$('dbStatus').innerHTML='<i></i><span>Database pronto</span>';
+  $('runBtn').disabled=false;$('startBtn').disabled=false;$('startBtn').innerHTML='<span class="case-cta-copy"><small>CASO 01 · F–204</small><strong>Inizia l’indagine</strong></span><span class="case-cta-seal" aria-hidden="true">AO</span>';$('dbStatus').className='db-status ready';$('dbStatus').innerHTML='<i></i><span>Database pronto</span>';
 }
 
 function renderMission(){
