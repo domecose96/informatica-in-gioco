@@ -172,32 +172,32 @@ function renderRelationalSchema(){ $('schemaGrid').innerHTML=`
   </defs>
   <g aria-hidden="true">
     <!-- cittadini.id → accessi_archivio.cittadino_id -->
-    <path class="er-link required" d="M390 112 H356"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M274 112 H250"/>
+    <path class="er-link required" d="M390 112 H356"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M274 112 H246"/>
     ${erRelationTag(315,112,82,'USA BADGE')}
     <circle class="er-fk-anchor" cx="230" cy="112" r="3"/><text class="er-cardinality er-one-label" text-anchor="middle" x="377" y="105">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="258" y="105">N</text>
 
     <!-- cittadini.id → veicoli.cittadino_id -->
-    <path class="er-link required" d="M390 312 H356"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M274 312 H250"/>
+    <path class="er-link required" d="M390 312 H356"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M274 312 H246"/>
     ${erRelationTag(315,312,82,'POSSIEDE')}
     <circle class="er-fk-anchor" cx="230" cy="312" r="3"/><text class="er-cardinality er-one-label" text-anchor="middle" x="377" y="305">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="258" y="305">N</text>
 
     <!-- cittadini.id → telefonate.mittente_id -->
-    <path class="er-link required" d="M610 95 H655"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M745 95 H770"/>
+    <path class="er-link required" d="M610 95 H655"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M745 95 H774"/>
     ${erRelationTag(700,95,90,'MITTENTE')}
     <circle class="er-fk-anchor er-fk-sender" cx="790" cy="95" r="3"/><text class="er-cardinality er-one-label" text-anchor="middle" x="623" y="88">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="758" y="88">N</text>
 
     <!-- cittadini.id → telefonate.destinatario_id -->
-    <path class="er-link required" d="M610 125 H650"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M750 125 H770"/>
-    ${erRelationTag(700,125,100,'DESTINATARIO')}
-    <circle class="er-fk-anchor er-fk-recipient" cx="790" cy="125" r="3"/><text class="er-cardinality er-one-label" text-anchor="middle" x="623" y="139">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="758" y="139">N</text>
+    <path class="er-link required" d="M610 145 H650"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M750 145 H774"/>
+    ${erRelationTag(700,145,100,'DESTINATARIO')}
+    <circle class="er-fk-anchor er-fk-recipient" cx="790" cy="145" r="3"/><text class="er-cardinality er-one-label" text-anchor="middle" x="623" y="138">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="758" y="138">N</text>
 
     <!-- cittadini.id → prestiti_documenti.cittadino_id -->
-    <path class="er-link required" d="M610 312 H665"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M735 312 H770"/>
+    <path class="er-link required" d="M610 312 H665"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M735 312 H774"/>
     ${erRelationTag(700,312,70,'PRENDE')}
     <circle class="er-fk-anchor" cx="790" cy="312" r="3"/><text class="er-cardinality er-one-label" text-anchor="middle" x="623" y="305">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="758" y="305">N</text>
 
     <circle class="er-pk-anchor" cx="390" cy="112" r="3"/><circle class="er-pk-anchor" cx="390" cy="312" r="3"/>
-    <circle class="er-pk-anchor" cx="610" cy="95" r="3"/><circle class="er-pk-anchor" cx="610" cy="125" r="3"/><circle class="er-pk-anchor" cx="610" cy="312" r="3"/>
+    <circle class="er-pk-anchor" cx="610" cy="95" r="3"/><circle class="er-pk-anchor" cx="610" cy="145" r="3"/><circle class="er-pk-anchor" cx="610" cy="312" r="3"/>
   </g>
   ${erCard(390,80,220,260,'cittadini',['id  INTEGER  PK','nome  TEXT','cognome  TEXT','professione  TEXT','via  TEXT','civico  INTEGER'],true)}
   ${erCard(10,35,220,145,'accessi_archivio',['id  INTEGER  PK','cittadino_id  INTEGER  FK','data · ora_badge · varco','esito  TEXT'])}
