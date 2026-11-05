@@ -8,7 +8,7 @@
   <title>Archivio Ombra — SQL Mystery</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/archivio-noir.png" as="image">
-  <link rel="stylesheet" href="styles.css?v=20">
+  <link rel="stylesheet" href="styles.css?v=21">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -37,7 +37,7 @@
           <div><b>3</b><span><strong>Interpreta e annota</strong><small>Trasforma il risultato in un indizio.</small></span></div>
         </div>
         <div class="difficulty"><span>CASO PER PRINCIPIANTI</span><i></i><i></i><i class="off"></i></div>
-        <button class="primary" id="startBtn" type="button" disabled>Preparazione database… <span>···</span></button>
+        <button class="case-cta" id="startBtn" type="button" disabled><span class="case-cta-copy"><small>ARCHIVIO OMBRA</small><strong>Preparazione database…</strong></span><span class="case-cta-seal" aria-hidden="true">···</span></button>
         <p class="privacy-note">Nessun account. Le query vengono eseguite sul tuo dispositivo.</p>
       </div>
       <aside class="case-card" aria-label="Fascicolo del caso">
@@ -149,10 +149,10 @@ WHERE data = '2026-10-31';</textarea>
         <div class="demo-note"><span>✓</span><div><small>TACCUINO</small><p>L’allarme è scattato alle 22:14.</p></div></div>
       </div>
     </div>
-    <div class="help-footer"><p><span>?</span>Se ti blocchi, usa i suggerimenti progressivi: la soluzione completa arriva solo al terzo aiuto.</p><button class="primary" id="beginBtn" type="button">Apri il caso <span>→</span></button></div>
+    <div class="help-footer"><p><span>?</span>Se ti blocchi, usa i suggerimenti progressivi: la soluzione completa arriva solo al terzo aiuto.</p><button class="case-cta case-cta-compact" id="beginBtn" type="button"><span class="case-cta-copy"><small>BRIEFING COMPLETATO</small><strong>Entra nell’archivio</strong></span><span class="case-cta-seal" aria-hidden="true">01</span></button></div>
   </dialog>
 
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js?v=20"></script>
+  <script src="app.js?v=21"></script>
 </body>
 </html>
