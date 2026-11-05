@@ -114,13 +114,18 @@ function finish(){document.body.classList.remove('game-active');els.workspace.cl
 function startGame(showGuide=true){document.body.classList.add('game-active');els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.workspace.classList.remove('hidden');step=0;queryCount=0;collectedClues=[];renderNotebook();renderMission();window.scrollTo({top:0,behavior:'smooth'});if(showGuide)$('helpDialog').showModal();}
 function renderSchema(){ $('schemaGrid').innerHTML=`
 <svg viewBox="0 0 1000 520" role="img" aria-labelledby="erTitle erDesc" preserveAspectRatio="xMidYMid meet">
-  <title id="erTitle">Modello entità-relazioni del database comunale</title><desc id="erDesc">Cittadini è collegata uno a molti ad accessi, veicoli, prestiti e telefonate. Eventi e telecamere sono fonti di prova indipendenti.</desc>
+  <title id="erTitle">Modello entità-relazioni del database comunale</title><desc id="erDesc">Cittadini è collegata uno a molti ad accessi, veicoli, prestiti e telefonate. La zampa di gallina indica il lato molti; le linee continue indicano partecipazione obbligatoria e quelle tratteggiate partecipazione facoltativa. Eventi e telecamere sono fonti di prova indipendenti.</desc>
+  <defs>
+    <marker id="crowFoot" markerWidth="18" markerHeight="18" refX="1" refY="9" orient="auto" markerUnits="userSpaceOnUse">
+      <path class="er-crow-foot" d="M1 9 L17 1 M1 9 L17 9 M1 9 L17 17"/>
+    </marker>
+  </defs>
   <g aria-hidden="true">
-    <path class="er-link" d="M370 190 C335 190 330 106 290 106"/><text class="er-cardinality" x="348" y="179">1</text><text class="er-cardinality" x="299" y="96">N</text><text class="er-relation-label" x="300" y="145">USA BADGE</text>
-    <path class="er-link" d="M370 250 C330 250 330 300 290 300"/><text class="er-cardinality" x="347" y="239">1</text><text class="er-cardinality" x="299" y="291">N</text><text class="er-relation-label" x="303" y="268">POSSIEDE</text>
-    <path class="er-link" d="M630 190 C670 190 670 82 710 82"/><text class="er-cardinality" x="640" y="179">1</text><text class="er-cardinality" x="695" y="73">N</text><text class="er-relation-label" x="645" y="126">MITTENTE</text>
-    <path class="er-link-secondary" d="M630 215 C680 215 680 145 710 145"/><text class="er-cardinality" x="640" y="228">1</text><text class="er-cardinality" x="695" y="160">N</text><text class="er-relation-label" x="638" y="196">DESTINATARIO</text>
-    <path class="er-link" d="M630 255 C670 255 670 302 710 302"/><text class="er-cardinality" x="640" y="245">1</text><text class="er-cardinality" x="695" y="293">N</text><text class="er-relation-label" x="641" y="277">PRENDE</text>
+    <path class="er-link optional" marker-end="url(#crowFoot)" d="M370 190 C335 190 335 106 310 106"/><text class="er-cardinality" x="348" y="179">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="310" y="87">0..N</text><text class="er-relation-label" x="300" y="145">USA BADGE</text>
+    <path class="er-link optional" marker-end="url(#crowFoot)" d="M370 250 C335 250 335 300 310 300"/><text class="er-cardinality" x="347" y="239">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="310" y="281">0..N</text><text class="er-relation-label" x="303" y="268">POSSIEDE</text>
+    <path class="er-link" marker-end="url(#crowFoot)" d="M630 190 C670 190 670 82 690 82"/><text class="er-cardinality" x="640" y="179">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="690" y="63">1..N</text><text class="er-relation-label" x="645" y="126">MITTENTE</text>
+    <path class="er-link" marker-end="url(#crowFoot)" d="M630 215 C675 215 675 145 690 145"/><text class="er-cardinality" x="640" y="228">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="690" y="168">1..N</text><text class="er-relation-label" x="638" y="196">DESTINATARIO</text>
+    <path class="er-link optional" marker-end="url(#crowFoot)" d="M630 255 C670 255 670 302 690 302"/><text class="er-cardinality" x="640" y="245">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="690" y="283">0..N</text><text class="er-relation-label" x="641" y="277">PRENDE</text>
   </g>
   ${erCard(370,110,260,190,'cittadini',['id  INTEGER  PK','nome  TEXT','cognome  TEXT','professione  TEXT','via  TEXT','civico  INTEGER'],true)}
   ${erCard(30,35,260,145,'accessi_archivio',['id  INTEGER  PK','cittadino_id  INTEGER  FK','data · ora_badge · varco','esito  TEXT'])}

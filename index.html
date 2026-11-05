@@ -123,7 +123,13 @@ WHERE data = '2026-10-31';</textarea>
 
   <dialog id="schemaDialog">
     <div class="dialog-head"><div><p class="eyebrow">DATABASE COMUNALE</p><h2>Modello E/R dell’indagine</h2></div><button id="closeSchemaBtn" aria-label="Chiudi schema" type="button">×</button></div>
-    <div class="er-legend"><span><i class="pk-dot"></i> Chiave primaria</span><span><i class="fk-dot"></i> Chiave esterna</span><span><i class="rel-line"></i> Relazione uno a molti</span></div>
+    <div class="er-legend">
+      <span><i class="pk-dot"></i> Chiave primaria</span>
+      <span><i class="fk-dot"></i> Chiave esterna</span>
+      <span><i class="crow-foot-icon"></i> Molti (N)</span>
+      <span><i class="rel-line required"></i> Obbligatoria</span>
+      <span><i class="rel-line optional"></i> Facoltativa</span>
+    </div>
     <div class="er-diagram" id="schemaGrid"></div>
   </dialog>
 
