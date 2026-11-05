@@ -172,26 +172,27 @@ function renderRelationalSchema(){ $('schemaGrid').innerHTML=`
   </defs>
   <g aria-hidden="true">
     <!-- cittadini.id → accessi_archivio.cittadino_id -->
-    <path class="er-link required" d="M360 165 H330 V150 H324"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M324 150 V112 H300"/>
+    <path class="er-link required" d="M360 150 H330 V150 H324"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M324 150 V112 H300"/>
     <circle class="er-fk-anchor" cx="280" cy="112" r="3"/><text class="er-cardinality er-one-label" x="334" y="146">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="300" y="99">0..N</text><text class="er-relation-label" text-anchor="end" x="319" y="137">USA BADGE</text>
 
     <!-- cittadini.id → veicoli.cittadino_id -->
-    <path class="er-link required" d="M360 165 H340 V181 H328"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M328 181 V312 H300"/>
-    <circle class="er-fk-anchor" cx="280" cy="312" r="3"/><text class="er-cardinality er-one-label" x="333" y="198">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="300" y="299">0..N</text><text class="er-relation-label" text-anchor="end" x="319" y="285">POSSIEDE</text>
+    <path class="er-link required" d="M360 250 H340"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M340 250 V312 H300"/>
+    <circle class="er-fk-anchor" cx="280" cy="312" r="3"/><text class="er-cardinality er-one-label" x="342" y="265">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="300" y="299">0..N</text><text class="er-relation-label" text-anchor="end" x="329" y="285">POSSIEDE</text>
 
     <!-- cittadini.id → telefonate.mittente_id -->
-    <path class="er-link required" d="M600 165 H622 V92 H650"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M650 92 V107 H720"/>
-    <circle class="er-fk-anchor er-fk-sender" cx="740" cy="107" r="3"/><text class="er-cardinality er-one-label" x="626" y="88">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="720" y="96">0..N</text><text class="er-phone-role" x="658" y="82">MITTENTE</text>
+    <path class="er-link required" d="M600 145 H622 V92 H650"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M650 92 V107 H720"/>
+    <circle class="er-fk-anchor er-fk-sender" cx="740" cy="107" r="3"/><text class="er-cardinality er-one-label" x="626" y="137">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="720" y="96">0..N</text><text class="er-phone-role" x="658" y="82">MITTENTE</text>
 
     <!-- cittadini.id → telefonate.destinatario_id -->
-    <path class="er-link required" d="M600 165 H640 V177 H666"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M666 177 V129 H720"/>
-    <circle class="er-fk-anchor er-fk-recipient" cx="740" cy="129" r="3"/><text class="er-cardinality er-one-label" x="644" y="191">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="720" y="148">0..N</text><text class="er-phone-role" x="668" y="196">DESTINATARIO</text>
+    <path class="er-link required" d="M600 195 H640 V177 H666"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M666 177 V129 H720"/>
+    <circle class="er-fk-anchor er-fk-recipient" cx="740" cy="129" r="3"/><text class="er-cardinality er-one-label" x="644" y="210">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="720" y="148">0..N</text><text class="er-phone-role" x="668" y="196">DESTINATARIO</text>
 
     <!-- cittadini.id → prestiti_documenti.cittadino_id -->
-    <path class="er-link required" d="M600 165 H620 V215 H650"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M650 215 V312 H720"/>
-    <circle class="er-fk-anchor" cx="740" cy="312" r="3"/><text class="er-cardinality er-one-label" x="625" y="229">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="720" y="299">0..N</text><text class="er-relation-label" x="662" y="282">PRENDE</text>
+    <path class="er-link required" d="M600 265 H635"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M635 265 V312 H720"/>
+    <circle class="er-fk-anchor" cx="740" cy="312" r="3"/><text class="er-cardinality er-one-label" x="606" y="280">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="720" y="299">0..N</text><text class="er-relation-label" x="662" y="282">PRENDE</text>
 
-    <circle class="er-pk-anchor" cx="360" cy="165" r="4"/><circle class="er-pk-anchor" cx="600" cy="165" r="4"/>
+    <circle class="er-pk-anchor" cx="360" cy="150" r="3"/><circle class="er-pk-anchor" cx="360" cy="250" r="3"/>
+    <circle class="er-pk-anchor" cx="600" cy="145" r="3"/><circle class="er-pk-anchor" cx="600" cy="195" r="3"/><circle class="er-pk-anchor" cx="600" cy="265" r="3"/>
   </g>
   ${erCard(360,110,240,190,'cittadini',['id  INTEGER  PK','nome  TEXT','cognome  TEXT','professione  TEXT','via  TEXT','civico  INTEGER'],true)}
   ${erCard(30,35,250,145,'accessi_archivio',['id  INTEGER  PK','cittadino_id  INTEGER  FK','data · ora_badge · varco','esito  TEXT'])}
@@ -213,17 +214,8 @@ $('resetQueryBtn').onclick=()=>{els.editor.value=missions[step].starter;els.edit
 $('hintBtn').onclick=()=>{const m=missions[step];const level=Math.min(hintLevel,m.hints.length-1);$('hintBox').textContent=(level===2?'SOLUZIONE POSSIBILE\n':'SUGGERIMENTO\n')+m.hints[level];$('hintBox').classList.remove('hidden');hintLevel++;$('hintBtn').textContent=hintLevel>=3?'↻ Rileggi la soluzione':'＋ Altro suggerimento';};
 $('clueInput').addEventListener('input',()=>{const valid=$('clueInput').value.trim().length>=8;$('continueBtn').disabled=!valid;$('clueInputHelp').textContent=valid?'Pronto per essere aggiunto al taccuino.':'Scrivi almeno una breve frase con ciò che hai scoperto.';$('clueInputHelp').className=valid?'':'input-error'});
 $('continueBtn').onclick=()=>{if(!solvedCurrent)return;const note=$('clueInput').value.trim();if(note.length<8){$('clueInputHelp').textContent='Scrivi prima l’indizio con parole tue.';$('clueInputHelp').className='input-error';return}if(!collectedClues[step])collectedClues.push(note);renderNotebook();if(step===missions.length-1){finish()}else{step++;renderMission();window.scrollTo({top:0,behavior:'smooth'})}};
-function setSchemaView(view){
-  const conceptual=view==='er';
-  $('erTab').classList.toggle('active',conceptual);$('erTab').setAttribute('aria-selected',String(conceptual));
-  $('sqlTab').classList.toggle('active',!conceptual);$('sqlTab').setAttribute('aria-selected',String(!conceptual));
-  $('erLegend').classList.toggle('hidden',!conceptual);$('erNote').classList.toggle('hidden',!conceptual);
-  $('sqlLegend').classList.toggle('hidden',conceptual);$('sqlNote').classList.toggle('hidden',conceptual);
-  conceptual?renderConceptualSchema():renderRelationalSchema();
-}
-$('schemaBtn').onclick=()=>{$('schemaDialog').showModal();setSchemaView('er')};$('closeSchemaBtn').onclick=()=>$('schemaDialog').close();
-$('erTab').onclick=()=>setSchemaView('er');$('sqlTab').onclick=()=>setSchemaView('sql');
+$('schemaBtn').onclick=()=>{$('schemaDialog').showModal();renderRelationalSchema()};$('closeSchemaBtn').onclick=()=>$('schemaDialog').close();
 $('helpBtn').onclick=()=>$('helpDialog').showModal();$('closeHelpBtn').onclick=()=>$('helpDialog').close();$('beginBtn').onclick=()=>{$('helpDialog').close();els.editor.focus()};
 $('soundBtn').onclick=()=>{soundOn=!soundOn;$('soundBtn').textContent=soundOn?'♪':'×';$('soundBtn').ariaLabel=soundOn?'Disattiva effetti sonori':'Attiva effetti sonori'};
 els.editor.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();runQuery()}if(e.key==='Tab'){e.preventDefault();const s=e.target.selectionStart;e.target.value=e.target.value.slice(0,s)+'  '+e.target.value.slice(e.target.selectionEnd);e.target.selectionStart=e.target.selectionEnd=s+2}});
-setSchemaView('er');initDb().catch(err=>{$('dbStatus').className='db-status error';$('dbStatus').innerHTML='<i></i><span>Database non disponibile</span>';$('startBtn').innerHTML='Errore caricamento <span>!</span>';setFeedback('Impossibile avviare SQLite: '+err.message,'error')});
+renderRelationalSchema();initDb().catch(err=>{$('dbStatus').className='db-status error';$('dbStatus').innerHTML='<i></i><span>Database non disponibile</span>';$('startBtn').innerHTML='Errore caricamento <span>!</span>';setFeedback('Impossibile avviare SQLite: '+err.message,'error')});
