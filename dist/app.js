@@ -114,18 +114,34 @@ function finish(){document.body.classList.remove('game-active');els.workspace.cl
 function startGame(showGuide=true){document.body.classList.add('game-active');els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.workspace.classList.remove('hidden');step=0;queryCount=0;collectedClues=[];renderNotebook();renderMission();window.scrollTo({top:0,behavior:'smooth'});if(showGuide)$('helpDialog').showModal();}
 function renderSchema(){ $('schemaGrid').innerHTML=`
 <svg viewBox="0 0 1000 520" role="img" aria-labelledby="erTitle erDesc" preserveAspectRatio="xMidYMid meet">
-  <title id="erTitle">Modello entità-relazioni del database comunale</title><desc id="erDesc">Cittadini è collegata uno a molti ad accessi, veicoli, prestiti e telefonate. La zampa di gallina indica il lato molti; le linee continue indicano partecipazione obbligatoria e quelle tratteggiate partecipazione facoltativa. Eventi e telecamere sono fonti di prova indipendenti.</desc>
+  <title id="erTitle">Modello entità-relazioni del database comunale</title><desc id="erDesc">Ogni relazione parte dalla chiave primaria cittadini punto id e raggiunge la specifica chiave esterna. Il tratto vicino a cittadini è continuo e obbligatorio, con cardinalità uno a uno. Il tratto vicino all'entità dipendente è tratteggiato e facoltativo, con cardinalità zero a molti e zampa di gallina. Eventi e telecamere sono fonti di prova indipendenti.</desc>
   <defs>
     <marker id="crowFoot" markerWidth="18" markerHeight="18" refX="1" refY="9" orient="auto" markerUnits="userSpaceOnUse">
       <path class="er-crow-foot" d="M1 9 L17 1 M1 9 L17 9 M1 9 L17 17"/>
     </marker>
   </defs>
   <g aria-hidden="true">
-    <path class="er-link optional" marker-end="url(#crowFoot)" d="M370 190 C335 190 335 106 310 106"/><text class="er-cardinality" x="348" y="179">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="310" y="87">0..N</text><text class="er-relation-label" x="300" y="145">USA BADGE</text>
-    <path class="er-link optional" marker-end="url(#crowFoot)" d="M370 250 C335 250 335 300 310 300"/><text class="er-cardinality" x="347" y="239">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="310" y="281">0..N</text><text class="er-relation-label" x="303" y="268">POSSIEDE</text>
-    <path class="er-link" marker-end="url(#crowFoot)" d="M630 190 C670 190 670 82 690 82"/><text class="er-cardinality" x="640" y="179">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="690" y="63">1..N</text><text class="er-relation-label" x="645" y="126">MITTENTE</text>
-    <path class="er-link" marker-end="url(#crowFoot)" d="M630 215 C675 215 675 145 690 145"/><text class="er-cardinality" x="640" y="228">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="690" y="168">1..N</text><text class="er-relation-label" x="638" y="196">DESTINATARIO</text>
-    <path class="er-link optional" marker-end="url(#crowFoot)" d="M630 255 C670 255 670 302 690 302"/><text class="er-cardinality" x="640" y="245">1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="690" y="283">0..N</text><text class="er-relation-label" x="641" y="277">PRENDE</text>
+    <!-- cittadini.id → accessi_archivio.cittadino_id -->
+    <path class="er-link required" d="M370 165 H340 V150 H334"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M334 150 V112 H310"/>
+    <circle class="er-fk-anchor" cx="290" cy="112" r="3"/><text class="er-cardinality er-one-label" x="344" y="146">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="310" y="99">0..N</text><text class="er-relation-label" text-anchor="end" x="329" y="137">USA BADGE</text>
+
+    <!-- cittadini.id → veicoli.cittadino_id -->
+    <path class="er-link required" d="M370 165 H350 V181 H338"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M338 181 V312 H310"/>
+    <circle class="er-fk-anchor" cx="290" cy="312" r="3"/><text class="er-cardinality er-one-label" x="343" y="198">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="310" y="299">0..N</text><text class="er-relation-label" text-anchor="end" x="329" y="285">POSSIEDE</text>
+
+    <!-- cittadini.id → telefonate.mittente_id -->
+    <path class="er-link required" d="M630 165 H648 V148 H654"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M654 148 V107 H690"/>
+    <circle class="er-fk-anchor" cx="710" cy="107" r="3"/><text class="er-cardinality er-one-label" x="635" y="145">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="690" y="94">0..N</text><text class="er-relation-label" x="658" y="120">MITTENTE</text>
+
+    <!-- cittadini.id → telefonate.destinatario_id -->
+    <path class="er-link required" d="M630 165 H672 V169 H678"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M678 169 V129 H690"/>
+    <circle class="er-fk-anchor" cx="710" cy="129" r="3"/><text class="er-cardinality er-one-label" x="637" y="181">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="690" y="150">0..N</text><text class="er-relation-label" x="655" y="196">DESTINATARIO</text>
+
+    <!-- cittadini.id → prestiti_documenti.cittadino_id -->
+    <path class="er-link required" d="M630 165 H648 V187 H654"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M654 187 V312 H690"/>
+    <circle class="er-fk-anchor" cx="710" cy="312" r="3"/><text class="er-cardinality er-one-label" x="635" y="204">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="690" y="299">0..N</text><text class="er-relation-label" x="660" y="282">PRENDE</text>
+
+    <circle class="er-pk-anchor" cx="370" cy="165" r="4"/><circle class="er-pk-anchor" cx="630" cy="165" r="4"/>
   </g>
   ${erCard(370,110,260,190,'cittadini',['id  INTEGER  PK','nome  TEXT','cognome  TEXT','professione  TEXT','via  TEXT','civico  INTEGER'],true)}
   ${erCard(30,35,260,145,'accessi_archivio',['id  INTEGER  PK','cittadino_id  INTEGER  FK','data · ora_badge · varco','esito  TEXT'])}
