@@ -56,12 +56,12 @@ async function initDb(){
 
 function renderMission(){
   const m=missions[step]; hintLevel=0; solvedCurrent=false;
-  $('stepCount').textContent=`INDIZIO ${step+1} DI ${missions.length}`;$('progressPercent').textContent=`${Math.round((step+1)/missions.length*100)}%`;$('progressBar').style.width=`${(step+1)/missions.length*100}%`;
+  $('stepCount').textContent=`INDIZIO ${step+1} DI ${missions.length}`;updateProgress(step);setNotebookOpen(false);
   $('missionSkill').textContent=m.skill;$('missionTitle').textContent=m.title;$('missionText').textContent=m.text;$('missionObjective').textContent=m.objective;els.editor.value=m.starter;
   const guidance=step<2?'GUIDA ALTA':step<5?'GUIDA MEDIA':'GUIDA MINIMA';
   $('nextAction').textContent=step===0 ? "Esegui la query iniziale, osserva le righe ottenute e prova a restringere la ricerca fino a isolare un solo evento." : `${guidance}: completa ciò che manca usando l’obiettivo e gli indizi già raccolti, poi esegui la query.`;
   $('tableChips').innerHTML=m.tables.map(t=>`<button type="button" data-table="${t}">${t}</button>`).join('');
-  $('hintBox').classList.add('hidden');$('hintBox').textContent='';$('hintBtn').textContent='＋ Richiedi un suggerimento';
+  setHintsOpen(false);$('hintBtn').setAttribute('aria-label','Apri gli indizi');$('hintBtn').title='Indizi';
   $('foundClue').classList.add('hidden');$('runBtn').disabled=!db;els.editor.readOnly=false;
   $('clueInput').value='';$('continueBtn').disabled=true;$('clueInputHelp').textContent='Scrivi con parole tue ciò che potrà servirti dopo.';$('clueInputHelp').className='';
   els.results.innerHTML='<div class="empty-state">I risultati della query appariranno qui.</div>';$('rowCount').textContent='0 righe';setFeedback(step===0 ? "Prima prova: esegui la query così com’è, studia il risultato e poi rendila più precisa." : step<2 ? "La struttura è quasi completa: aggiungi i filtri richiesti dall’obiettivo." : step<5 ? "La traccia contiene solo una parte della soluzione: costruisci i passaggi mancanti." : "Ora hai meno aiuti nell’editor: usa schema, taccuino e suggerimenti per costruire la query.");
@@ -70,9 +70,42 @@ function renderMission(){
 
 function renderNotebook(){
   $('clueCount').textContent=`${collectedClues.length} / ${missions.length}`;
+  $('notebookButtonCount').textContent=`${collectedClues.length} / ${missions.length}`;
+  $('notebookBtn').setAttribute('aria-label',`Apri il taccuino: ${collectedClues.length} indizi su ${missions.length}`);
   $('clueList').innerHTML=collectedClues.length
     ? collectedClues.map((clue,i)=>`<p class="clue-note"><b>${i+1}.</b> ${escapeHtml(clue)}</p>`).join('')
     : '<p class="notebook-empty">Le prove corrette verranno annotate qui e resteranno disponibili per gli enigmi successivi.</p>';
+}
+
+function updateProgress(completed){
+  const percent=Math.round(completed/missions.length*100);
+  $('progressPercent').textContent=`${percent}%`;
+  $('progressBar').style.width=`${completed/missions.length*100}%`;
+}
+
+function renderHint(){
+  const hints=missions[step].hints;
+  hintLevel=Math.max(0,Math.min(hintLevel,hints.length-1));
+  $('hintText').textContent=hints[hintLevel];
+  $('hintCounter').textContent=`${hintLevel+1} / ${hints.length}`;
+  $('hintPrevBtn').disabled=hintLevel===0;
+  $('hintNextBtn').disabled=hintLevel===hints.length-1;
+}
+
+function setHintsOpen(open){
+  if(open)setNotebookOpen(false);
+  $('hintBox').classList.toggle('hidden',!open);
+  $('hintBtn').setAttribute('aria-expanded',String(open));
+  $('hintBtn').classList.toggle('active',open);
+  $('hintBtn').setAttribute('aria-label',open?'Chiudi gli indizi':'Apri gli indizi');
+  if(open)renderHint();
+}
+
+function setNotebookOpen(open){
+  if(open)setHintsOpen(false);
+  $('notebookDrawer').classList.toggle('hidden',!open);
+  $('notebookBtn').setAttribute('aria-expanded',String(open));
+  $('notebookBtn').classList.toggle('active',open);
 }
 
 function setFeedback(text,type=''){ els.feedback.textContent=text;els.feedback.className=`feedback ${type}`; }
@@ -106,9 +139,10 @@ function runQuery(){
     const started=performance.now();const result=db.exec(sql);const elapsed=Math.max(1,Math.round(performance.now()-started));queryCount++;renderResults(result,elapsed);const rows=rowsFrom(result);const structureOk=step===missions.length-1||usesRequiredTables(sql,missions[step].tables);
     if(structureOk&&missions[step].validate(rows)){
       solvedCurrent=true;beep(740,.11);setFeedback('Query corretta. Prima di continuare, osserva con calma le righe ottenute: contengono una prova che servirà nell’indagine.','success');
+      updateProgress(step+1);
       $('foundClueText').textContent=clueTexts[step];$('foundClue').classList.remove('hidden');
       $('continueBtn').textContent=step===missions.length-1?'Salva e firma il rapporto':'Salva e continua';
-      $('runBtn').disabled=true;els.editor.readOnly=true;$('foundClue').scrollIntoView({behavior:'smooth',block:'nearest'});
+      $('runBtn').disabled=true;els.editor.readOnly=true;setNotebookOpen(true);$('foundClue').scrollIntoView({behavior:'smooth',block:'nearest'});
     } else { beep(230,.08);setFeedback(structureOk?`La query è valida e i ${rows.length} ${rows.length===1?'risultato è visibile':'risultati sono visibili'} qui sotto, ma non contengono ancora la prova richiesta. Modifica la query e riprova: non perdi nulla.`:'La query è valida, ma per questo indizio devi interrogare tutte le tabelle indicate a sinistra. I risultati restano visibili per aiutarti a correggerla.', ''); }
   }catch(err){beep(180,.12);setFeedback(`Errore SQL: ${err.message.replace('Error: ','')}`,'error')}
 }
@@ -226,8 +260,14 @@ function erRelationTag(cx,cy,w,label){
 $('startBtn').onclick=()=>startGame(true);$('replayBtn').onclick=()=>startGame(false);$('runBtn').onclick=runQuery;$('runBtn').disabled=true;
 document.querySelector('.brand').onclick=e=>{e.preventDefault();goHome()};
 $('resetQueryBtn').onclick=()=>{els.editor.value=missions[step].starter;els.editor.focus()};
-$('hintBtn').onclick=()=>{const m=missions[step];const level=Math.min(hintLevel,m.hints.length-1);$('hintBox').textContent=(level===2?'INDIZIO MIRATO\n':'SUGGERIMENTO\n')+m.hints[level];$('hintBox').classList.remove('hidden');hintLevel++;$('hintBtn').textContent=hintLevel>=3?'↻ Rileggi l’ultimo indizio':'＋ Altro suggerimento';};
+$('hintBtn').onclick=()=>setHintsOpen($('hintBox').classList.contains('hidden'));
+$('hintCloseBtn').onclick=()=>setHintsOpen(false);
+$('hintPrevBtn').onclick=()=>{hintLevel--;renderHint()};
+$('hintNextBtn').onclick=()=>{hintLevel++;renderHint()};
 $('clueInput').addEventListener('input',()=>{const valid=$('clueInput').value.trim().length>=8;$('continueBtn').disabled=!valid;$('clueInputHelp').textContent=valid?'Pronto per essere aggiunto al taccuino.':'Scrivi almeno una breve frase con ciò che hai scoperto.';$('clueInputHelp').className=valid?'':'input-error'});
+$('notebookBtn').onclick=()=>setNotebookOpen($('notebookDrawer').classList.contains('hidden'));
+$('notebookCloseBtn').onclick=()=>setNotebookOpen(false);
+document.addEventListener('keydown',event=>{if(event.key==='Escape'){setNotebookOpen(false);setHintsOpen(false)}});
 $('continueBtn').onclick=()=>{if(!solvedCurrent)return;const note=$('clueInput').value.trim();if(note.length<8){$('clueInputHelp').textContent='Scrivi prima l’indizio con parole tue.';$('clueInputHelp').className='input-error';return}if(!collectedClues[step])collectedClues.push(note);renderNotebook();if(step===missions.length-1){finish()}else{step++;renderMission();window.scrollTo({top:0,behavior:'smooth'})}};
 $('schemaBtn').onclick=()=>{$('schemaDialog').showModal();renderRelationalSchema()};$('closeSchemaBtn').onclick=()=>$('schemaDialog').close();
 $('helpBtn').onclick=()=>$('helpDialog').showModal();$('closeHelpBtn').onclick=()=>$('helpDialog').close();$('beginBtn').onclick=()=>{$('helpDialog').close();els.editor.focus()};
