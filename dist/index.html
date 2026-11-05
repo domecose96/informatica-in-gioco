@@ -8,7 +8,7 @@
   <title>Archivio Ombra — SQL Mystery</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/archivio-noir.png" as="image">
-  <link rel="stylesheet" href="styles.css?v=33">
+  <link rel="stylesheet" href="styles.css?v=34">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -72,7 +72,17 @@
         <div class="hint-box hidden" id="hintBox" aria-live="polite"></div>
         <details class="notebook" aria-label="Taccuino degli indizi" open>
           <summary class="notebook-title"><span>TACCUINO INDIZI</span><b id="clueCount">0 / 8</b></summary>
-          <div id="clueList"><p class="notebook-empty">Le prove corrette verranno annotate qui e resteranno disponibili per gli enigmi successivi.</p></div>
+          <div class="notebook-paper">
+            <div class="found-clue hidden" id="foundClue" aria-live="polite">
+              <div class="clue-discovery"><span>✓ PROVA TROVATA</span><strong id="foundClueText"></strong><small>Osserva la tabella: cosa hai scoperto?</small></div>
+              <div class="clue-writing">
+                <label for="clueInput">04 · SCRIVI L’INDIZIO</label>
+                <textarea id="clueInput" maxlength="180" aria-describedby="clueInputHelp" placeholder="Esempio: L’allarme è scattato alle…"></textarea>
+                <div><small id="clueInputHelp">Scrivi con parole tue ciò che potrà servirti dopo.</small><button class="continue-button" id="continueBtn" type="button" disabled>Salva e continua</button></div>
+              </div>
+            </div>
+            <div id="clueList"><p class="notebook-empty">Le prove corrette verranno annotate qui e resteranno disponibili per gli enigmi successivi.</p></div>
+          </div>
         </details>
       </aside>
 
@@ -97,14 +107,6 @@ WHERE data = '2026-10-31';</textarea>
         <div class="results-wrap">
           <div class="results-head"><span>RISULTATI</span><span id="rowCount">0 righe</span></div>
           <div class="table-scroll" id="results"><div class="empty-state">I risultati della query appariranno qui.</div></div>
-        </div>
-        <div class="found-clue hidden" id="foundClue" aria-live="polite">
-          <div class="clue-discovery"><span>✓ PROVA TROVATA</span><strong id="foundClueText"></strong><small>Osserva la tabella: cosa hai scoperto?</small></div>
-          <div class="clue-writing">
-            <label for="clueInput">4 · SCRIVI L’INDIZIO NEL TUO TACCUINO</label>
-            <textarea id="clueInput" maxlength="180" aria-describedby="clueInputHelp" placeholder="Esempio: L’allarme è scattato alle…"></textarea>
-            <div><small id="clueInputHelp">Scrivi con parole tue ciò che potrà servirti dopo.</small><button class="continue-button" id="continueBtn" type="button" disabled>Salva e continua →</button></div>
-          </div>
         </div>
       </section>
     </section>
@@ -153,6 +155,6 @@ WHERE data = '2026-10-31';</textarea>
   </dialog>
 
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js?v=27"></script>
+  <script src="app.js?v=28"></script>
 </body>
 </html>
