@@ -8,7 +8,7 @@
   <title>Archivio Ombra — SQL Mystery</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/archivio-noir.png" as="image">
-  <link rel="stylesheet" href="styles.css?v=8">
+  <link rel="stylesheet" href="styles.css?v=10">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -122,15 +122,26 @@ WHERE data = '2026-10-31';</textarea>
   <footer><span>ARCHIVIO OMBRA</span><span>Un prototipo originale in italiano · SQLite nel browser</span></footer>
 
   <dialog id="schemaDialog">
-    <div class="dialog-head"><div><p class="eyebrow">DATABASE COMUNALE</p><h2>Modello E/R dell’indagine</h2></div><button id="closeSchemaBtn" aria-label="Chiudi schema" type="button">×</button></div>
-    <div class="er-legend">
+    <div class="dialog-head"><div><p class="eyebrow">DATABASE COMUNALE</p><h2>Struttura dell’indagine</h2></div><button id="closeSchemaBtn" aria-label="Chiudi schema" type="button">×</button></div>
+    <div class="schema-tabs" role="tablist" aria-label="Tipo di schema">
+      <button id="erTab" class="active" role="tab" aria-selected="true" type="button">Modello E/R</button>
+      <button id="sqlTab" role="tab" aria-selected="false" type="button">Schema SQL</button>
+    </div>
+    <div class="er-legend schema-legend-panel" id="erLegend">
+      <span><i class="entity-icon"></i> Entità</span>
+      <span><i class="association-icon"></i> Associazione</span>
+      <span><i class="rel-line required"></i> Partecipazione obbligatoria · 1..1</span>
+      <span><i class="rel-line optional"></i> Partecipazione facoltativa · 0..N</span>
+    </div>
+    <p class="er-legend-note schema-legend-panel" id="erNote">Nel modello concettuale le associazioni sono separate e <strong>non compaiono chiavi esterne</strong>.</p>
+    <div class="er-legend schema-legend-panel hidden" id="sqlLegend">
       <span><i class="pk-dot"></i> Chiave primaria</span>
       <span><i class="fk-dot"></i> Chiave esterna</span>
       <span><i class="crow-foot-icon"></i> Molti (N)</span>
       <span><i class="rel-line required"></i> Lato obbligatorio · 1..1</span>
       <span><i class="rel-line optional"></i> Lato facoltativo · 0..N</span>
     </div>
-    <p class="er-legend-note">Ogni linea parte dalla PK <strong>cittadini.id</strong> e termina sulla FK assegnata.</p>
+    <p class="er-legend-note schema-legend-panel hidden" id="sqlNote">Nello schema SQL <strong>mittente_id</strong> e <strong>destinatario_id</strong> sono due FK distinte verso cittadini.id.</p>
     <div class="er-diagram" id="schemaGrid"></div>
   </dialog>
 
@@ -153,6 +164,6 @@ WHERE data = '2026-10-31';</textarea>
   </dialog>
 
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js?v=8"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>

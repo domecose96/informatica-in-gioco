@@ -112,9 +112,59 @@ function runQuery(){
 
 function finish(){document.body.classList.remove('game-active');els.workspace.classList.add('hidden');els.completion.classList.remove('hidden');$('queryStat').textContent=queryCount;window.scrollTo({top:0,behavior:'smooth'});}
 function startGame(showGuide=true){document.body.classList.add('game-active');els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.workspace.classList.remove('hidden');step=0;queryCount=0;collectedClues=[];renderNotebook();renderMission();window.scrollTo({top:0,behavior:'smooth'});if(showGuide)$('helpDialog').showModal();}
-function renderSchema(){ $('schemaGrid').innerHTML=`
+function renderConceptualSchema(){ $('schemaGrid').innerHTML=`
+<svg viewBox="0 0 1000 510" role="img" aria-labelledby="erConceptTitle erConceptDesc" preserveAspectRatio="xMidYMid meet">
+  <title id="erConceptTitle">Modello entità-relazioni concettuale del database comunale</title>
+  <desc id="erConceptDesc">Cittadino partecipa a cinque associazioni distinte: usa badge, possiede, effettua come mittente, riceve come destinatario e prende in prestito. Le chiavi esterne non sono mostrate perché appartengono alla successiva traduzione relazionale.</desc>
+  <g aria-hidden="true">
+    <!-- ACCESSO — USA BADGE — CITTADINO -->
+    <path class="er-link required" d="M255 115 H270"/><path class="er-link optional" d="M360 115 H370 V190 H380"/>
+    ${erAssociation(315,115,90,54,'USA','BADGE')}
+    <text class="er-cardinality er-many-label" x="364" y="178">0..N</text><text class="er-cardinality er-one-label" x="259" y="106">1..1</text>
+
+    <!-- VEICOLO — POSSIEDE — CITTADINO -->
+    <path class="er-link required" d="M255 370 H270"/><path class="er-link optional" d="M360 370 H370 V270 H380"/>
+    ${erAssociation(315,370,90,54,'POSSIEDE','')}
+    <text class="er-cardinality er-many-label" x="364" y="286">0..N</text><text class="er-cardinality er-one-label" x="259" y="360">1..1</text>
+
+    <!-- CITTADINO — EFFETTUA — TELEFONATA: ruolo mittente -->
+    <path class="er-link optional" d="M620 185 H638 V105 H645"/><path class="er-link required" d="M735 105 H745 V95"/>
+    ${erAssociation(690,105,90,54,'EFFETTUA','MITTENTE')}
+    <text class="er-cardinality er-many-label" x="625" y="178">0..N</text><text class="er-cardinality er-one-label" x="738" y="87">1..1</text>
+
+    <!-- CITTADINO — RICEVE — TELEFONATA: ruolo destinatario -->
+    <path class="er-link optional" d="M620 230 H638 V245 H645"/><path class="er-link required" d="M735 245 H745 V145"/>
+    ${erAssociation(690,245,90,54,'RICEVE','DESTINATARIO')}
+    <text class="er-cardinality er-many-label" x="625" y="224">0..N</text><text class="er-cardinality er-one-label" x="738" y="157">1..1</text>
+
+    <!-- CITTADINO — PRENDE — PRESTITO -->
+    <path class="er-link optional" d="M620 280 H635 V370 H645"/><path class="er-link required" d="M735 370 H745"/>
+    ${erAssociation(690,370,90,54,'PRENDE','')}
+    <text class="er-cardinality er-many-label" x="625" y="294">0..N</text><text class="er-cardinality er-one-label" x="738" y="360">1..1</text>
+  </g>
+  ${erEntity(380,155,240,150,'CITTADINO',['id  · identificatore','nome · cognome','professione','via · civico'],true)}
+  ${erEntity(35,55,220,120,'ACCESSO ARCHIVIO',['id  · identificatore','data · ora_badge','varco · esito'])}
+  ${erEntity(35,320,220,110,'VEICOLO',['targa · identificatore','modello · colore'])}
+  ${erEntity(745,35,220,145,'TELEFONATA',['id  · identificatore','data · ora','durata_sec'])}
+  ${erEntity(745,320,220,120,'PRESTITO DOCUMENTO',['id  · identificatore','codice_fascicolo','data_prestito · restituzione'])}
+  <text class="er-independent" x="325" y="420">ENTITÀ INDIPENDENTI DAL CITTADINO</text>
+  ${erEntity(325,432,165,68,'EVENTO',['data · ora · tipo'])}
+  ${erEntity(510,432,190,68,'TELECAMERA',['data · ora · targa'])}
+</svg>`; }
+
+function erAssociation(cx,cy,w,h,line1,line2){
+  const points=`${cx} ${cy-h/2},${cx+w/2} ${cy},${cx} ${cy+h/2},${cx-w/2} ${cy}`;
+  return `<g><polygon class="er-association" points="${points}"/><text class="er-association-title" text-anchor="middle" x="${cx}" y="${cy+(line2?-3:3)}">${line1}</text>${line2?`<text class="er-association-role" text-anchor="middle" x="${cx}" y="${cy+10}">${line2}</text>`:''}</g>`;
+}
+
+function erEntity(x,y,w,h,title,fields,main=false){
+  const rows=fields.map((field,i)=>`<text class="er-field${i===0?' er-identifier':''}" x="${x+14}" y="${y+57+i*21}">${field}</text>`).join('');
+  return `<g><rect class="${main?'er-card-main':'er-card'}" x="${x}" y="${y}" width="${w}" height="${h}" rx="4"/><path class="er-header" d="M${x+4} ${y+4}h${w-8}v32h-${w-8}z"/><text class="er-title" x="${x+14}" y="${y+26}">${title}</text>${rows}</g>`;
+}
+
+function renderRelationalSchema(){ $('schemaGrid').innerHTML=`
 <svg viewBox="0 0 1000 520" role="img" aria-labelledby="erTitle erDesc" preserveAspectRatio="xMidYMid meet">
-  <title id="erTitle">Modello entità-relazioni del database comunale</title><desc id="erDesc">Ogni relazione parte dalla chiave primaria cittadini punto id e raggiunge la specifica chiave esterna. Il tratto vicino a cittadini è continuo e obbligatorio, con cardinalità uno a uno. Il tratto vicino all'entità dipendente è tratteggiato e facoltativo, con cardinalità zero a molti e zampa di gallina. Eventi e telecamere sono fonti di prova indipendenti.</desc>
+  <title id="erTitle">Schema relazionale SQL del database comunale</title><desc id="erDesc">La vista mostra le tabelle, le chiavi primarie e le chiavi esterne. Telefonate contiene due chiavi esterne distinte verso cittadini punto id: mittente id rappresenta chi effettua la chiamata e destinatario id chi la riceve.</desc>
   <defs>
     <marker id="crowFoot" markerWidth="18" markerHeight="18" refX="1" refY="9" orient="auto" markerUnits="userSpaceOnUse">
       <path class="er-crow-foot" d="M1 9 L17 1 M1 9 L17 9 M1 9 L17 17"/>
@@ -163,8 +213,17 @@ $('resetQueryBtn').onclick=()=>{els.editor.value=missions[step].starter;els.edit
 $('hintBtn').onclick=()=>{const m=missions[step];const level=Math.min(hintLevel,m.hints.length-1);$('hintBox').textContent=(level===2?'SOLUZIONE POSSIBILE\n':'SUGGERIMENTO\n')+m.hints[level];$('hintBox').classList.remove('hidden');hintLevel++;$('hintBtn').textContent=hintLevel>=3?'↻ Rileggi la soluzione':'＋ Altro suggerimento';};
 $('clueInput').addEventListener('input',()=>{const valid=$('clueInput').value.trim().length>=8;$('continueBtn').disabled=!valid;$('clueInputHelp').textContent=valid?'Pronto per essere aggiunto al taccuino.':'Scrivi almeno una breve frase con ciò che hai scoperto.';$('clueInputHelp').className=valid?'':'input-error'});
 $('continueBtn').onclick=()=>{if(!solvedCurrent)return;const note=$('clueInput').value.trim();if(note.length<8){$('clueInputHelp').textContent='Scrivi prima l’indizio con parole tue.';$('clueInputHelp').className='input-error';return}if(!collectedClues[step])collectedClues.push(note);renderNotebook();if(step===missions.length-1){finish()}else{step++;renderMission();window.scrollTo({top:0,behavior:'smooth'})}};
-$('schemaBtn').onclick=()=>$('schemaDialog').showModal();$('closeSchemaBtn').onclick=()=>$('schemaDialog').close();
+function setSchemaView(view){
+  const conceptual=view==='er';
+  $('erTab').classList.toggle('active',conceptual);$('erTab').setAttribute('aria-selected',String(conceptual));
+  $('sqlTab').classList.toggle('active',!conceptual);$('sqlTab').setAttribute('aria-selected',String(!conceptual));
+  $('erLegend').classList.toggle('hidden',!conceptual);$('erNote').classList.toggle('hidden',!conceptual);
+  $('sqlLegend').classList.toggle('hidden',conceptual);$('sqlNote').classList.toggle('hidden',conceptual);
+  conceptual?renderConceptualSchema():renderRelationalSchema();
+}
+$('schemaBtn').onclick=()=>{$('schemaDialog').showModal();setSchemaView('er')};$('closeSchemaBtn').onclick=()=>$('schemaDialog').close();
+$('erTab').onclick=()=>setSchemaView('er');$('sqlTab').onclick=()=>setSchemaView('sql');
 $('helpBtn').onclick=()=>$('helpDialog').showModal();$('closeHelpBtn').onclick=()=>$('helpDialog').close();$('beginBtn').onclick=()=>{$('helpDialog').close();els.editor.focus()};
 $('soundBtn').onclick=()=>{soundOn=!soundOn;$('soundBtn').textContent=soundOn?'♪':'×';$('soundBtn').ariaLabel=soundOn?'Disattiva effetti sonori':'Attiva effetti sonori'};
 els.editor.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();runQuery()}if(e.key==='Tab'){e.preventDefault();const s=e.target.selectionStart;e.target.value=e.target.value.slice(0,s)+'  '+e.target.value.slice(e.target.selectionEnd);e.target.selectionStart=e.target.selectionEnd=s+2}});
-renderSchema();initDb().catch(err=>{$('dbStatus').className='db-status error';$('dbStatus').innerHTML='<i></i><span>Database non disponibile</span>';$('startBtn').innerHTML='Errore caricamento <span>!</span>';setFeedback('Impossibile avviare SQLite: '+err.message,'error')});
+setSchemaView('er');initDb().catch(err=>{$('dbStatus').className='db-status error';$('dbStatus').innerHTML='<i></i><span>Database non disponibile</span>';$('startBtn').innerHTML='Errore caricamento <span>!</span>';setFeedback('Impossibile avviare SQLite: '+err.message,'error')});
