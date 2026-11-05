@@ -122,34 +122,34 @@ function renderSchema(){ $('schemaGrid').innerHTML=`
   </defs>
   <g aria-hidden="true">
     <!-- cittadini.id → accessi_archivio.cittadino_id -->
-    <path class="er-link required" d="M370 165 H340 V150 H334"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M334 150 V112 H310"/>
-    <circle class="er-fk-anchor" cx="290" cy="112" r="3"/><text class="er-cardinality er-one-label" x="344" y="146">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="310" y="99">0..N</text><text class="er-relation-label" text-anchor="end" x="329" y="137">USA BADGE</text>
+    <path class="er-link required" d="M360 165 H330 V150 H324"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M324 150 V112 H300"/>
+    <circle class="er-fk-anchor" cx="280" cy="112" r="3"/><text class="er-cardinality er-one-label" x="334" y="146">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="300" y="99">0..N</text><text class="er-relation-label" text-anchor="end" x="319" y="137">USA BADGE</text>
 
     <!-- cittadini.id → veicoli.cittadino_id -->
-    <path class="er-link required" d="M370 165 H350 V181 H338"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M338 181 V312 H310"/>
-    <circle class="er-fk-anchor" cx="290" cy="312" r="3"/><text class="er-cardinality er-one-label" x="343" y="198">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="310" y="299">0..N</text><text class="er-relation-label" text-anchor="end" x="329" y="285">POSSIEDE</text>
+    <path class="er-link required" d="M360 165 H340 V181 H328"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M328 181 V312 H300"/>
+    <circle class="er-fk-anchor" cx="280" cy="312" r="3"/><text class="er-cardinality er-one-label" x="333" y="198">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="300" y="299">0..N</text><text class="er-relation-label" text-anchor="end" x="319" y="285">POSSIEDE</text>
 
     <!-- cittadini.id → telefonate.mittente_id -->
-    <path class="er-link required" d="M630 165 H648 V148 H654"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M654 148 V107 H690"/>
-    <circle class="er-fk-anchor" cx="710" cy="107" r="3"/><text class="er-cardinality er-one-label" x="635" y="145">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="690" y="94">0..N</text><text class="er-relation-label" x="658" y="120">MITTENTE</text>
+    <path class="er-link required" d="M600 165 H622 V92 H650"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M650 92 V107 H720"/>
+    <circle class="er-fk-anchor er-fk-sender" cx="740" cy="107" r="3"/><text class="er-cardinality er-one-label" x="626" y="88">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="720" y="96">0..N</text><text class="er-phone-role" x="658" y="82">MITTENTE</text>
 
     <!-- cittadini.id → telefonate.destinatario_id -->
-    <path class="er-link required" d="M630 165 H672 V169 H678"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M678 169 V129 H690"/>
-    <circle class="er-fk-anchor" cx="710" cy="129" r="3"/><text class="er-cardinality er-one-label" x="637" y="181">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="690" y="150">0..N</text><text class="er-relation-label" x="655" y="196">DESTINATARIO</text>
+    <path class="er-link required" d="M600 165 H640 V177 H666"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M666 177 V129 H720"/>
+    <circle class="er-fk-anchor er-fk-recipient" cx="740" cy="129" r="3"/><text class="er-cardinality er-one-label" x="644" y="191">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="720" y="148">0..N</text><text class="er-phone-role" x="668" y="196">DESTINATARIO</text>
 
     <!-- cittadini.id → prestiti_documenti.cittadino_id -->
-    <path class="er-link required" d="M630 165 H648 V187 H654"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M654 187 V312 H690"/>
-    <circle class="er-fk-anchor" cx="710" cy="312" r="3"/><text class="er-cardinality er-one-label" x="635" y="204">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="690" y="299">0..N</text><text class="er-relation-label" x="660" y="282">PRENDE</text>
+    <path class="er-link required" d="M600 165 H620 V215 H650"/><path class="er-link optional" marker-end="url(#crowFoot)" d="M650 215 V312 H720"/>
+    <circle class="er-fk-anchor" cx="740" cy="312" r="3"/><text class="er-cardinality er-one-label" x="625" y="229">1..1</text><text class="er-cardinality er-many-label" text-anchor="middle" x="720" y="299">0..N</text><text class="er-relation-label" x="662" y="282">PRENDE</text>
 
-    <circle class="er-pk-anchor" cx="370" cy="165" r="4"/><circle class="er-pk-anchor" cx="630" cy="165" r="4"/>
+    <circle class="er-pk-anchor" cx="360" cy="165" r="4"/><circle class="er-pk-anchor" cx="600" cy="165" r="4"/>
   </g>
-  ${erCard(370,110,260,190,'cittadini',['id  INTEGER  PK','nome  TEXT','cognome  TEXT','professione  TEXT','via  TEXT','civico  INTEGER'],true)}
-  ${erCard(30,35,260,145,'accessi_archivio',['id  INTEGER  PK','cittadino_id  INTEGER  FK','data · ora_badge · varco','esito  TEXT'])}
-  ${erCard(30,235,260,130,'veicoli',['targa  TEXT  PK','cittadino_id  INTEGER  FK','modello · colore'])}
-  ${erCard(710,30,260,165,'telefonate',['id  INTEGER  PK','mittente_id  INTEGER  FK','destinatario_id  INTEGER  FK','data · ora · durata_sec'])}
-  ${erCard(710,235,260,145,'prestiti_documenti',['id  INTEGER  PK','cittadino_id  INTEGER  FK','codice_fascicolo  TEXT','data_prestito · restituzione'])}
-  <text class="er-independent" x="370" y="397">FONTI DI PROVA INDIPENDENTI</text>
-  ${erCard(370,410,250,95,'eventi',['id  INTEGER  PK','data · ora · tipo · luogo'])}
+  ${erCard(360,110,240,190,'cittadini',['id  INTEGER  PK','nome  TEXT','cognome  TEXT','professione  TEXT','via  TEXT','civico  INTEGER'],true)}
+  ${erCard(30,35,250,145,'accessi_archivio',['id  INTEGER  PK','cittadino_id  INTEGER  FK','data · ora_badge · varco','esito  TEXT'])}
+  ${erCard(30,235,250,130,'veicoli',['targa  TEXT  PK','cittadino_id  INTEGER  FK','modello · colore'])}
+  ${erCard(740,30,230,165,'telefonate',['id  INTEGER  PK','mittente_id  INTEGER  FK','destinatario_id  INTEGER  FK','data · ora · durata_sec'])}
+  ${erCard(740,235,230,145,'prestiti_documenti',['id  INTEGER  PK','cittadino_id  INTEGER  FK','codice_fascicolo  TEXT','data_prestito · restituzione'])}
+  <text class="er-independent" x="360" y="397">FONTI DI PROVA INDIPENDENTI</text>
+  ${erCard(360,410,250,95,'eventi',['id  INTEGER  PK','data · ora · tipo · luogo'])}
   ${erCard(650,410,300,95,'telecamere',['id  INTEGER  PK','data · ora · targa · direzione'])}
 </svg>`; }
 

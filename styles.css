@@ -40,3 +40,5 @@ body.game-active{height:100dvh;overflow:hidden}body.game-active main{height:calc
 @media(max-width:560px){.topbar{height:65px}.brand small,.db-status span{display:none}.text-button{font-size:9px}.top-actions{gap:8px}.icon-button{display:none}.intro{min-height:calc(100vh - 105px);padding:42px 22px}h1{font-size:62px}.lede{font-size:16px}.how-it-works{grid-template-columns:1fr}.how-it-works>div{padding:8px}.terminal-panel{padding-left:12px;padding-right:12px}.editor-wrap{grid-template-columns:35px 1fr}.line-number{padding-left:5px;padding-right:8px}.editor-wrap textarea{font-size:12px;padding:15px 12px}.run-row>span{display:none}.run-button{margin-left:auto}.stats{flex-direction:column}.stats div{min-width:100%}footer{height:40px}footer span:last-child{display:none}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 .er-fk-anchor{fill:#6fb8b2;stroke:#0c2225;stroke-width:1.5}
+.er-role-cardinality{fill:#a9beb9;font:700 8px "DM Mono";letter-spacing:.025em}
+.er-phone-role{fill:#c7d8d3;font:700 8px "DM Mono";letter-spacing:.08em}
