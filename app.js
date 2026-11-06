@@ -38,9 +38,39 @@ CREATE TABLE telefonate (id INTEGER PRIMARY KEY, mittente_id INTEGER, destinatar
 INSERT INTO telefonate VALUES (1,1,3,'2026-10-31','21:48',92,'Archivio Civico'),(2,3,2,'2026-10-26','11:20',145,'Piazza del Grano'),(3,3,4,'2026-10-28','16:02',61,'Piazza del Grano'),(4,3,6,'2026-10-30','09:14',203,'Piazza del Grano'),(5,2,4,'2026-10-31','18:11',34,'Archivio Civico'),(6,5,7,'2026-10-31','20:05',180,'Via del Portico'),(7,1,3,'2026-10-31','22:27',18,'Tangenziale Nord'),(8,3,7,'2026-10-29','12:05',51,'Piazza del Grano'),(9,2,6,'2026-10-29','10:36',74,'Via Garibaldi'),(10,7,5,'2026-10-31','21:42',48,'Stazione Centrale');
 `;
 
-let db, step = 0, hintLevel = 0, queryCount = 0, solvedCurrent = false, collectedClues = [];
+const trainingSeed = `
+PRAGMA foreign_keys = ON;
+CREATE TABLE importazione_temporanea (riga TEXT);
+INSERT INTO importazione_temporanea VALUES ('file acquisito'),('record da verificare');
+`;
+
+const trainingMissions = [
+  {skill:'CREATE TABLE · PRIMARY KEY',title:'Apri il nuovo archivio',text:'Il vecchio registro cartaceo deve diventare una tabella SQL. Definisci la struttura che conterrà i fascicoli comunali.',objective:'Crea fascicoli con codice TEXT chiave primaria e i campi titolo, settore e stato, tutti TEXT NOT NULL.',tables:[],explore:[],command:/^create\s+table\s+fascicoli\b/i,starter:"CREATE TABLE fascicoli (\n  codice TEXT PRIMARY KEY,\n  titolo TEXT NOT NULL,\n  settore TEXT NOT NULL,\n  -- aggiungi qui il campo stato\n);",hints:['Ogni tabella nasce con CREATE TABLE nome (...).','Il campo mancante si chiama stato ed è testuale e obbligatorio.','Sostituisci il commento con stato TEXT NOT NULL, senza lasciare una virgola superflua.'],preview:'PRAGMA table_info(fascicoli)',validateDb:()=>{const columns=columnsOf('fascicoli');return tableExists('fascicoli')&&columns.find(column=>column.name==='codice')?.pk===1&&['titolo','settore','stato'].every(name=>columns.find(column=>column.name===name)?.notnull===1)}},
+  {skill:'INSERT INTO · VALUES',title:'Popola i primi fascicoli',text:'La struttura è pronta, ma un archivio vuoto non serve. Trascrivi quattro schede dal registro cartaceo.',objective:'Inserisci F-101 Catasto storico, F-204 Fondo riservato, A-117 Delibere 2025 e TMP-999 Doppione importato. Usa i settori Storico, Storico, Amministrativo e Importazione; stato disponibile per tutti.',tables:['fascicoli'],command:/^insert\s+into\s+fascicoli\b/i,starter:"INSERT INTO fascicoli (codice, titolo, settore, stato)\nVALUES\n  ('F-101', 'Catasto storico', 'Storico', 'disponibile'),\n  -- aggiungi qui le altre tre righe\n;",hints:['Con un solo INSERT puoi aggiungere più righe separandole con una virgola.','Ogni riga deve contenere quattro valori nello stesso ordine delle colonne.','Completa VALUES con F-204, A-117 e TMP-999, poi rimuovi l’ultima virgola prima del punto e virgola.'],preview:'SELECT * FROM fascicoli ORDER BY codice',validateDb:()=>scalar('SELECT COUNT(*) FROM fascicoli')===4&&['F-101','F-204','A-117','TMP-999'].every(code=>scalar('SELECT COUNT(*) FROM fascicoli WHERE codice = ?',[code])===1)},
+  {skill:'SELECT · WHERE · ORDER BY',title:'Controlla il popolamento',text:'Prima di modificare i dati, verifica che i fascicoli storici siano stati registrati correttamente.',objective:'Mostra codice, titolo e stato dei fascicoli del settore “Storico”, ordinati per codice.',tables:['fascicoli'],command:/^select\b/i,starter:"SELECT codice, titolo, stato\nFROM fascicoli",hints:['Filtra le righe con WHERE settore = ...','Il valore testuale Storico va racchiuso tra apici.','Dopo il WHERE aggiungi ORDER BY codice.'],validate:rows=>rows.length===2&&rows[0].codice==='F-101'&&rows[1].codice==='F-204'},
+  {skill:'UPDATE · SET · WHERE',title:'Classifica il fascicolo riservato',text:'Il fascicolo F-204 è stato importato come disponibile, ma deve essere classificato come riservato.',objective:'Aggiorna soltanto F-204 impostando stato = “riservato”.',tables:['fascicoli'],command:/^update\s+fascicoli\b/i,starter:"UPDATE fascicoli\nSET stato = 'riservato'\n-- aggiungi qui il filtro",hints:['UPDATE senza WHERE modificherebbe tutte le righe.','Il filtro deve identificare la chiave primaria codice.','Aggiungi WHERE codice = \'F-204\'.'],preview:"SELECT codice, titolo, stato FROM fascicoli ORDER BY codice",validateDb:()=>scalar("SELECT COUNT(*) FROM fascicoli WHERE codice='F-204' AND stato='riservato'")===1&&scalar("SELECT COUNT(*) FROM fascicoli WHERE codice<>'F-204' AND stato='disponibile'")===3},
+  {skill:'ALTER TABLE · ADD COLUMN',title:'Aggiungi la collocazione',text:'I fascicoli devono indicare anche lo scaffale fisico. Estendi la tabella senza perdere le righe già inserite.',objective:'Aggiungi a fascicoli la colonna scaffale di tipo TEXT.',tables:['fascicoli'],command:/^alter\s+table\s+fascicoli\b/i,starter:"ALTER TABLE fascicoli\nADD COLUMN",hints:['ALTER TABLE modifica la struttura di una tabella esistente.','Dopo ADD COLUMN scrivi nome e tipo del nuovo campo.','Completa con scaffale TEXT.'],preview:'PRAGMA table_info(fascicoli)',validateDb:()=>columnsOf('fascicoli').some(column=>column.name==='scaffale'&&String(column.type).toUpperCase()==='TEXT')},
+  {skill:'DELETE FROM · WHERE',title:'Elimina il doppione',text:'TMP-999 è una riga provvisoria generata dall’importazione, non un vero fascicolo. Rimuovila senza toccare gli altri dati.',objective:'Elimina soltanto il record con codice TMP-999.',tables:['fascicoli'],command:/^delete\s+from\s+fascicoli\b/i,starter:"DELETE FROM fascicoli\n-- aggiungi qui il filtro",hints:['DELETE senza WHERE svuoterebbe la tabella.','Usa la chiave primaria per individuare una sola riga.','Aggiungi WHERE codice = \'TMP-999\'.'],preview:'SELECT codice, titolo, settore, stato FROM fascicoli ORDER BY codice',validateDb:()=>scalar("SELECT COUNT(*) FROM fascicoli WHERE codice='TMP-999'")===0&&scalar('SELECT COUNT(*) FROM fascicoli')===3},
+  {skill:'CREATE TABLE · FOREIGN KEY',title:'Registra le consultazioni',text:'Ora serve una seconda tabella per annotare chi consulta un fascicolo e in quale data.',objective:'Crea consultazioni con id INTEGER PRIMARY KEY, fascicolo_codice TEXT NOT NULL, operatore TEXT NOT NULL, data TEXT NOT NULL e chiave esterna verso fascicoli(codice).',tables:['fascicoli'],command:/^create\s+table\s+consultazioni\b/i,starter:"CREATE TABLE consultazioni (\n  id INTEGER PRIMARY KEY,\n  fascicolo_codice TEXT NOT NULL,\n  operatore TEXT NOT NULL,\n  data TEXT NOT NULL,\n  -- aggiungi qui il collegamento alla tabella fascicoli\n);",hints:['La chiave esterna collega fascicolo_codice alla chiave primaria di fascicoli.','La sintassi inizia con FOREIGN KEY (fascicolo_codice).','Completa con REFERENCES fascicoli(codice), senza lasciare virgole superflue.'],preview:'PRAGMA foreign_key_list(consultazioni)',validateDb:()=>tableExists('consultazioni')&&columnsOf('consultazioni').length===4&&queryRows('PRAGMA foreign_key_list(consultazioni)').some(row=>row.table==='fascicoli'&&row.from==='fascicolo_codice'&&row.to==='codice')},
+  {skill:'INSERT · CHIAVE ESTERNA',title:'Popola il registro consultazioni',text:'Inserisci tre movimenti reali. Il vincolo appena creato impedirà di collegare codici che non esistono.',objective:'Registra: id 1, F-101, Anna Bianchi, 2026-10-29; id 2, F-204, Luca Verdi, 2026-10-30; id 3, A-117, Sara Conti, 2026-10-31.',tables:['consultazioni','fascicoli'],command:/^insert\s+into\s+consultazioni\b/i,starter:"INSERT INTO consultazioni (id, fascicolo_codice, operatore, data)\nVALUES\n  (1, 'F-101', 'Anna Bianchi', '2026-10-29'),\n  -- aggiungi qui le altre due consultazioni\n;",hints:['Aggiungi le righe separandole con una virgola.','Controlla che ogni fascicolo_codice esista davvero in fascicoli.','Completa con F-204/Luca Verdi e A-117/Sara Conti.'],preview:'SELECT c.id, c.operatore, c.data, f.codice, f.titolo FROM consultazioni c JOIN fascicoli f ON f.codice=c.fascicolo_codice ORDER BY c.id',validateDb:()=>scalar('SELECT COUNT(*) FROM consultazioni')===3&&['F-101','F-204','A-117'].every(code=>scalar('SELECT COUNT(*) FROM consultazioni WHERE fascicolo_codice = ?',[code])===1)},
+  {skill:'DROP TABLE',title:'Chiudi l’importazione',text:'Il lavoro è concluso. La tabella tecnica usata per l’importazione non serve più e può essere eliminata.',objective:'Elimina definitivamente la tabella importazione_temporanea.',tables:['fascicoli','consultazioni'],command:/^drop\s+table\s+importazione_temporanea\b/i,starter:"DROP TABLE",hints:['DROP TABLE elimina una struttura non più necessaria.','Devi indicare il nome esatto della tabella temporanea.','Completa con importazione_temporanea.'],preview:"SELECT name AS tabella FROM sqlite_master WHERE type='table' ORDER BY name",validateDb:()=>!tableExists('importazione_temporanea')}
+];
+
+const trainingClueTexts = [
+  'La tabella fascicoli è stata creata con una chiave primaria e campi obbligatori.',
+  'Il primo popolamento contiene quattro fascicoli comunali.',
+  'Il filtro mostra correttamente i due fascicoli del settore Storico.',
+  'F-204 è ora classificato come riservato senza modificare gli altri record.',
+  'La struttura conserva i dati e include la nuova colonna scaffale.',
+  'Il record temporaneo è stato eliminato senza perdere i fascicoli validi.',
+  'Consultazioni è collegata a fascicoli tramite una chiave esterna.',
+  'Il registro contiene tre consultazioni collegate a fascicoli esistenti.',
+  'La tabella provvisoria è stata rimossa: il database è pronto per il Caso 01.'
+];
+
+let SQLRuntime, db, currentCase='mystery', activeMissions=missions, activeClueTexts=clueTexts, step = 0, hintLevel = 0, queryCount = 0, solvedCurrent = false, collectedClues = [];
 const $ = id => document.getElementById(id);
-const els = {intro:$('intro'),workspace:$('workspace'),completion:$('completion'),editor:$('sqlEditor'),results:$('results'),feedback:$('feedback')};
+const els = {hub:$('caseHub'),trainingIntro:$('trainingIntro'),intro:$('intro'),workspace:$('workspace'),completion:$('completion'),editor:$('sqlEditor'),results:$('results'),feedback:$('feedback')};
 
 const readVolume=(key,fallback)=>{try{const value=Number(localStorage.getItem(key));return Number.isFinite(value)?Math.max(0,Math.min(1,value)):fallback}catch(e){return fallback}};
 const music=$('ambientMusic');
@@ -66,45 +96,62 @@ function includes(rows,key,needle){ return rows.some(r => Object.entries(r).some
 function has(rows,key,value){ return rows.some(r => String(r[key])===String(value)); }
 function valueOf(rows,key){ return rows[0]?.[key]; }
 function rowsFrom(result){ if(!result.length) return []; const last=result[result.length-1]; return last.values.map(vals=>Object.fromEntries(last.columns.map((c,i)=>[c,vals[i]]))); }
+function queryRows(sql,params=[]){const statement=db.prepare(sql);try{statement.bind(params);const rows=[];while(statement.step())rows.push(statement.getAsObject());return rows}finally{statement.free()}}
+function scalar(sql,params=[]){const row=queryRows(sql,params)[0];return row?Object.values(row)[0]:undefined}
+function tableExists(name){return scalar("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?",[name])===1}
+function columnsOf(name){return queryRows(`PRAGMA table_info(${name})`)}
 function beep(freq=540,duration=.06,level=.045){if(!audio.effectsVolume)return;try{ensureAudio();const o=audio.ctx.createOscillator(),g=audio.ctx.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(level,audio.ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.ctx.currentTime+duration);o.connect(g).connect(audio.fxGain);o.start();o.stop(audio.ctx.currentTime+duration)}catch(e){}}
 
+function resetDatabase(mode=currentCase){
+  if(db)db.close();
+  db=new SQLRuntime.Database();
+  db.run(mode==='training'?trainingSeed:seed);
+}
+
 async function initDb(){
-  const SQL = await initSqlJs({locateFile:file=>`vendor/${file}`});
-  db = new SQL.Database(); db.run(seed);
-  $('runBtn').disabled=false;$('startBtn').disabled=false;$('startBtn').innerHTML='<span class="case-cta-copy"><small>CASO 01 · PRONTO</small><strong>Avvia il gioco</strong></span><span class="case-cta-seal" aria-hidden="true">01</span>';$('dbStatus').className='db-status ready';$('dbStatus').innerHTML='<i></i><span>Database pronto</span>';
+  SQLRuntime=await initSqlJs({locateFile:file=>`vendor/${file}`});
+  resetDatabase('mystery');
+  $('runBtn').disabled=false;$('startBtn').disabled=false;$('startTrainingBtn').disabled=false;$('beginTrainingBtn').disabled=false;
+  $('startBtn').innerHTML='<span class="case-cta-copy"><small>CASO 01 · PRONTO</small><strong>Avvia il gioco</strong></span><span class="case-cta-seal" aria-hidden="true">01</span>';
+  $('dbStatus').className='db-status ready';$('dbStatus').innerHTML='<i></i><span>Database pronto</span>';
 }
 
 function renderMission(){
-  const m=missions[step]; hintLevel=0; solvedCurrent=false;
-  $('stepCount').textContent=`INDIZIO ${step+1} DI ${missions.length}`;updateProgress(step);setNotebookOpen(false);
+  const m=activeMissions[step]; hintLevel=0; solvedCurrent=false;
+  const training=currentCase==='training';
+  $('briefingLabel').innerHTML=training?'<b>01</b> LEGGI LA CONSEGNA':'<b>01</b> LEGGI QUI COSA CERCARE';
+  $('queryLabel').innerHTML=training?'<b>02</b> COMPLETA IL COMANDO SQL':'<b>02</b> COMPLETA LA QUERY QUI SOTTO';
+  $('queryFilename').textContent=training?'laboratorio_sql.sql':'query_indagine.sql';
+  $('notebookCaseLabel').textContent=training?'CASO 00 · LABORATORIO':'CASO F–204';
+  $('stepCount').textContent=`${training?'PROVA':'INDIZIO'} ${step+1} DI ${activeMissions.length}`;updateProgress(step);setNotebookOpen(false);
   $('missionSkill').textContent=m.skill;$('missionTitle').textContent=m.title;$('missionText').textContent=m.text;$('missionObjective').textContent=m.objective;els.editor.value=m.starter;
   const guidance=step<2?'GUIDA ALTA':step<5?'GUIDA MEDIA':'GUIDA MINIMA';
-  $('nextAction').textContent=step===0 ? "Esegui la query iniziale, osserva le righe ottenute e prova a restringere la ricerca fino a isolare un solo evento." : `${guidance}: completa ciò che manca usando l’obiettivo e gli indizi già raccolti, poi esegui la query.`;
-  $('tableChips').innerHTML=m.tables.map(t=>`<button type="button" data-table="${t}">${t}</button>`).join('');
+  $('nextAction').textContent=training?`${guidance}: completa l’istruzione, eseguila e verifica la struttura o i dati prodotti.`:step===0?"Esegui la query iniziale, osserva le righe ottenute e prova a restringere la ricerca fino a isolare un solo evento.":`${guidance}: completa ciò che manca usando l’obiettivo e gli indizi già raccolti, poi esegui la query.`;
+  $('tableChips').innerHTML=(m.explore??m.tables).map(t=>`<button type="button" data-table="${t}">${t}</button>`).join('');
   setHintsOpen(false);$('hintBtn').setAttribute('aria-label','Apri gli indizi');$('hintBtn').title='Indizi';
   $('foundClue').classList.add('hidden');$('runBtn').disabled=!db;els.editor.readOnly=false;
   $('clueInput').value='';$('continueBtn').disabled=true;$('clueInputHelp').textContent='Scrivi con parole tue ciò che potrà servirti dopo.';$('clueInputHelp').className='';
-  els.results.innerHTML='<div class="empty-state">I risultati della query appariranno qui.</div>';$('rowCount').textContent='0 righe';setFeedback(step===0 ? "Prima prova: esegui la query così com’è, studia il risultato e poi rendila più precisa." : step<2 ? "La struttura è quasi completa: aggiungi i filtri richiesti dall’obiettivo." : step<5 ? "La traccia contiene solo una parte della soluzione: costruisci i passaggi mancanti." : "Ora hai meno aiuti nell’editor: usa schema, taccuino e suggerimenti per costruire la query.");
+  els.results.innerHTML='<div class="empty-state">I risultati del comando appariranno qui.</div>';$('rowCount').textContent='0 righe';setFeedback(training?'Completa il comando predisposto. Se la modifica non è corretta verrà annullata, così potrai riprovare senza danneggiare il database.':step===0?"Prima prova: esegui la query così com’è, studia il risultato e poi rendila più precisa.":step<2?"La struttura è quasi completa: aggiungi i filtri richiesti dall’obiettivo.":step<5?"La traccia contiene solo una parte della soluzione: costruisci i passaggi mancanti.":"Ora hai meno aiuti nell’editor: usa schema, taccuino e suggerimenti per costruire la query.");
   document.querySelectorAll('[data-table]').forEach(b=>b.onclick=()=>{els.editor.value=`SELECT *\nFROM ${b.dataset.table}\nLIMIT 20;`;els.editor.focus()});
 }
 
 function renderNotebook(){
-  $('clueCount').textContent=`${collectedClues.length} / ${missions.length}`;
-  $('notebookButtonCount').textContent=`${collectedClues.length} / ${missions.length}`;
-  $('notebookBtn').setAttribute('aria-label',`Apri il taccuino: ${collectedClues.length} indizi su ${missions.length}`);
+  $('clueCount').textContent=`${collectedClues.length} / ${activeMissions.length}`;
+  $('notebookButtonCount').textContent=`${collectedClues.length} / ${activeMissions.length}`;
+  $('notebookBtn').setAttribute('aria-label',`Apri il taccuino: ${collectedClues.length} note su ${activeMissions.length}`);
   $('clueList').innerHTML=collectedClues.length
     ? collectedClues.map((clue,i)=>`<p class="clue-note"><b>${i+1}.</b> ${escapeHtml(clue)}</p>`).join('')
     : '<p class="notebook-empty">Le prove corrette verranno annotate qui e resteranno disponibili per gli enigmi successivi.</p>';
 }
 
 function updateProgress(completed){
-  const percent=Math.round(completed/missions.length*100);
+  const percent=Math.round(completed/activeMissions.length*100);
   $('progressPercent').textContent=`${percent}%`;
-  $('progressBar').style.width=`${completed/missions.length*100}%`;
+  $('progressBar').style.width=`${completed/activeMissions.length*100}%`;
 }
 
 function renderHint(){
-  const hints=missions[step].hints;
+  const hints=activeMissions[step].hints;
   hintLevel=Math.max(0,Math.min(hintLevel,hints.length-1));
   $('hintText').textContent=hints[hintLevel];
   $('hintCounter').textContent=`${hintLevel+1} / ${hints.length}`;
@@ -150,6 +197,11 @@ function inspectSql(sql){
   let depth=0;for(const char of singleStatement){if(char==='(')depth++;if(char===')')depth--;if(depth<0)break}if(depth!==0)return 'Controlla le parentesi: ogni parentesi aperta deve essere chiusa.';
   if(singleStatement.length>4000)return 'La query è troppo lunga.';
   if(singleStatement.includes(';'))return 'Esegui una sola istruzione SQL alla volta.';
+  if(currentCase==='training'){
+    if(!/^(create\s+table|insert\s+into|select|update|alter\s+table|delete\s+from|drop\s+table)\b/i.test(singleStatement))return 'In questa prova usa uno dei comandi SQL previsti: CREATE TABLE, INSERT, SELECT, UPDATE, ALTER TABLE, DELETE o DROP TABLE.';
+    if(/\b(attach|detach|vacuum|pragma|replace)\b/i.test(singleStatement))return 'Questo comando non fa parte del laboratorio guidato.';
+    return '';
+  }
   if(!/^(select|with|explain)\b/i.test(singleStatement))return 'Sono consentite soltanto query di lettura.';
   if(/\b(insert|update|delete|drop|alter|create|replace|attach|detach|vacuum|pragma)\b/i.test(singleStatement))return 'Il database del caso è in sola lettura.';
   return '';
@@ -162,21 +214,43 @@ function runQuery(){
   if(solvedCurrent)return;
   const sql=els.editor.value.trim(); if(!sql)return setFeedback('Scrivi prima una query.','error');
   const inspectionError=inspectSql(sql);if(inspectionError)return setFeedback(inspectionError,'error');
+  const m=activeMissions[step],training=currentCase==='training';let savepointOpen=false;
   try{
-    const started=performance.now();const result=db.exec(sql);const elapsed=Math.max(1,Math.round(performance.now()-started));queryCount++;renderResults(result,elapsed);const rows=rowsFrom(result);const structureOk=step===missions.length-1||usesRequiredTables(sql,missions[step].tables);
-    if(structureOk&&missions[step].validate(rows)){
-      solvedCurrent=true;beep(740,.11);setFeedback('Query corretta. Prima di continuare, osserva con calma le righe ottenute: contengono una prova che servirà nell’indagine.','success');
+    if(training){db.run('SAVEPOINT mission_attempt');savepointOpen=true}
+    const started=performance.now();const result=db.exec(sql);const elapsed=Math.max(1,Math.round(performance.now()-started));queryCount++;const rows=rowsFrom(result);
+    const normalized=sql.replace(/--.*$/gm,' ').replace(/\/\*[\s\S]*?\*\//g,' ').trim();
+    const structureOk=training?m.command.test(normalized):(step===activeMissions.length-1||usesRequiredTables(sql,m.tables));
+    const solved=structureOk&&(m.validateDb?m.validateDb():m.validate(rows));
+    if(training){db.run(solved?'RELEASE mission_attempt':'ROLLBACK TO mission_attempt');if(!solved)db.run('RELEASE mission_attempt');savepointOpen=false}
+    let displayResult=result;
+    if(m.preview){try{displayResult=db.exec(m.preview)}catch(e){}}
+    renderResults(displayResult,elapsed);
+    if(solved){
+      solvedCurrent=true;beep(740,.11);setFeedback(training?'Comando corretto. La modifica è stata applicata: controlla il risultato e annota ciò che hai costruito.':'Query corretta. Prima di continuare, osserva con calma le righe ottenute: contengono una prova che servirà nell’indagine.','success');
       updateProgress(step+1);
-      $('foundClueText').textContent=clueTexts[step];$('foundClue').classList.remove('hidden');
-      $('continueBtn').textContent=step===missions.length-1?'Salva e firma il rapporto':'Salva e continua';
+      $('foundClueText').textContent=activeClueTexts[step];$('foundClue').classList.remove('hidden');
+      $('continueBtn').textContent=step===activeMissions.length-1?(training?'Completa il laboratorio':'Salva e firma il rapporto'):'Salva e continua';
       $('runBtn').disabled=true;els.editor.readOnly=true;setNotebookOpen(true);$('foundClue').scrollIntoView({behavior:'smooth',block:'nearest'});
-    } else { beep(230,.08);setFeedback(structureOk?`La query è valida e i ${rows.length} ${rows.length===1?'risultato è visibile':'risultati sono visibili'} qui sotto, ma non contengono ancora la prova richiesta. Modifica la query e riprova: non perdi nulla.`:'La query è valida, ma per questo indizio devi interrogare tutte le tabelle indicate a sinistra. I risultati restano visibili per aiutarti a correggerla.', ''); }
-  }catch(err){beep(180,.12);setFeedback(`Errore SQL: ${err.message.replace('Error: ','')}`,'error')}
+    } else {beep(230,.08);setFeedback(training?'Il comando è valido, ma non produce ancora esattamente la struttura o i dati richiesti. La modifica è stata annullata automaticamente: correggi e riprova.':structureOk?`La query è valida e i ${rows.length} ${rows.length===1?'risultato è visibile':'risultati sono visibili'} qui sotto, ma non contengono ancora la prova richiesta. Modifica la query e riprova: non perdi nulla.`:'La query è valida, ma per questo indizio devi interrogare tutte le tabelle indicate a sinistra. I risultati restano visibili per aiutarti a correggerla.','');}
+  }catch(err){if(savepointOpen){try{db.run('ROLLBACK TO mission_attempt');db.run('RELEASE mission_attempt')}catch(e){}}beep(180,.12);setFeedback(`Errore SQL: ${err.message.replace('Error: ','')}`,'error')}
 }
 
-function finish(){document.body.classList.remove('game-active');els.workspace.classList.add('hidden');els.completion.classList.remove('hidden');$('queryStat').textContent=queryCount;window.scrollTo({top:0,behavior:'smooth'});}
-function startGame(showGuide=true){document.body.classList.add('game-active');els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.workspace.classList.remove('hidden');step=0;queryCount=0;collectedClues=[];renderNotebook();renderMission();window.scrollTo({top:0,behavior:'smooth'});if(showGuide)$('helpDialog').showModal();}
-function goHome(){document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());document.body.classList.remove('game-active');els.workspace.classList.add('hidden');els.completion.classList.add('hidden');els.intro.classList.remove('hidden');window.scrollTo(0,0);}
+function finish(){
+  document.body.classList.remove('game-active');els.workspace.classList.add('hidden');els.completion.classList.remove('hidden');$('queryStat').textContent=queryCount;
+  const training=currentCase==='training';
+  $('completionEyebrow').textContent=training?'CASO 00 · LABORATORIO COMPLETATO':'CASO 01 · RISOLTO';
+  $('completionTitle').textContent=training?'Il database è pronto.':'Hai fatto parlare i dati.';
+  $('completionText').innerHTML=training?'Hai creato e popolato un piccolo archivio relazionale, modificato struttura e dati e rimosso in sicurezza ciò che non serviva. Ora puoi affrontare il primo caso.':'Le prove indicano <strong>Marco Riva</strong> come autore del furto e <strong>Laura Neri</strong> come complice. Hai usato filtri, ordinamenti e JOIN per ricostruire la notte.';
+  $('missionStat').textContent=activeMissions.length;$('missionStatLabel').textContent=training?'prove SQL':'indizi';$('completionStatLabel').textContent=training?'laboratorio completato':'caso risolto';$('completionSeal').textContent=training?'00':'01';window.scrollTo(0,0);
+}
+function startGame(mode='mystery',showGuide=true){
+  currentCase=mode;activeMissions=mode==='training'?trainingMissions:missions;activeClueTexts=mode==='training'?trainingClueTexts:clueTexts;resetDatabase(mode);
+  $('brandSubtitle').textContent=mode==='training'?'LABORATORIO SQL · CASO 00':'SQL MYSTERY · CASO 01';
+  document.body.classList.add('game-active');els.hub.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.workspace.classList.remove('hidden');step=0;queryCount=0;collectedClues=[];renderNotebook();renderMission();window.scrollTo(0,0);if(showGuide&&mode==='mystery')$('helpDialog').showModal();
+}
+function openCaseOne(){$('brandSubtitle').textContent='SQL MYSTERY · CASO 01';els.hub.classList.add('hidden');els.intro.classList.remove('hidden');window.scrollTo(0,0)}
+function openTraining(){$('brandSubtitle').textContent='LABORATORIO SQL · CASO 00';els.hub.classList.add('hidden');els.trainingIntro.classList.remove('hidden');window.scrollTo(0,0)}
+function goHome(){document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());$('brandSubtitle').textContent='SQL MYSTERY · ARCHIVIO DEI CASI';document.body.classList.remove('game-active');els.workspace.classList.add('hidden');els.completion.classList.add('hidden');els.intro.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.hub.classList.remove('hidden');window.scrollTo(0,0);}
 function renderConceptualSchema(){ $('schemaGrid').innerHTML=`
 <svg viewBox="0 0 1000 510" role="img" aria-labelledby="erConceptTitle erConceptDesc" preserveAspectRatio="xMidYMid meet">
   <title id="erConceptTitle">Modello entità-relazioni concettuale del database comunale</title>
@@ -284,9 +358,19 @@ function erRelationTag(cx,cy,w,label){
   return `<g class="er-relation-tag"><rect x="${cx-w/2}" y="${cy-10}" width="${w}" height="20" rx="10"/><text text-anchor="middle" x="${cx}" y="${cy+3}">${label}</text></g>`;
 }
 
-$('startBtn').onclick=()=>startGame(true);$('replayBtn').onclick=goHome;$('runBtn').onclick=runQuery;$('runBtn').disabled=true;
+function renderTrainingSchema(){$('schemaGrid').innerHTML=`
+<svg viewBox="0 0 1000 500" role="img" aria-labelledby="labSchemaTitle labSchemaDesc" preserveAspectRatio="xMidYMid meet">
+  <title id="labSchemaTitle">Schema obiettivo del laboratorio SQL</title><desc id="labSchemaDesc">La tabella fascicoli è collegata in relazione uno a molti alla tabella consultazioni tramite la chiave esterna fascicolo_codice.</desc>
+  <defs><marker id="labCrowFoot" markerWidth="18" markerHeight="18" refX="1" refY="9" orient="auto" markerUnits="userSpaceOnUse"><path class="er-crow-foot" d="M1 9 L17 1 M1 9 L17 9 M1 9 L17 17"/></marker></defs>
+  <g aria-hidden="true"><path class="er-link required" d="M430 235 H515"/><path class="er-link optional" marker-end="url(#labCrowFoot)" d="M650 235 H735"/>${erRelationTag(582,235,130,'È CONSULTATO')}<text class="er-cardinality er-one-label" x="448" y="224">1</text><text class="er-cardinality er-many-label" x="704" y="224">N</text></g>
+  ${erCard(90,125,340,235,'fascicoli',['codice  TEXT  PK','titolo  TEXT  NOT NULL','settore  TEXT  NOT NULL','stato  TEXT  NOT NULL','scaffale  TEXT'],true,28)}
+  ${erCard(735,125,250,235,'consultazioni',['id  INTEGER  PK','fascicolo_codice  TEXT  FK','operatore  TEXT NOT NULL','data  TEXT  NOT NULL'],false,31)}
+  <text class="er-independent" text-anchor="middle" x="500" y="430">OBIETTIVO DEL LABORATORIO · CREAZIONE, POPOLAMENTO E MANUTENZIONE</text>
+</svg>`}
+
+$('startTrainingBtn').onclick=openTraining;$('beginTrainingBtn').onclick=()=>startGame('training',false);$('openCaseOneBtn').onclick=openCaseOne;$('startBtn').onclick=()=>startGame('mystery',true);$('replayBtn').onclick=goHome;$('runBtn').onclick=runQuery;$('runBtn').disabled=true;
 document.querySelector('.brand').onclick=e=>{e.preventDefault();goHome()};
-$('resetQueryBtn').onclick=()=>{els.editor.value=missions[step].starter;els.editor.focus()};
+$('resetQueryBtn').onclick=()=>{els.editor.value=activeMissions[step].starter;els.editor.focus()};
 $('hintBtn').onclick=()=>setHintsOpen($('hintBox').classList.contains('hidden'));
 $('hintCloseBtn').onclick=()=>setHintsOpen(false);
 $('hintPrevBtn').onclick=()=>{hintLevel--;renderHint()};
@@ -295,8 +379,8 @@ $('clueInput').addEventListener('input',()=>{const valid=$('clueInput').value.tr
 $('notebookBtn').onclick=()=>setNotebookOpen($('notebookDrawer').classList.contains('hidden'));
 $('notebookCloseBtn').onclick=()=>setNotebookOpen(false);
 document.addEventListener('keydown',event=>{if(event.key==='Escape'){setNotebookOpen(false);setHintsOpen(false);setAudioPanel(false)}});
-$('continueBtn').onclick=()=>{if(!solvedCurrent)return;const note=$('clueInput').value.trim();if(note.length<8){$('clueInputHelp').textContent='Scrivi prima l’indizio con parole tue.';$('clueInputHelp').className='input-error';return}if(!collectedClues[step])collectedClues.push(note);renderNotebook();if(step===missions.length-1){finish()}else{step++;renderMission();window.scrollTo({top:0,behavior:'smooth'})}};
-$('schemaBtn').onclick=()=>{$('schemaDialog').showModal();renderRelationalSchema()};$('closeSchemaBtn').onclick=()=>$('schemaDialog').close();
+$('continueBtn').onclick=()=>{if(!solvedCurrent)return;const note=$('clueInput').value.trim();if(note.length<8){$('clueInputHelp').textContent='Scrivi prima una breve nota con parole tue.';$('clueInputHelp').className='input-error';return}if(!collectedClues[step])collectedClues.push(note);renderNotebook();if(step===activeMissions.length-1){finish()}else{step++;renderMission();window.scrollTo(0,0)}};
+$('schemaBtn').onclick=()=>{const training=currentCase==='training';$('schemaTitle').textContent=training?'Schema obiettivo del laboratorio':'Schema del database';$('schemaNote').innerHTML=training?'La relazione collega <strong>fascicoli.codice</strong> alla chiave esterna <strong>consultazioni.fascicolo_codice</strong>.':'Ogni associazione parte da un punto distinto di <strong>cittadini</strong> e termina sulla relativa <strong>FK</strong>.';$('schemaDialog').showModal();training?renderTrainingSchema():renderRelationalSchema()};$('closeSchemaBtn').onclick=()=>$('schemaDialog').close();
 $('helpBtn').onclick=()=>$('helpDialog').showModal();$('closeHelpBtn').onclick=()=>$('helpDialog').close();$('beginBtn').onclick=()=>{$('helpDialog').close();els.editor.focus()};
 $('soundBtn').onclick=()=>setAudioPanel($('audioPanel').classList.contains('hidden'));
 $('musicVolume').addEventListener('input',event=>{audio.musicVolume=Number(event.target.value)/100;applyMusicVolume();ensureAudio();persistAudio();syncAudioControls()});
