@@ -9,7 +9,7 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/archivio-noir-manerbio.webp" as="image" type="image/webp">
   <link rel="preload" href="assets/fascicolo-f204.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="styles.css?v=45">
+  <link rel="stylesheet" href="styles.css?v=46">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -22,7 +22,17 @@
       <span class="db-status loading" id="dbStatus" role="status" aria-live="polite"><i></i><span>Database in caricamento</span></span>
       <button class="text-button" id="helpBtn" type="button">Come si gioca</button>
       <button class="text-button" id="schemaBtn" type="button">Schema database</button>
-      <button class="icon-button" id="soundBtn" type="button" aria-label="Disattiva effetti sonori" title="Effetti sonori">♪</button>
+      <div class="audio-control">
+        <button class="icon-button" id="soundBtn" type="button" aria-label="Apri controlli audio" title="Audio" aria-expanded="false" aria-controls="audioPanel">♪</button>
+        <section class="audio-panel hidden" id="audioPanel" aria-label="Controlli audio">
+          <div class="audio-panel-head"><div><small>ATMOSFERA DEL CASO</small><strong>Controlli audio</strong></div><span id="audioStatus">Pronto</span></div>
+          <label for="musicVolume"><span>Musica</span><output id="musicVolumeValue">20%</output></label>
+          <input id="musicVolume" type="range" min="0" max="100" value="20" aria-label="Volume musica">
+          <label for="effectsVolume"><span>Effetti sonori</span><output id="effectsVolumeValue">55%</output></label>
+          <input id="effectsVolume" type="range" min="0" max="100" value="55" aria-label="Volume effetti sonori">
+          <p>“Moil” · Ruskerdax · CC0. Il sottofondo parte al primo clic e resta attivo durante l’indagine.</p>
+        </section>
+      </div>
     </div>
   </header>
 
@@ -176,7 +186,8 @@ WHERE data = '2026-10-31';</textarea>
     <div class="help-footer"><p><span>?</span>Se ti blocchi, usa i suggerimenti progressivi: l’ultimo orienta il ragionamento senza mostrare la query completa.</p><button class="case-cta case-cta-main case-cta-compact" id="beginBtn" type="button"><span class="case-cta-copy"><small>BRIEFING COMPLETATO</small><strong>Entra nell’archivio</strong></span><span class="case-cta-seal" aria-hidden="true">01</span></button></div>
   </dialog>
 
+  <audio id="ambientMusic" src="assets/moil-ruskerdax-cc0.mp3" loop preload="auto"></audio>
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js?v=38"></script>
+  <script src="app.js?v=41"></script>
 </body>
 </html>

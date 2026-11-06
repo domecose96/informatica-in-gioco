@@ -38,15 +38,35 @@ CREATE TABLE telefonate (id INTEGER PRIMARY KEY, mittente_id INTEGER, destinatar
 INSERT INTO telefonate VALUES (1,1,3,'2026-10-31','21:48',92,'Archivio Civico'),(2,3,2,'2026-10-26','11:20',145,'Piazza del Grano'),(3,3,4,'2026-10-28','16:02',61,'Piazza del Grano'),(4,3,6,'2026-10-30','09:14',203,'Piazza del Grano'),(5,2,4,'2026-10-31','18:11',34,'Archivio Civico'),(6,5,7,'2026-10-31','20:05',180,'Via del Portico'),(7,1,3,'2026-10-31','22:27',18,'Tangenziale Nord'),(8,3,7,'2026-10-29','12:05',51,'Piazza del Grano'),(9,2,6,'2026-10-29','10:36',74,'Via Garibaldi'),(10,7,5,'2026-10-31','21:42',48,'Stazione Centrale');
 `;
 
-let db, step = 0, hintLevel = 0, queryCount = 0, soundOn = true, solvedCurrent = false, collectedClues = [];
+let db, step = 0, hintLevel = 0, queryCount = 0, solvedCurrent = false, collectedClues = [];
 const $ = id => document.getElementById(id);
 const els = {intro:$('intro'),workspace:$('workspace'),completion:$('completion'),editor:$('sqlEditor'),results:$('results'),feedback:$('feedback')};
+
+const readVolume=(key,fallback)=>{try{const value=Number(localStorage.getItem(key));return Number.isFinite(value)?Math.max(0,Math.min(1,value)):fallback}catch(e){return fallback}};
+const music=$('ambientMusic');
+const audio={ctx:null,fxGain:null,started:false,musicVolume:readVolume('ao-music-volume',.20),effectsVolume:readVolume('ao-effects-volume',.55)};
+const applyMusicVolume=()=>{music.volume=Math.min(1,audio.musicVolume*.32)};
+
+function setGain(gain,value,time=.08){if(!gain||!audio.ctx)return;gain.gain.cancelScheduledValues(audio.ctx.currentTime);gain.gain.setTargetAtTime(value,audio.ctx.currentTime,time)}
+function ensureAudio(){
+  try{
+    if(!audio.ctx){audio.ctx=new (window.AudioContext||window.webkitAudioContext)();audio.fxGain=audio.ctx.createGain();audio.fxGain.connect(audio.ctx.destination);audio.fxGain.gain.value=audio.effectsVolume}
+    if(audio.ctx.state==='suspended')audio.ctx.resume();
+    setGain(audio.fxGain,audio.effectsVolume,.03);applyMusicVolume();
+    if(!audio.started||music.paused){
+      const playback=music.play();
+      if(playback)playback.then(()=>{audio.started=true;$('audioStatus').textContent=audio.musicVolume?'In riproduzione':'Musica a zero'}).catch(()=>{audio.started=false;$('audioStatus').textContent='Premi ♪ per avviare'});
+    }else $('audioStatus').textContent=audio.musicVolume?'In riproduzione':'Musica a zero';
+  }catch(e){$('audioStatus').textContent='Non disponibile'}
+}
+function persistAudio(){try{localStorage.setItem('ao-music-volume',String(audio.musicVolume));localStorage.setItem('ao-effects-volume',String(audio.effectsVolume))}catch(e){}}
+function syncAudioControls(){const music=Math.round(audio.musicVolume*100),effects=Math.round(audio.effectsVolume*100);$('musicVolume').value=music;$('effectsVolume').value=effects;$('musicVolumeValue').textContent=`${music}%`;$('effectsVolumeValue').textContent=`${effects}%`;if(audio.started)$('audioStatus').textContent=music?'In riproduzione':'Musica a zero'}
 
 function includes(rows,key,needle){ return rows.some(r => Object.entries(r).some(([k,v]) => (!key || k===key) && String(v).toLowerCase().includes(String(needle).toLowerCase()))); }
 function has(rows,key,value){ return rows.some(r => String(r[key])===String(value)); }
 function valueOf(rows,key){ return rows[0]?.[key]; }
 function rowsFrom(result){ if(!result.length) return []; const last=result[result.length-1]; return last.values.map(vals=>Object.fromEntries(last.columns.map((c,i)=>[c,vals[i]]))); }
-function beep(freq=540,duration=.06){ if(!soundOn) return; try{const ctx=new (window.AudioContext||window.webkitAudioContext)(),o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=freq;g.gain.setValueAtTime(.035,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+duration);o.connect(g).connect(ctx.destination);o.start();o.stop(ctx.currentTime+duration)}catch(e){} }
+function beep(freq=540,duration=.06,level=.045){if(!audio.effectsVolume)return;try{ensureAudio();const o=audio.ctx.createOscillator(),g=audio.ctx.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(level,audio.ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.ctx.currentTime+duration);o.connect(g).connect(audio.fxGain);o.start();o.stop(audio.ctx.currentTime+duration)}catch(e){}}
 
 async function initDb(){
   const SQL = await initSqlJs({locateFile:file=>`vendor/${file}`});
@@ -106,6 +126,13 @@ function setNotebookOpen(open){
   $('notebookDrawer').classList.toggle('hidden',!open);
   $('notebookBtn').setAttribute('aria-expanded',String(open));
   $('notebookBtn').classList.toggle('active',open);
+}
+
+function setAudioPanel(open){
+  $('audioPanel').classList.toggle('hidden',!open);
+  $('soundBtn').setAttribute('aria-expanded',String(open));
+  $('soundBtn').setAttribute('aria-label',open?'Chiudi controlli audio':'Apri controlli audio');
+  if(open){ensureAudio();syncAudioControls()}
 }
 
 function setFeedback(text,type=''){ els.feedback.textContent=text;els.feedback.className=`feedback ${type}`; }
@@ -267,10 +294,15 @@ $('hintNextBtn').onclick=()=>{hintLevel++;renderHint()};
 $('clueInput').addEventListener('input',()=>{const valid=$('clueInput').value.trim().length>=8;$('continueBtn').disabled=!valid;$('clueInputHelp').textContent=valid?'Pronto per essere aggiunto al taccuino.':'Scrivi almeno una breve frase con ciò che hai scoperto.';$('clueInputHelp').className=valid?'':'input-error'});
 $('notebookBtn').onclick=()=>setNotebookOpen($('notebookDrawer').classList.contains('hidden'));
 $('notebookCloseBtn').onclick=()=>setNotebookOpen(false);
-document.addEventListener('keydown',event=>{if(event.key==='Escape'){setNotebookOpen(false);setHintsOpen(false)}});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'){setNotebookOpen(false);setHintsOpen(false);setAudioPanel(false)}});
 $('continueBtn').onclick=()=>{if(!solvedCurrent)return;const note=$('clueInput').value.trim();if(note.length<8){$('clueInputHelp').textContent='Scrivi prima l’indizio con parole tue.';$('clueInputHelp').className='input-error';return}if(!collectedClues[step])collectedClues.push(note);renderNotebook();if(step===missions.length-1){finish()}else{step++;renderMission();window.scrollTo({top:0,behavior:'smooth'})}};
 $('schemaBtn').onclick=()=>{$('schemaDialog').showModal();renderRelationalSchema()};$('closeSchemaBtn').onclick=()=>$('schemaDialog').close();
 $('helpBtn').onclick=()=>$('helpDialog').showModal();$('closeHelpBtn').onclick=()=>$('helpDialog').close();$('beginBtn').onclick=()=>{$('helpDialog').close();els.editor.focus()};
-$('soundBtn').onclick=()=>{soundOn=!soundOn;$('soundBtn').textContent=soundOn?'♪':'×';$('soundBtn').ariaLabel=soundOn?'Disattiva effetti sonori':'Attiva effetti sonori'};
+$('soundBtn').onclick=()=>setAudioPanel($('audioPanel').classList.contains('hidden'));
+$('musicVolume').addEventListener('input',event=>{audio.musicVolume=Number(event.target.value)/100;applyMusicVolume();ensureAudio();persistAudio();syncAudioControls()});
+$('effectsVolume').addEventListener('input',event=>{audio.effectsVolume=Number(event.target.value)/100;ensureAudio();setGain(audio.fxGain,audio.effectsVolume,.03);persistAudio();syncAudioControls()});
+document.addEventListener('pointerdown',ensureAudio,{once:true,capture:true});
+document.addEventListener('click',event=>{const button=event.target.closest('button');if(button&&!button.disabled&&button.id!=='runBtn'&&button.id!=='soundBtn')beep(420,.025,.018);if(!event.target.closest('.audio-control'))setAudioPanel(false)});
+syncAudioControls();
 els.editor.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();runQuery()}if(e.key==='Tab'){e.preventDefault();const s=e.target.selectionStart;e.target.value=e.target.value.slice(0,s)+'  '+e.target.value.slice(e.target.selectionEnd);e.target.selectionStart=e.target.selectionEnd=s+2}});
 renderRelationalSchema();initDb().catch(err=>{$('dbStatus').className='db-status error';$('dbStatus').innerHTML='<i></i><span>Database non disponibile</span>';$('startBtn').innerHTML='Errore caricamento <span>!</span>';setFeedback('Impossibile avviare SQLite: '+err.message,'error')});
