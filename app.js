@@ -73,24 +73,28 @@ const $ = id => document.getElementById(id);
 const els = {hub:$('caseHub'),trainingIntro:$('trainingIntro'),intro:$('intro'),workspace:$('workspace'),completion:$('completion'),editor:$('sqlEditor'),results:$('results'),feedback:$('feedback')};
 
 const readVolume=(key,fallback)=>{try{const value=Number(localStorage.getItem(key));return Number.isFinite(value)?Math.max(0,Math.min(1,value)):fallback}catch(e){return fallback}};
+const readFlag=key=>{try{return localStorage.getItem(key)==='true'}catch(e){return false}};
 const music=$('ambientMusic');
-const audio={ctx:null,fxGain:null,started:false,musicVolume:readVolume('ao-music-volume',.20),effectsVolume:readVolume('ao-effects-volume',.55)};
-const applyMusicVolume=()=>{music.volume=Math.min(1,audio.musicVolume*.32)};
+const audio={ctx:null,fxGain:null,started:false,muted:readFlag('ao-muted'),musicVolume:readVolume('ao-music-volume',.20),effectsVolume:readVolume('ao-effects-volume',.55)};
+const effectiveEffectsVolume=()=>audio.muted?0:audio.effectsVolume;
+const applyMusicVolume=()=>{music.volume=audio.muted?0:Math.min(1,audio.musicVolume*.32)};
 
 function setGain(gain,value,time=.08){if(!gain||!audio.ctx)return;gain.gain.cancelScheduledValues(audio.ctx.currentTime);gain.gain.setTargetAtTime(value,audio.ctx.currentTime,time)}
 function ensureAudio(){
   try{
-    if(!audio.ctx){audio.ctx=new (window.AudioContext||window.webkitAudioContext)();audio.fxGain=audio.ctx.createGain();audio.fxGain.connect(audio.ctx.destination);audio.fxGain.gain.value=audio.effectsVolume}
+    if(!audio.ctx){audio.ctx=new (window.AudioContext||window.webkitAudioContext)();audio.fxGain=audio.ctx.createGain();audio.fxGain.connect(audio.ctx.destination);audio.fxGain.gain.value=effectiveEffectsVolume()}
     if(audio.ctx.state==='suspended')audio.ctx.resume();
-    setGain(audio.fxGain,audio.effectsVolume,.03);applyMusicVolume();
+    setGain(audio.fxGain,effectiveEffectsVolume(),.03);applyMusicVolume();
     if(!audio.started||music.paused){
       const playback=music.play();
-      if(playback)playback.then(()=>{audio.started=true;$('audioStatus').textContent=audio.musicVolume?'In riproduzione':'Musica a zero'}).catch(()=>{audio.started=false;$('audioStatus').textContent='Premi ♪ per avviare'});
-    }else $('audioStatus').textContent=audio.musicVolume?'In riproduzione':'Musica a zero';
+      if(playback)playback.then(()=>{audio.started=true;syncAudioStatus()}).catch(()=>{audio.started=false;$('audioStatus').textContent='Premi ♪ per avviare'});
+    }else syncAudioStatus();
   }catch(e){$('audioStatus').textContent='Non disponibile'}
 }
-function persistAudio(){try{localStorage.setItem('ao-music-volume',String(audio.musicVolume));localStorage.setItem('ao-effects-volume',String(audio.effectsVolume))}catch(e){}}
-function syncAudioControls(){const music=Math.round(audio.musicVolume*100),effects=Math.round(audio.effectsVolume*100);$('musicVolume').value=music;$('effectsVolume').value=effects;$('musicVolumeValue').textContent=`${music}%`;$('effectsVolumeValue').textContent=`${effects}%`;if(audio.started)$('audioStatus').textContent=music?'In riproduzione':'Musica a zero'}
+function syncAudioStatus(){const musicLevel=Math.round(audio.musicVolume*100);$('audioStatus').textContent=audio.muted?'Tutto in muto':!audio.started?'Pronto':musicLevel?'In riproduzione':'Musica a zero'}
+function persistAudio(){try{localStorage.setItem('ao-music-volume',String(audio.musicVolume));localStorage.setItem('ao-effects-volume',String(audio.effectsVolume));localStorage.setItem('ao-muted',String(audio.muted))}catch(e){}}
+function syncAudioControls(){const storedMusic=Math.round(audio.musicVolume*100),storedEffects=Math.round(audio.effectsVolume*100),musicLevel=audio.muted?0:storedMusic,effectsLevel=audio.muted?0:storedEffects;const musicControl=$('musicVolume'),effectsControl=$('effectsVolume');musicControl.value=musicLevel;effectsControl.value=effectsLevel;musicControl.disabled=false;effectsControl.disabled=false;$('musicVolumeValue').textContent=`${musicLevel}%`;$('effectsVolumeValue').textContent=`${effectsLevel}%`;const muteButton=$('muteAllBtn'),soundButton=$('soundBtn'),action=audio.muted?'Riattiva tutto':'Silenzia tutto',waveCount=musicLevel===0?0:musicLevel<=20?1:musicLevel<=50?2:3;muteButton.setAttribute('aria-pressed',String(audio.muted));muteButton.setAttribute('data-waves',String(waveCount));muteButton.setAttribute('aria-label',action);muteButton.title=`${action} · musica ${musicLevel}%`;soundButton.setAttribute('data-waves',String(waveCount));soundButton.classList.toggle('is-muted',audio.muted);soundButton.title=audio.muted?'Audio in muto':`Musica ${musicLevel}%`;syncAudioStatus()}
+function toggleMuteAll(){audio.muted=!audio.muted;applyMusicVolume();setGain(audio.fxGain,effectiveEffectsVolume(),.03);persistAudio();syncAudioControls()}
 
 function includes(rows,key,needle){ return rows.some(r => Object.entries(r).some(([k,v]) => (!key || k===key) && String(v).toLowerCase().includes(String(needle).toLowerCase()))); }
 function has(rows,key,value){ return rows.some(r => String(r[key])===String(value)); }
@@ -100,7 +104,7 @@ function queryRows(sql,params=[]){const statement=db.prepare(sql);try{statement.
 function scalar(sql,params=[]){const row=queryRows(sql,params)[0];return row?Object.values(row)[0]:undefined}
 function tableExists(name){return scalar("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?",[name])===1}
 function columnsOf(name){return queryRows(`PRAGMA table_info(${name})`)}
-function beep(freq=540,duration=.06,level=.045){if(!audio.effectsVolume)return;try{ensureAudio();const o=audio.ctx.createOscillator(),g=audio.ctx.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(level,audio.ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.ctx.currentTime+duration);o.connect(g).connect(audio.fxGain);o.start();o.stop(audio.ctx.currentTime+duration)}catch(e){}}
+function beep(freq=540,duration=.06,level=.045){if(audio.muted||!audio.effectsVolume)return;try{ensureAudio();const o=audio.ctx.createOscillator(),g=audio.ctx.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(level,audio.ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.ctx.currentTime+duration);o.connect(g).connect(audio.fxGain);o.start();o.stop(audio.ctx.currentTime+duration)}catch(e){}}
 
 function resetDatabase(mode=currentCase){
   if(db)db.close();
@@ -383,8 +387,9 @@ $('continueBtn').onclick=()=>{if(!solvedCurrent)return;const note=$('clueInput')
 $('schemaBtn').onclick=()=>{const training=currentCase==='training';$('schemaTitle').textContent=training?'Schema obiettivo del laboratorio':'Schema del database';$('schemaNote').innerHTML=training?'La relazione collega <strong>fascicoli.codice</strong> alla chiave esterna <strong>consultazioni.fascicolo_codice</strong>.':'Ogni associazione parte da un punto distinto di <strong>cittadini</strong> e termina sulla relativa <strong>FK</strong>.';$('schemaDialog').showModal();training?renderTrainingSchema():renderRelationalSchema()};$('closeSchemaBtn').onclick=()=>$('schemaDialog').close();
 $('helpBtn').onclick=()=>$('helpDialog').showModal();$('closeHelpBtn').onclick=()=>$('helpDialog').close();$('beginBtn').onclick=()=>{$('helpDialog').close();els.editor.focus()};
 $('soundBtn').onclick=()=>setAudioPanel($('audioPanel').classList.contains('hidden'));
-$('musicVolume').addEventListener('input',event=>{audio.musicVolume=Number(event.target.value)/100;applyMusicVolume();ensureAudio();persistAudio();syncAudioControls()});
-$('effectsVolume').addEventListener('input',event=>{audio.effectsVolume=Number(event.target.value)/100;ensureAudio();setGain(audio.fxGain,audio.effectsVolume,.03);persistAudio();syncAudioControls()});
+$('musicVolume').addEventListener('input',event=>{audio.muted=false;audio.musicVolume=Number(event.target.value)/100;applyMusicVolume();ensureAudio();persistAudio();syncAudioControls()});
+$('effectsVolume').addEventListener('input',event=>{audio.muted=false;audio.effectsVolume=Number(event.target.value)/100;ensureAudio();setGain(audio.fxGain,effectiveEffectsVolume(),.03);applyMusicVolume();persistAudio();syncAudioControls()});
+$('muteAllBtn').onclick=toggleMuteAll;
 document.addEventListener('pointerdown',ensureAudio,{once:true,capture:true});
 document.addEventListener('click',event=>{const button=event.target.closest('button');if(button&&!button.disabled&&button.id!=='runBtn'&&button.id!=='soundBtn')beep(420,.025,.018);if(!event.target.closest('.audio-control'))setAudioPanel(false)});
 syncAudioControls();
