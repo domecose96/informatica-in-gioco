@@ -9,7 +9,7 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/archivio-noir-manerbio.webp" as="image" type="image/webp">
   <link rel="preload" href="assets/fascicolo-f204.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="styles.css?v=49">
+  <link rel="stylesheet" href="styles.css?v=54">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -23,14 +23,22 @@
       <button class="text-button" id="helpBtn" type="button">Come si gioca</button>
       <button class="text-button" id="schemaBtn" type="button">Schema database</button>
       <div class="audio-control">
-        <button class="icon-button" id="soundBtn" type="button" aria-label="Apri controlli audio" title="Audio" aria-expanded="false" aria-controls="audioPanel">♪</button>
+        <button class="icon-button audio-level-button" id="soundBtn" type="button" aria-label="Apri controlli audio" title="Audio" aria-expanded="false" aria-controls="audioPanel" data-waves="1">
+          <svg class="mute-icon" viewBox="0 0 28 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path class="mute-slash" d="m17 9 6 6m0-6-6 6"/><path class="sound-wave wave-1" d="M15 9.5c.8.7 1.1 1.5 1.1 2.5s-.3 1.8-1.1 2.5"/><path class="sound-wave wave-2" d="M18 7.5c1.4 1.2 2 2.7 2 4.5s-.6 3.3-2 4.5"/><path class="sound-wave wave-3" d="M21 5.5c2 1.8 3 4 3 6.5s-1 4.7-3 6.5"/></svg>
+        </button>
         <section class="audio-panel hidden" id="audioPanel" aria-label="Controlli audio">
           <div class="audio-panel-head"><div><small>ATMOSFERA DEL CASO</small><strong>Controlli audio</strong></div><span id="audioStatus">Pronto</span></div>
           <label for="musicVolume"><span>Musica</span><output id="musicVolumeValue">20%</output></label>
           <input id="musicVolume" type="range" min="0" max="100" value="20" aria-label="Volume musica">
           <label for="effectsVolume"><span>Effetti sonori</span><output id="effectsVolumeValue">55%</output></label>
           <input id="effectsVolume" type="range" min="0" max="100" value="55" aria-label="Volume effetti sonori">
-          <p>“Moil” · Ruskerdax · CC0. Il sottofondo parte al primo clic e resta attivo durante l’indagine.</p>
+          <div class="audio-master-row">
+            <span>Audio generale</span>
+            <button class="audio-master-toggle" id="muteAllBtn" type="button" aria-pressed="false" aria-label="Silenzia tutto" title="Silenzia tutto">
+              <svg class="mute-icon" viewBox="0 0 28 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path class="mute-slash" d="m17 9 6 6m0-6-6 6"/><path class="sound-wave wave-1" d="M15 9.5c.8.7 1.1 1.5 1.1 2.5s-.3 1.8-1.1 2.5"/><path class="sound-wave wave-2" d="M18 7.5c1.4 1.2 2 2.7 2 4.5s-.6 3.3-2 4.5"/><path class="sound-wave wave-3" d="M21 5.5c2 1.8 3 4 3 6.5s-1 4.7-3 6.5"/></svg>
+            </button>
+          </div>
+          <p class="audio-track">Brano: “Moil”</p>
         </section>
       </div>
     </div>
@@ -250,6 +258,6 @@ WHERE data = '2026-10-31';</textarea>
 
   <audio id="ambientMusic" src="assets/moil-ruskerdax-cc0.mp3" loop preload="auto"></audio>
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js?v=44"></script>
+  <script src="app.js?v=49"></script>
 </body>
 </html>
