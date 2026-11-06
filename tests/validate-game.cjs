@@ -16,11 +16,11 @@ const missions = eval(missionMatch[1]);
 
 const solutions = [
   "SELECT * FROM eventi WHERE data='2026-10-31' AND tipo='allarme'",
-  "SELECT cittadino_id,ora_badge,varco FROM accessi_archivio WHERE data='2026-10-31' AND esito='accettato' AND ora_badge>'21:45' ORDER BY ora_badge",
+  "SELECT c.nome,c.cognome,a.ora_badge,a.varco FROM accessi_archivio a JOIN cittadini c ON c.id=a.cittadino_id WHERE a.data='2026-10-31' AND a.esito='accettato' AND a.ora_badge>'21:45' ORDER BY a.ora_badge",
   "SELECT ora,targa,direzione FROM telecamere WHERE data='2026-10-31' AND ora>'22:14' AND direzione='tangenziale' ORDER BY ora",
-  "SELECT targa,cittadino_id,modello,colore FROM veicoli WHERE targa='TO-314-XR'",
-  "SELECT cittadino_id,codice_fascicolo,data_prestito,data_restituzione FROM prestiti_documenti WHERE codice_fascicolo='F-204' AND data_restituzione IS NULL",
-  "SELECT mittente_id,COUNT(DISTINCT destinatario_id) AS contatti_archivio FROM telefonate WHERE destinatario_id IN (2,4,6) GROUP BY mittente_id HAVING COUNT(DISTINCT destinatario_id)=3",
+  "SELECT c.nome,c.cognome,v.targa,v.modello,v.colore FROM veicoli v JOIN cittadini c ON c.id=v.cittadino_id WHERE v.targa IN ('TO-314-XR','MI-770-KA')",
+  "SELECT c.nome,c.cognome,p.data_prestito,p.data_restituzione FROM prestiti_documenti p JOIN cittadini c ON c.id=p.cittadino_id WHERE p.codice_fascicolo='F-204' ORDER BY p.data_prestito",
+  "SELECT mitt.nome,mitt.cognome,COUNT(DISTINCT t.destinatario_id) AS contatti_archivio FROM telefonate t JOIN cittadini mitt ON mitt.id=t.mittente_id JOIN cittadini dest ON dest.id=t.destinatario_id WHERE dest.professione='archivista' GROUP BY mitt.id,mitt.nome,mitt.cognome HAVING COUNT(DISTINCT t.destinatario_id)>=2",
   "SELECT c.nome,c.cognome,c.professione FROM cittadini c JOIN veicoli v ON v.cittadino_id=c.id JOIN prestiti_documenti p ON p.cittadino_id=c.id WHERE v.targa='TO-314-XR' AND p.codice_fascicolo='F-204' AND p.data_restituzione IS NULL",
   "SELECT dest.nome,dest.cognome,t.ora,t.durata_sec FROM telefonate t JOIN cittadini mitt ON mitt.id=t.mittente_id JOIN cittadini dest ON dest.id=t.destinatario_id WHERE mitt.nome='Marco' AND mitt.cognome='Riva' AND dest.id=3 AND t.ora BETWEEN '21:30' AND '22:00'"
 ];
@@ -34,8 +34,10 @@ const solutions = [
     assert.strictEqual(mission.validate(getRows(mission.starter)),false,`La query iniziale ${index+1} non deve risolvere il livello`);
     assert.strictEqual(mission.validate(solvedRows[index]),true,`La soluzione ${index+1} deve risolvere il livello`);
   });
-  const earlyEvidence = JSON.stringify(solvedRows.slice(0,6)).toLowerCase();
-  assert(!earlyEvidence.includes('marco') && !earlyEvidence.includes('laura'),'I nomi non devono comparire prima delle ultime due prove');
+  assert(includes(solvedRows[1],'nome','Marco') && includes(solvedRows[1],'nome','Sara'),'Gli accessi devono aprire almeno due piste');
+  assert(includes(solvedRows[3],'nome','Marco') && includes(solvedRows[3],'nome','Giulia'),'I veicoli devono condurre a due proprietari');
+  assert(solvedRows[4].length===3,'Il fascicolo deve essere collegato a tre persone');
+  assert(includes(solvedRows[5],'nome','Sara') && includes(solvedRows[5],'nome','Laura'),'I contatti devono mantenere due piste aperte');
   assert(includes(solvedRows[6],'nome','Marco') && !includes(solvedRows[6],null,'Laura'),'La penultima prova deve rivelare soltanto il colpevole');
   assert(includes(solvedRows[7],'nome','Laura'),'L’ultima prova deve rivelare la complice');
   console.log(`OK: ${missions.length} query iniziali respinte e ${solutions.length} soluzioni accettate.`);
