@@ -135,27 +135,27 @@ html{height:100%;overflow:hidden;scroll-behavior:auto;overscroll-behavior:none}b
   text-shadow:0 1px rgba(255,242,210,.28);transform:rotate(-.5deg)
 }
 .training-intro .training-cover .municipal-mark{
-  top:32.7%;left:23%;right:15%;
+  top:32.7%;left:26%;width:60%;
   color:#eadfc7;font-size:7.4px;line-height:1.15;letter-spacing:.11em;text-align:center
 }
 .training-intro .training-cover .municipal-mark small{
   margin-top:5px;color:#cbb985;font-size:5.1px;line-height:1.2;letter-spacing:.12em;text-align:center
 }
 .training-intro .training-cover .file-label{
-  top:38.7%;left:22%;right:16%;
+  top:38.7%;left:26%;width:60%;
   color:#d4bd78;font-size:7px;line-height:1;letter-spacing:.3em;text-align:center
 }
 .training-intro .training-cover>strong{
-  top:42.1%;left:20%;right:14%;
-  color:#f0e4ca;font-size:clamp(42px,3.7vw,54px);line-height:1;letter-spacing:.045em;text-align:center;
+  top:42.1%;left:26%;width:60%;
+  color:#f0e4ca;font-size:clamp(40px,3.45vw,51px);line-height:1;letter-spacing:.035em;text-align:center;
   text-shadow:0 3px 5px rgba(0,0,0,.62)
 }
 .training-intro .training-cover .red-line{
-  top:54.2%;left:23%;right:17%;height:1px;
+  top:54.2%;left:26%;width:60%;height:1px;
   background:linear-gradient(90deg,transparent,#c9a85f 8%,#c9a85f 92%,transparent);opacity:.8
 }
 .training-intro .training-cover dl{
-  top:65.2%;left:23%;right:17%;padding:0;
+  top:65.2%;left:26%;width:60%;padding:0;
   background:transparent;border-top:1px solid rgba(218,196,141,.34);border-bottom:1px solid rgba(218,196,141,.28);
   backdrop-filter:none
 }
