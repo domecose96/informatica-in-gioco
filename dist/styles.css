@@ -160,9 +160,10 @@ html{height:100%;overflow:hidden;scroll-behavior:auto;overscroll-behavior:none}b
   backdrop-filter:none
 }
 .training-intro .training-cover dl div{
-  align-items:center;padding:9px 3px;border-bottom:1px solid rgba(218,196,141,.24);font-size:7.6px;line-height:1.15
+  display:grid;grid-template-columns:36% 64%;align-items:center;padding:9px 4%;
+  border-bottom:1px solid rgba(218,196,141,.24);font-size:7.6px;line-height:1.15
 }
 .training-intro .training-cover dl div:last-child{border-bottom:0}
-.training-intro .training-cover dt{color:#c5b795;font-weight:600;letter-spacing:.045em}
+.training-intro .training-cover dt{color:#c5b795;font-weight:600;letter-spacing:.045em;text-align:center}
 .training-intro .training-cover dd{color:#f0e4ca;font-weight:700;letter-spacing:.025em;text-align:right}
 .training-intro .training-cover dd.danger{color:#e19a78;letter-spacing:.055em}
