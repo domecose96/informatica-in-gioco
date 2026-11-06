@@ -155,15 +155,15 @@ html{height:100%;overflow:hidden;scroll-behavior:auto;overscroll-behavior:none}b
   background:linear-gradient(90deg,transparent,#c9a85f 8%,#c9a85f 92%,transparent);opacity:.8
 }
 .training-intro .training-cover dl{
-  top:65.2%;left:26%;width:60%;padding:0;
+  top:65.2%;left:29%;width:51%;padding:0 2%;
   background:transparent;border-top:1px solid rgba(218,196,141,.34);border-bottom:1px solid rgba(218,196,141,.28);
   backdrop-filter:none
 }
 .training-intro .training-cover dl div{
-  display:grid;grid-template-columns:36% 64%;align-items:center;padding:9px 4%;
-  border-bottom:1px solid rgba(218,196,141,.24);font-size:7.6px;line-height:1.15
+  display:grid;grid-template-columns:38% 62%;align-items:center;column-gap:4%;padding:9px 1%;
+  border-bottom:1px solid rgba(218,196,141,.24);font-size:7.1px;line-height:1.15
 }
 .training-intro .training-cover dl div:last-child{border-bottom:0}
 .training-intro .training-cover dt{color:#c5b795;font-weight:600;letter-spacing:.045em;text-align:center}
-.training-intro .training-cover dd{color:#f0e4ca;font-weight:700;letter-spacing:.025em;text-align:right}
+.training-intro .training-cover dd{min-width:0;color:#f0e4ca;font-weight:700;letter-spacing:.015em;text-align:center;white-space:nowrap}
 .training-intro .training-cover dd.danger{color:#e19a78;letter-spacing:.055em}
