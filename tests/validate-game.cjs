@@ -34,7 +34,7 @@ const solutions = [
     assert.strictEqual(mission.validate(getRows(mission.starter)),false,`La query iniziale ${index+1} non deve risolvere il livello`);
     assert.strictEqual(mission.validate(solvedRows[index]),true,`La soluzione ${index+1} deve risolvere il livello`);
   });
-  assert(includes(solvedRows[1],'nome','Marco') && includes(solvedRows[1],'nome','Sara') && includes(solvedRows[1],'nome','Laura') && includes(solvedRows[1],'esito','rifiutato'),'Gli accessi devono aprire tre piste, compreso il tentativo rifiutato');
+  assert(includes(solvedRows[1],'nome','Paolo') && includes(solvedRows[1],'nome','Sara') && includes(solvedRows[1],'nome','Laura') && !includes(solvedRows[1],'nome','Marco') && includes(solvedRows[1],'esito','rifiutato'),'Gli accessi devono aprire tre piste senza anticipare il nome del colpevole');
   assert(includes(solvedRows[3],'nome','Marco') && includes(solvedRows[3],'nome','Giulia'),'I veicoli devono condurre a due proprietari');
   assert(solvedRows[4].length===3 && solvedRows[4].every(row=>!('data_restituzione' in row)),'Il fascicolo deve essere collegato a tre persone senza rivelare la restituzione');
   assert(includes(solvedRows[5],'nome','Sara') && includes(solvedRows[5],'nome','Laura'),'I contatti devono mantenere due piste aperte');
