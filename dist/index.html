@@ -19,7 +19,7 @@
   <link rel="preload" href="assets/fascicolo-f204.webp" as="image" type="image/webp">
   <link rel="preload" href="assets/laboratorio-archivio-manerbio.webp" as="image" type="image/webp">
   <link rel="preload" href="assets/registro-lab00.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="styles.css?v=69">
+  <link rel="stylesheet" href="styles.css?v=70">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -207,11 +207,10 @@ FROM eventi
 WHERE data = '2026-10-31';</textarea>
         </div>
         <div class="run-row">
-          <span>⌘/Ctrl + Invio per eseguire</span>
+          <div class="feedback" id="feedback">
+            <span id="feedbackText" role="status" aria-live="polite">Il database è pronto. Interroga le tabelle per trovare il primo indizio.</span>
+          </div>
           <button class="run-button" id="runBtn" type="button"><span class="run-step">03</span><span class="run-label">Esegui e verifica</span></button>
-        </div>
-        <div class="feedback" id="feedback">
-          <span id="feedbackText" role="status" aria-live="polite">Il database è pronto. Interroga le tabelle per trovare il primo indizio.</span>
         </div>
         <div class="results-wrap">
           <div class="results-head"><span>RISULTATI</span><span id="rowCount">0 righe</span></div>
@@ -281,6 +280,6 @@ WHERE data = '2026-10-31';</textarea>
 
   <audio id="ambientMusic" src="assets/moil-ruskerdax-cc0.mp3" loop preload="auto"></audio>
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js?v=59"></script>
+  <script src="app.js?v=60"></script>
 </body>
 </html>
