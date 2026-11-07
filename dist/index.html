@@ -179,7 +179,7 @@
               <div class="clue-writing">
                 <label for="clueInput" id="clueInputLabel">04 · SCRIVI L’INDIZIO</label>
                 <textarea id="clueInput" maxlength="180" aria-describedby="clueInputHelp" placeholder="Esempio: L’allarme è scattato alle…"></textarea>
-                <div><small id="clueInputHelp">Scrivi con parole tue ciò che potrà servirti dopo.</small><button class="continue-button" id="continueBtn" type="button" disabled>Salva e continua</button></div>
+                <div><small id="clueInputHelp">Scrivi con parole tue ciò che potrà servirti dopo.</small><button class="continue-button" id="continueBtn" type="button" disabled>Salva</button></div>
               </div>
             </div>
             <div id="clueList"><p class="notebook-empty">Le prove corrette verranno annotate qui e resteranno disponibili per gli enigmi successivi.</p></div>
@@ -266,7 +266,7 @@ WHERE data = '2026-10-31';</textarea>
       <div class="help-steps" aria-label="Le tre fasi del gioco">
         <article><b>01</b><div><span>OSSERVA</span><h3>Leggi la missione</h3><p>L’obiettivo ti dice quale informazione devi far emergere dal database.</p></div></article>
         <article><b>02</b><div><span>INTERROGA</span><h3>Completa la query</h3><p>Modifica il codice e premi <strong>Esegui</strong>. Un tentativo errato mostra comunque risultati utili.</p></div></article>
-        <article><b>03</b><div><span>DEDUCI</span><h3>Annota la prova</h3><p>Quando trovi la risposta, scrivila con parole tue: resterà nel taccuino.</p></div></article>
+        <article><b>03</b><div><span>DEDUCI</span><h3>Annota la prova</h3><p>Salva la risposta nel taccuino; poi lo stesso pulsante diventa Continua.</p></div></article>
       </div>
       <div class="help-demo" aria-label="Esempio di indagine SQL">
         <div class="demo-bar"><i></i><i></i><i></i><span>prova_01.sql</span></div>
@@ -280,6 +280,6 @@ WHERE data = '2026-10-31';</textarea>
 
   <audio id="ambientMusic" src="assets/moil-ruskerdax-cc0.mp3" loop preload="auto"></audio>
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js?v=63"></script>
+  <script src="app.js?v=64"></script>
 </body>
 </html>
