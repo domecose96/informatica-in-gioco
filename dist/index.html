@@ -19,7 +19,7 @@
   <link rel="preload" href="assets/fascicolo-f204.webp" as="image" type="image/webp">
   <link rel="preload" href="assets/laboratorio-archivio-manerbio.webp" as="image" type="image/webp">
   <link rel="preload" href="assets/registro-lab00.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="styles.css?v=77">
+  <link rel="stylesheet" href="styles.css?v=79">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -30,7 +30,7 @@
     </a>
     <div class="top-actions">
       <button class="text-button" id="helpBtn" type="button">Come si gioca</button>
-      <button class="text-button" id="schemaBtn" type="button">Schema database</button>
+      <button class="text-button hidden" id="schemaBtn" type="button">Schema database</button>
       <div class="audio-control">
         <button class="icon-button" id="soundBtn" type="button" aria-label="Apri controlli audio" title="Audio" aria-expanded="false" aria-controls="audioPanel">♪</button>
         <section class="audio-panel hidden" id="audioPanel" aria-label="Controlli audio">
@@ -247,7 +247,7 @@ WHERE data = '2026-10-31';</textarea>
   </dialog>
 
   <dialog id="schemaDialog">
-    <div class="dialog-head"><div><p class="eyebrow">DATABASE COMUNALE</p><h2 id="schemaTitle">Schema del database</h2></div><button id="closeSchemaBtn" aria-label="Chiudi schema" type="button">×</button></div>
+    <div class="dialog-head"><div><p class="eyebrow" id="schemaEyebrow">DATABASE COMUNALE</p><h2 id="schemaTitle">Schema del database</h2></div><button id="closeSchemaBtn" aria-label="Chiudi schema" type="button">×</button></div>
     <div class="er-legend">
       <span><i class="pk-dot"></i> Chiave primaria</span>
       <span><i class="fk-dot"></i> Chiave esterna</span>
@@ -279,6 +279,6 @@ WHERE data = '2026-10-31';</textarea>
 
   <audio id="ambientMusic" src="assets/moil-ruskerdax-cc0.mp3" loop preload="auto"></audio>
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js?v=70"></script>
+  <script src="app.js?v=71"></script>
 </body>
 </html>
