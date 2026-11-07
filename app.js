@@ -56,7 +56,7 @@ const trainingMissions = [
   {skill:'DROP TABLE',title:'Consegna un archivio pulito',text:'Il database è completo. Prima della consegna, elimina la tabella tecnica usata soltanto durante l’importazione.',objective:'Elimina definitivamente la tabella importazione_temporanea.',tables:['fascicoli','consultazioni'],command:/^drop\s+table\s+importazione_temporanea\b/i,starter:"DROP TABLE",hints:['DROP TABLE elimina una struttura che non serve più.','Indica il nome esatto della tabella temporanea.','DROP TABLE importazione_temporanea;'],preview:"SELECT name AS tabella FROM sqlite_master WHERE type='table' ORDER BY name",validateDb:()=>!tableExists('importazione_temporanea')}
 ];
 
-const trainingClueTexts = [
+const trainingVerificationTexts = [
   'Struttura verificata: fascicoli ha una chiave primaria e tre campi obbligatori.',
   'Popolamento verificato: il registro contiene le quattro schede richieste.',
   'Controllo riuscito: il filtro restituisce F-101 e F-204 nell’ordine corretto.',
@@ -65,12 +65,12 @@ const trainingClueTexts = [
   'Pulizia riuscita: TMP-999 è stato rimosso e restano tre fascicoli validi.',
   'Relazione verificata: consultazioni fa riferimento a fascicoli(codice).',
   'Registro popolato: tre consultazioni sono collegate a fascicoli esistenti.',
-  'Consegna completata: la tabella temporanea è stata rimossa e il database è pronto.'
+  'Consegna completata: la tabella temporanea è stata rimossa e il database è pronto per il controllo finale.'
 ];
 
 let SQLRuntime, db, currentCase='mystery', activeMissions=missions, activeClueTexts=clueTexts, step = 0, hintLevel = 0, queryCount = 0, solvedCurrent = false, collectedClues = [];
 const $ = id => document.getElementById(id);
-const els = {hub:$('caseHub'),trainingIntro:$('trainingIntro'),intro:$('intro'),workspace:$('workspace'),completion:$('completion'),editor:$('sqlEditor'),results:$('results'),feedback:$('feedback')};
+const els = {hub:$('caseHub'),trainingIntro:$('trainingIntro'),intro:$('intro'),workspace:$('workspace'),completion:$('completion'),editor:$('sqlEditor'),results:$('results'),feedback:$('feedback'),feedbackText:$('feedbackText')};
 
 const readVolume=(key,fallback)=>{try{const value=Number(localStorage.getItem(key));return Number.isFinite(value)?Math.max(0,Math.min(1,value)):fallback}catch(e){return fallback}};
 const readFlag=key=>{try{return localStorage.getItem(key)==='true'}catch(e){return false}};
@@ -132,6 +132,7 @@ function renderMission(){
   $('nextAction').textContent=training?'Scrivi il comando richiesto, eseguilo e usa il risultato per controllare il lavoro. Se ti blocchi, apri i suggerimenti progressivi.':step===0?"Esegui la query iniziale, osserva le righe ottenute e prova a restringere la ricerca fino a isolare un solo evento.":`Completa ciò che manca usando l’obiettivo e gli indizi già raccolti, poi esegui la query.`;
   $('tableChips').innerHTML=(m.explore??m.tables).map(t=>`<button type="button" data-table="${t}">${t}</button>`).join('');
   setHintsOpen(false);$('hintBtn').setAttribute('aria-label',training?'Apri i suggerimenti':'Apri gli indizi');$('hintBtn').title=training?'Suggerimenti':'Indizi';
+  $('notebookBtn').classList.toggle('hidden',training);$('trainingContinueBtn').classList.add('hidden');
   $('foundClue').classList.add('hidden');$('runBtn').disabled=!db;els.editor.readOnly=false;
   $('clueInput').value='';$('continueBtn').disabled=true;
   $('notebookEyebrow').textContent=training?'REGISTRO DEL LABORATORIO':'STRUMENTI DELL’INVESTIGATORE';
@@ -201,7 +202,7 @@ function setAudioPanel(open){
   if(open){ensureAudio();syncAudioControls()}
 }
 
-function setFeedback(text,type=''){ els.feedback.textContent=text;els.feedback.className=`feedback ${type}`; }
+function setFeedback(text,type=''){ els.feedbackText.textContent=text;els.feedback.className=`feedback ${type}`; }
 function escapeHtml(v){return String(v??'NULL').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function renderResults(result,elapsed=0){
   if(!result.length){els.results.innerHTML='<div class="empty-state">Query eseguita: nessuna riga restituita.</div>';$('rowCount').textContent=`0 righe · ${elapsed} ms`;return;}
@@ -245,11 +246,17 @@ function runQuery(){
     if(m.preview){try{displayResult=db.exec(m.preview)}catch(e){}}
     renderResults(displayResult,elapsed);
     if(solved){
-      solvedCurrent=true;beep(740,.11);setFeedback(training?'Fase completata. Il database è stato aggiornato: controlla la verifica e descrivi in una frase ciò che hai fatto.':'Query corretta. Prima di continuare, osserva con calma le righe ottenute: contengono una prova che servirà nell’indagine.','success');
+      solvedCurrent=true;beep(740,.11);setFeedback(training?activeClueTexts[step]:'Query corretta. Prima di continuare, osserva con calma le righe ottenute: contengono una prova che servirà nell’indagine.','success');
       updateProgress(step+1);
-      $('foundClueText').textContent=activeClueTexts[step];$('foundClue').classList.remove('hidden');
-      $('continueBtn').textContent=step===activeMissions.length-1?(training?'Completa il laboratorio':'Salva e firma il rapporto'):'Salva e continua';
-      $('runBtn').disabled=true;els.editor.readOnly=true;setNotebookOpen(true);$('foundClue').scrollIntoView({behavior:'smooth',block:'nearest'});
+      $('runBtn').disabled=true;els.editor.readOnly=true;
+      if(training){
+        $('trainingContinueBtn').innerHTML=step===activeMissions.length-1?'Concludi il laboratorio <span aria-hidden="true">→</span>':'Continua <span aria-hidden="true">→</span>';
+        $('trainingContinueBtn').classList.remove('hidden');
+      }else{
+        $('foundClueText').textContent=activeClueTexts[step];$('foundClue').classList.remove('hidden');
+        $('continueBtn').textContent=step===activeMissions.length-1?'Salva e firma il rapporto':'Salva e continua';
+        setNotebookOpen(true);$('foundClue').scrollIntoView({behavior:'smooth',block:'nearest'});
+      }
     } else {beep(230,.08);setFeedback(training?'Il comando è valido, ma non produce ancora esattamente la struttura o i dati richiesti. La modifica è stata annullata automaticamente: correggi e riprova.':structureOk?`La query è valida e i ${rows.length} ${rows.length===1?'risultato è visibile':'risultati sono visibili'} qui sotto, ma non contengono ancora la prova richiesta. Modifica la query e riprova: non perdi nulla.`:'La query è valida, ma per questo indizio devi interrogare tutte le tabelle indicate a sinistra. I risultati restano visibili per aiutarti a correggerla.','');}
   }catch(err){if(savepointOpen){try{db.run('ROLLBACK TO mission_attempt');db.run('RELEASE mission_attempt')}catch(e){}}beep(180,.12);setFeedback(`Errore SQL: ${err.message.replace('Error: ','')}`,'error')}
 }
@@ -257,18 +264,18 @@ function runQuery(){
 function finish(){
   document.body.classList.remove('game-active');els.workspace.classList.add('hidden');els.completion.classList.remove('hidden');$('queryStat').textContent=queryCount;
   const training=currentCase==='training';
-  $('completionEyebrow').textContent=training?'CASO 00 · LABORATORIO COMPLETATO':'CASO 01 · RISOLTO';
-  $('completionTitle').textContent=training?'Il database è pronto.':'Hai fatto parlare i dati.';
-  $('completionText').innerHTML=training?'Hai creato e popolato un piccolo archivio relazionale, modificato struttura e dati e rimosso in sicurezza ciò che non serviva. Ora puoi affrontare il primo caso.':'Le prove indicano <strong>Marco Riva</strong> come autore del furto e <strong>Laura Neri</strong> come complice. Hai usato filtri, ordinamenti e JOIN per ricostruire la notte.';
+  $('completionEyebrow').textContent=training?'CASO 00 · CONTROLLO FINALE':'CASO 01 · RISOLTO';
+  $('completionTitle').textContent=training?'Il registro è pronto. Ma F‑204 non c’è.':'Hai fatto parlare i dati.';
+  $('completionText').innerHTML=training?'Nel database la scheda del fascicolo <strong>F‑204</strong> esiste ed è classificata come riservata. Durante la verifica fisica dell’archivio, però, il fascicolo cartaceo non si trova: <strong>qualcuno lo ha sottratto</strong>. Il Caso 01 può iniziare.':'Le prove indicano <strong>Marco Riva</strong> come autore del furto e <strong>Laura Neri</strong> come complice. Hai usato filtri, ordinamenti e JOIN per ricostruire la notte.';
   $('missionStat').textContent=activeMissions.length;$('missionStatLabel').textContent=training?'fasi SQL':'indizi';$('completionStatLabel').textContent=training?'laboratorio completato':'caso risolto';$('completionSeal').textContent=training?'00':'01';
-  $('replayBtn').querySelector('small').textContent=training?'CONSEGNA COMPLETATA':'CASO ARCHIVIATO';window.scrollTo(0,0);
+  $('replayBtn').querySelector('small').textContent=training?'NUOVA INDAGINE':'CASO ARCHIVIATO';$('replayBtn').querySelector('strong').textContent=training?'Apri il Caso 01':'Torna alla home';window.scrollTo(0,0);
 }
 function startGame(mode='mystery',showGuide=true){
-  currentCase=mode;activeMissions=mode==='training'?trainingMissions:missions;activeClueTexts=mode==='training'?trainingClueTexts:clueTexts;resetDatabase(mode);
+  currentCase=mode;activeMissions=mode==='training'?trainingMissions:missions;activeClueTexts=mode==='training'?trainingVerificationTexts:clueTexts;resetDatabase(mode);
   $('brandSubtitle').textContent=mode==='training'?'LABORATORIO SQL · CASO 00':'SQL MYSTERY · CASO 01';
   document.body.classList.add('game-active');els.hub.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.workspace.classList.remove('hidden');step=0;queryCount=0;collectedClues=[];renderNotebook();renderMission();window.scrollTo(0,0);if(showGuide&&mode==='mystery')$('helpDialog').showModal();
 }
-function openCaseOne(){$('brandSubtitle').textContent='SQL MYSTERY · CASO 01';els.hub.classList.add('hidden');els.intro.classList.remove('hidden');window.scrollTo(0,0)}
+function openCaseOne(){$('brandSubtitle').textContent='SQL MYSTERY · CASO 01';els.hub.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.completion.classList.add('hidden');els.intro.classList.remove('hidden');window.scrollTo(0,0)}
 function openTraining(){$('brandSubtitle').textContent='LABORATORIO SQL · CASO 00';els.hub.classList.add('hidden');els.trainingIntro.classList.remove('hidden');window.scrollTo(0,0)}
 function goHome(){document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());$('brandSubtitle').textContent='SQL MYSTERY · ARCHIVIO DEI CASI';document.body.classList.remove('game-active');els.workspace.classList.add('hidden');els.completion.classList.add('hidden');els.intro.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.hub.classList.remove('hidden');window.scrollTo(0,0);}
 function renderConceptualSchema(){ $('schemaGrid').innerHTML=`
@@ -388,7 +395,7 @@ function renderTrainingSchema(){$('schemaGrid').innerHTML=`
   <text class="er-independent" text-anchor="middle" x="500" y="430">OBIETTIVO DEL LABORATORIO · CREAZIONE, POPOLAMENTO E MANUTENZIONE</text>
 </svg>`}
 
-$('startTrainingBtn').onclick=openTraining;$('beginTrainingBtn').onclick=()=>startGame('training',false);$('openCaseOneBtn').onclick=openCaseOne;$('startBtn').onclick=()=>startGame('mystery',true);$('replayBtn').onclick=goHome;$('runBtn').onclick=runQuery;$('runBtn').disabled=true;
+$('startTrainingBtn').onclick=openTraining;$('beginTrainingBtn').onclick=()=>startGame('training',false);$('openCaseOneBtn').onclick=openCaseOne;$('startBtn').onclick=()=>startGame('mystery',true);$('replayBtn').onclick=()=>currentCase==='training'?openCaseOne():goHome();$('runBtn').onclick=runQuery;$('runBtn').disabled=true;
 document.querySelector('.brand').onclick=e=>{e.preventDefault();goHome()};
 $('resetQueryBtn').onclick=()=>{els.editor.value=activeMissions[step].starter;els.editor.focus()};
 $('hintBtn').onclick=()=>setHintsOpen($('hintBox').classList.contains('hidden'));
@@ -399,6 +406,7 @@ $('clueInput').addEventListener('input',()=>{const training=currentCase==='train
 $('notebookBtn').onclick=()=>setNotebookOpen($('notebookDrawer').classList.contains('hidden'));
 $('notebookCloseBtn').onclick=()=>setNotebookOpen(false);
 document.addEventListener('keydown',event=>{if(event.key==='Escape'){setNotebookOpen(false);setHintsOpen(false);setAudioPanel(false)}});
+$('trainingContinueBtn').onclick=()=>{if(currentCase!=='training'||!solvedCurrent)return;if(step===activeMissions.length-1){finish()}else{step++;renderMission();window.scrollTo(0,0)}};
 $('continueBtn').onclick=()=>{if(!solvedCurrent)return;const note=$('clueInput').value.trim();if(note.length<8){$('clueInputHelp').textContent='Scrivi prima una breve nota con parole tue.';$('clueInputHelp').className='input-error';return}if(!collectedClues[step])collectedClues.push(note);renderNotebook();if(step===activeMissions.length-1){finish()}else{step++;renderMission();window.scrollTo(0,0)}};
 $('schemaBtn').onclick=()=>{const training=currentCase==='training';$('schemaTitle').textContent=training?'Schema obiettivo del laboratorio':'Schema del database';$('schemaNote').innerHTML=training?'La relazione collega <strong>fascicoli.codice</strong> alla chiave esterna <strong>consultazioni.fascicolo_codice</strong>.':'Ogni associazione parte da un punto distinto di <strong>cittadini</strong> e termina sulla relativa <strong>FK</strong>.';$('schemaDialog').showModal();training?renderTrainingSchema():renderRelationalSchema()};$('closeSchemaBtn').onclick=()=>$('schemaDialog').close();
 $('helpBtn').onclick=()=>$('helpDialog').showModal();$('closeHelpBtn').onclick=()=>$('helpDialog').close();$('beginBtn').onclick=()=>{$('helpDialog').close();els.editor.focus()};
