@@ -259,7 +259,8 @@ function runQuery(){
         $('trainingSuccessDialog').showModal();
       }else{
         $('foundClueText').textContent=activeClueTexts[step];$('foundClue').classList.remove('hidden');
-        $('continueBtn').textContent=step===activeMissions.length-1?'Salva e firma il rapporto':'Salva e continua';
+        $('continueBtnLabel').textContent=step===activeMissions.length-1?'RAPPORTO FINALE':'PROSSIMO INDIZIO';
+        $('continueBtnText').textContent=step===activeMissions.length-1?'Salva e firma':'Salva e continua';
         setNotebookOpen(true);$('foundClue').scrollIntoView({behavior:'smooth',block:'nearest'});
       }
     } else {beep(230,.08);setFeedback(training?'Il comando è valido, ma non produce ancora esattamente la struttura o i dati richiesti. La modifica è stata annullata automaticamente: correggi e riprova.':structureOk?`La query è valida e i ${rows.length} ${rows.length===1?'risultato è visibile':'risultati sono visibili'} qui sotto, ma non contengono ancora la prova richiesta. Modifica la query e riprova: non perdi nulla.`:'La query è valida, ma per questo indizio devi interrogare tutte le tabelle indicate a sinistra. I risultati restano visibili per aiutarti a correggerla.','');}
