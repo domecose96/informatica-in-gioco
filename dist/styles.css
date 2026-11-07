@@ -135,29 +135,30 @@ html{height:100%;overflow:hidden;scroll-behavior:auto;overscroll-behavior:none}b
   text-shadow:0 1px rgba(255,242,210,.28);transform:rotate(-.5deg)
 }
 .training-intro .training-cover .municipal-mark{
-  top:32.7%;left:26%;width:60%;
+  top:32.7%;left:22%;width:60%;
   color:#eadfc7;font-size:7.4px;line-height:1.15;letter-spacing:.11em;text-align:center
 }
 .training-intro .training-cover .municipal-mark small{
   margin-top:5px;color:#cbb985;font-size:5.1px;line-height:1.2;letter-spacing:.12em;text-align:center
 }
 .training-intro .training-cover .file-label{
-  top:38.7%;left:26%;width:60%;
+  top:38.7%;left:22%;width:60%;
   color:#d4bd78;font-size:7px;line-height:1;letter-spacing:.3em;text-align:center
 }
 .training-intro .training-cover>strong{
-  top:42.1%;left:26%;width:60%;
+  top:42.1%;left:20%;width:60%;
   color:#f0e4ca;font-size:clamp(40px,3.45vw,51px);line-height:1;letter-spacing:.035em;text-align:center;
-  text-shadow:0 3px 5px rgba(0,0,0,.62)
+  text-shadow:0 3px 5px rgba(0,0,0,.62);transform:rotate(.85deg);transform-origin:center
 }
 .training-intro .training-cover .red-line{
-  top:54.2%;left:26%;width:60%;height:1px;
-  background:linear-gradient(90deg,transparent,#c9a85f 8%,#c9a85f 92%,transparent);opacity:.8
+  top:54.2%;left:20%;width:60%;height:1px;
+  background:linear-gradient(90deg,transparent,#c9a85f 8%,#c9a85f 92%,transparent);opacity:.8;
+  transform:rotate(.85deg);transform-origin:center
 }
 .training-intro .training-cover dl{
-  top:65.2%;left:24%;width:51%;padding:0 2%;
+  top:65.2%;left:22%;width:51%;padding:0 2%;
   background:transparent;border-top:1px solid rgba(218,196,141,.34);border-bottom:1px solid rgba(218,196,141,.28);
-  backdrop-filter:none
+  backdrop-filter:none;transform:rotate(.65deg);transform-origin:center
 }
 .training-intro .training-cover dl div{
   display:grid;grid-template-columns:38% 62%;align-items:center;column-gap:4%;padding:9px 1%;
