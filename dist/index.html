@@ -202,7 +202,10 @@ WHERE data = '2026-10-31';</textarea>
           <span>⌘/Ctrl + Invio per eseguire</span>
           <button class="run-button" id="runBtn" type="button"><span class="run-step">03</span><span class="run-label">Esegui e verifica</span></button>
         </div>
-        <div class="feedback" id="feedback" role="status" aria-live="polite">Il database è pronto. Interroga le tabelle per trovare il primo indizio.</div>
+        <div class="feedback" id="feedback">
+          <span id="feedbackText" role="status" aria-live="polite">Il database è pronto. Interroga le tabelle per trovare il primo indizio.</span>
+          <button class="training-next hidden" id="trainingContinueBtn" type="button">Continua <span aria-hidden="true">→</span></button>
+        </div>
         <div class="results-wrap">
           <div class="results-head"><span>RISULTATI</span><span id="rowCount">0 righe</span></div>
           <div class="table-scroll" id="results"><div class="empty-state">I risultati della query appariranno qui.</div></div>
@@ -258,6 +261,6 @@ WHERE data = '2026-10-31';</textarea>
 
   <audio id="ambientMusic" src="assets/moil-ruskerdax-cc0.mp3" loop preload="auto"></audio>
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js?v=54"></script>
+  <script src="app.js?v=55"></script>
 </body>
 </html>
