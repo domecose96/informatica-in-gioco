@@ -133,7 +133,7 @@ function renderMission(){
   $('tableChips').innerHTML=(m.explore??m.tables).map(t=>`<button type="button" data-table="${t}">${t}</button>`).join('');
   setHintsOpen(false);$('hintBtn').setAttribute('aria-label',training?'Apri i suggerimenti':'Apri gli indizi');$('hintBtn').title=training?'Suggerimenti':'Indizi';
   $('notebookBtn').classList.toggle('hidden',training);if($('trainingSuccessDialog').open)$('trainingSuccessDialog').close();
-  $('foundClue').classList.add('hidden');$('runBtn').disabled=!db;els.editor.readOnly=false;
+  $('foundClue').classList.add('hidden');$('runBtn').disabled=!db;$('runBtn').querySelector('.run-step').textContent='03';$('runBtn').querySelector('.run-label').textContent='Esegui e verifica';els.editor.readOnly=false;
   $('clueInput').value='';$('continueBtn').disabled=true;
   $('notebookEyebrow').textContent=training?'REGISTRO DEL LABORATORIO':'STRUMENTI DELL’INVESTIGATORE';
   $('notebookTitle').textContent=training?'Diario di costruzione':'Taccuino degli indizi';
@@ -248,19 +248,13 @@ function runQuery(){
     if(solved){
       solvedCurrent=true;beep(740,.11);setFeedback(training?'Comando corretto. Operazione verificata.':'Query corretta. Prima di continuare, osserva con calma le righe ottenute: contengono una prova che servirà nell’indagine.','success');
       updateProgress(step+1);
-      $('runBtn').disabled=true;els.editor.readOnly=true;
+      $('runBtn').disabled=!training;els.editor.readOnly=true;
       if(training){
-        const last=step===activeMissions.length-1;
-        $('trainingSuccessEyebrow').textContent=`FASE ${step+1} DI ${activeMissions.length} COMPLETATA`;
-        $('trainingSuccessTitle').textContent=m.title;
-        $('trainingSuccessText').textContent=activeClueTexts[step];
-        $('trainingContinueLabel').textContent=last?'CONTROLLO FINALE':'PROSSIMA FASE';
-        $('trainingContinueText').textContent=last?'Concludi il laboratorio':'Continua';
-        $('trainingSuccessDialog').showModal();
+        $('runBtn').querySelector('.run-step').textContent='→';
+        $('runBtn').querySelector('.run-label').textContent=step===activeMissions.length-1?'Concludi':'Continua';
       }else{
         $('foundClueText').textContent=activeClueTexts[step];$('foundClue').classList.remove('hidden');
-        $('continueBtnLabel').textContent=step===activeMissions.length-1?'RAPPORTO FINALE':'PROSSIMO INDIZIO';
-        $('continueBtnText').textContent=step===activeMissions.length-1?'Salva e firma':'Salva e continua';
+        $('continueBtn').textContent=step===activeMissions.length-1?'Salva e firma il rapporto':'Salva e continua';
         setNotebookOpen(true);$('foundClue').scrollIntoView({behavior:'smooth',block:'nearest'});
       }
     } else {beep(230,.08);setFeedback(training?'Il comando è valido, ma non produce ancora esattamente la struttura o i dati richiesti. La modifica è stata annullata automaticamente: correggi e riprova.':structureOk?`La query è valida e i ${rows.length} ${rows.length===1?'risultato è visibile':'risultati sono visibili'} qui sotto, ma non contengono ancora la prova richiesta. Modifica la query e riprova: non perdi nulla.`:'La query è valida, ma per questo indizio devi interrogare tutte le tabelle indicate a sinistra. I risultati restano visibili per aiutarti a correggerla.','');}
@@ -402,7 +396,7 @@ function renderTrainingSchema(){$('schemaGrid').innerHTML=`
   <text class="er-independent" text-anchor="middle" x="500" y="430">OBIETTIVO DEL LABORATORIO · CREAZIONE, POPOLAMENTO E MANUTENZIONE</text>
 </svg>`}
 
-$('startTrainingBtn').onclick=openTraining;$('beginTrainingBtn').onclick=()=>startGame('training',false);$('openCaseOneBtn').onclick=openCaseOne;$('startBtn').onclick=()=>startGame('mystery',true);$('replayBtn').onclick=()=>currentCase==='training'?openCaseOne():goHome();$('runBtn').onclick=runQuery;$('runBtn').disabled=true;
+$('startTrainingBtn').onclick=openTraining;$('beginTrainingBtn').onclick=()=>startGame('training',false);$('openCaseOneBtn').onclick=openCaseOne;$('startBtn').onclick=()=>startGame('mystery',true);$('replayBtn').onclick=()=>currentCase==='training'?openCaseOne():goHome();$('runBtn').onclick=()=>{if(currentCase==='training'&&solvedCurrent){if(step===activeMissions.length-1)finish();else{step++;renderMission();window.scrollTo(0,0)}}else runQuery()};$('runBtn').disabled=true;
 document.querySelector('.brand').onclick=e=>{e.preventDefault();goHome()};
 $('resetQueryBtn').onclick=()=>{els.editor.value=activeMissions[step].starter;els.editor.focus()};
 $('hintBtn').onclick=()=>setHintsOpen($('hintBox').classList.contains('hidden'));
@@ -425,5 +419,5 @@ $('muteAllBtn').onclick=toggleMuteAll;
 document.addEventListener('pointerdown',ensureAudio,{once:true,capture:true});
 document.addEventListener('click',event=>{const button=event.target.closest('button');if(button&&!button.disabled&&button.id!=='runBtn'&&button.id!=='soundBtn')beep(420,.025,.018);if(!event.target.closest('.audio-control'))setAudioPanel(false)});
 syncAudioControls();
-els.editor.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();runQuery()}if(e.key==='Tab'){e.preventDefault();const s=e.target.selectionStart;e.target.value=e.target.value.slice(0,s)+'  '+e.target.value.slice(e.target.selectionEnd);e.target.selectionStart=e.target.selectionEnd=s+2}});
+els.editor.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();$('runBtn').click()}if(e.key==='Tab'){e.preventDefault();const s=e.target.selectionStart;e.target.value=e.target.value.slice(0,s)+'  '+e.target.value.slice(e.target.selectionEnd);e.target.selectionStart=e.target.selectionEnd=s+2}});
 renderRelationalSchema();initDb().catch(err=>{$('dbStatus').className='db-status error';$('dbStatus').innerHTML='<i></i><span>Database non disponibile</span>';$('startBtn').innerHTML='Errore caricamento <span>!</span>';setFeedback('Impossibile avviare SQLite: '+err.message,'error')});

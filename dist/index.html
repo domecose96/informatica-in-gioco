@@ -19,7 +19,7 @@
   <link rel="preload" href="assets/fascicolo-f204.webp" as="image" type="image/webp">
   <link rel="preload" href="assets/laboratorio-archivio-manerbio.webp" as="image" type="image/webp">
   <link rel="preload" href="assets/registro-lab00.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="styles.css?v=68">
+  <link rel="stylesheet" href="styles.css?v=69">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -179,13 +179,7 @@
               <div class="clue-writing">
                 <label for="clueInput" id="clueInputLabel">04 · SCRIVI L’INDIZIO</label>
                 <textarea id="clueInput" maxlength="180" aria-describedby="clueInputHelp" placeholder="Esempio: L’allarme è scattato alle…"></textarea>
-                <div>
-                  <small id="clueInputHelp">Scrivi con parole tue ciò che potrà servirti dopo.</small>
-                  <button class="case-cta case-cta-main continue-button" id="continueBtn" type="button" disabled>
-                    <span class="case-cta-copy"><small id="continueBtnLabel">PROSSIMO INDIZIO</small><strong id="continueBtnText">Salva e continua</strong></span>
-                    <span class="case-cta-seal" aria-hidden="true">→</span>
-                  </button>
-                </div>
+                <div><small id="clueInputHelp">Scrivi con parole tue ciò che potrà servirti dopo.</small><button class="continue-button" id="continueBtn" type="button" disabled>Salva e continua</button></div>
               </div>
             </div>
             <div id="clueList"><p class="notebook-empty">Le prove corrette verranno annotate qui e resteranno disponibili per gli enigmi successivi.</p></div>
@@ -287,6 +281,6 @@ WHERE data = '2026-10-31';</textarea>
 
   <audio id="ambientMusic" src="assets/moil-ruskerdax-cc0.mp3" loop preload="auto"></audio>
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js?v=58"></script>
+  <script src="app.js?v=59"></script>
 </body>
 </html>
