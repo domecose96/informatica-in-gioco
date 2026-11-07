@@ -117,7 +117,7 @@ async function initDb(){
   resetDatabase('mystery');
   $('runBtn').disabled=false;$('startBtn').disabled=false;$('startTrainingBtn').disabled=false;$('beginTrainingBtn').disabled=false;
   $('startBtn').innerHTML='<span class="case-cta-copy"><small>CASO 01 · PRONTO</small><strong>Avvia il gioco</strong></span><span class="case-cta-seal" aria-hidden="true">01</span>';
-  $('dbStatus').className='db-status ready';$('dbStatus').innerHTML='<i></i><span>Database pronto</span>';
+  $('dbStatus').className='footer-status db-status ready';$('dbStatus').innerHTML='<i></i><span>DATABASE PRONTO</span>';
 }
 
 function renderMission(){
@@ -436,4 +436,4 @@ document.addEventListener('pointerdown',ensureAudio,{once:true,capture:true});
 document.addEventListener('click',event=>{const button=event.target.closest('button');if(button&&!button.disabled&&button.id!=='runBtn'&&button.id!=='soundBtn')beep(420,.025,.018);if(!event.target.closest('.audio-control'))setAudioPanel(false)});
 syncAudioControls();
 els.editor.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();$('runBtn').click()}if(e.key==='Tab'){e.preventDefault();const s=e.target.selectionStart;e.target.value=e.target.value.slice(0,s)+'  '+e.target.value.slice(e.target.selectionEnd);e.target.selectionStart=e.target.selectionEnd=s+2}});
-renderRelationalSchema();initDb().catch(err=>{$('dbStatus').className='db-status error';$('dbStatus').innerHTML='<i></i><span>Database non disponibile</span>';$('startBtn').innerHTML='Errore caricamento <span>!</span>';setFeedback('Impossibile avviare SQLite: '+err.message,'error')});
+renderRelationalSchema();initDb().catch(err=>{$('dbStatus').className='footer-status db-status error';$('dbStatus').innerHTML='<i></i><span>DATABASE NON DISPONIBILE</span>';$('startBtn').innerHTML='Errore caricamento <span>!</span>';setFeedback('Impossibile avviare SQLite: '+err.message,'error')});

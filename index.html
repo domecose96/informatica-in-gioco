@@ -19,7 +19,7 @@
   <link rel="preload" href="assets/fascicolo-f204.webp" as="image" type="image/webp">
   <link rel="preload" href="assets/laboratorio-archivio-manerbio.webp" as="image" type="image/webp">
   <link rel="preload" href="assets/registro-lab00.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="styles.css?v=75">
+  <link rel="stylesheet" href="styles.css?v=76">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -29,7 +29,6 @@
       <span><strong>ARCHIVIO OMBRA</strong><small id="brandSubtitle">SQL MYSTERY · ARCHIVIO DEI CASI</small></span>
     </a>
     <div class="top-actions">
-      <span class="db-status loading" id="dbStatus" role="status" aria-live="polite"><i></i><span>Database in caricamento</span></span>
       <button class="text-button" id="helpBtn" type="button">Come si gioca</button>
       <button class="text-button" id="schemaBtn" type="button">Schema database</button>
       <div class="audio-control">
@@ -232,7 +231,7 @@ WHERE data = '2026-10-31';</textarea>
     </section>
   </main>
 
-  <footer><span class="footer-status"><i aria-hidden="true"></i>DATABASE PRONTO</span><span>Un prototipo originale in italiano · SQLite nel browser</span></footer>
+  <footer><span class="footer-status db-status loading" id="dbStatus" role="status" aria-live="polite"><i aria-hidden="true"></i><span>DATABASE IN CARICAMENTO</span></span><span>LABORATORIO DIDATTICO SQL · COMUNE DI MANERBIO</span></footer>
 
   <dialog id="trainingSuccessDialog" class="training-success-dialog" aria-labelledby="trainingSuccessTitle">
     <div class="training-success-card">
@@ -280,6 +279,6 @@ WHERE data = '2026-10-31';</textarea>
 
   <audio id="ambientMusic" src="assets/moil-ruskerdax-cc0.mp3" loop preload="auto"></audio>
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js?v=66"></script>
+  <script src="app.js?v=67"></script>
 </body>
 </html>
