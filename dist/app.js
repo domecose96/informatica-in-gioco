@@ -250,7 +250,6 @@ function runQuery(){
       updateProgress(step+1);
       $('runBtn').disabled=!training;els.editor.readOnly=true;
       if(training){
-        $('runBtn').querySelector('.run-step').textContent='→';
         $('runBtn').querySelector('.run-label').textContent=step===activeMissions.length-1?'Concludi':'Continua';
       }else{
         $('foundClueText').textContent=activeClueTexts[step];$('foundClue').classList.remove('hidden');
