@@ -271,14 +271,30 @@ function finish(){
   $('missionStat').textContent=activeMissions.length;$('missionStatLabel').textContent=training?'fasi SQL':'indizi';$('completionStatLabel').textContent=training?'laboratorio completato':'caso risolto';$('completionSeal').textContent=training?'00':'01';
   $('replayBtn').querySelector('small').textContent=training?'NUOVA INDAGINE':'CASO ARCHIVIATO';$('replayBtn').querySelector('strong').textContent=training?'Apri il Caso 01':'Torna alla home';window.scrollTo(0,0);
 }
+function configureHelp(mode=currentCase){
+  const training=mode==='training',dialog=$('helpDialog');
+  dialog.querySelector('.help-head>div').innerHTML=training
+    ?'<p class="eyebrow">ISTRUZIONI DEL LABORATORIO</p><h2>Costruisci in tre mosse</h2><p>Leggi la consegna, scrivi il comando SQL e controlla ciò che hai costruito.</p>'
+    :'<p class="eyebrow">BRIEFING DELL’INVESTIGATORE</p><h2>Indaga in tre mosse</h2><p>Il codice è già iniziato. A te il compito di trasformare i dati in prove.</p>';
+  dialog.querySelector('.help-steps').innerHTML=training
+    ?'<article><b>01</b><div><span>LEGGI</span><h3>Comprendi la consegna</h3><p>Ogni fase indica quale struttura o dato devi creare, modificare o verificare.</p></div></article><article><b>02</b><div><span>SCRIVI</span><h3>Completa il comando</h3><p>Inserisci il comando SQL e premi <strong>Esegui e verifica</strong>.</p></div></article><article><b>03</b><div><span>CONTROLLA</span><h3>Osserva il risultato</h3><p>Quando il comando è corretto, lo stesso pulsante diventa <strong>Continua</strong>.</p></div></article>'
+    :'<article><b>01</b><div><span>OSSERVA</span><h3>Leggi la missione</h3><p>L’obiettivo ti dice quale informazione devi far emergere dal database.</p></div></article><article><b>02</b><div><span>INTERROGA</span><h3>Completa la query</h3><p>Modifica il codice e premi <strong>Esegui</strong>. Un tentativo errato mostra comunque risultati utili.</p></div></article><article><b>03</b><div><span>DEDUCI</span><h3>Annota la prova</h3><p>Quando trovi la risposta, scrivila con parole tue: resterà nel taccuino.</p></div></article>';
+  dialog.querySelector('.help-demo').innerHTML=training
+    ?'<div class="demo-bar"><i></i><i></i><i></i><span>laboratorio_sql.sql</span></div><div class="demo-code"><span>1</span><code><em>CREATE TABLE</em> fascicoli (<br>&nbsp;&nbsp;codice TEXT <mark>PRIMARY KEY</mark><br>);</code></div><div class="demo-result"><span>VERIFICA</span><strong>Struttura creata correttamente</strong></div><div class="demo-note"><span>✓</span><div><small>AVANZAMENTO</small><p>Il pulsante diventa Continua.</p></div></div>'
+    :'<div class="demo-bar"><i></i><i></i><i></i><span>prova_01.sql</span></div><div class="demo-code"><span>1</span><code><em>SELECT</em> ora, descrizione<br><em>FROM</em> eventi<br><em>WHERE</em> tipo = <mark>\'allarme\'</mark>;</code></div><div class="demo-result"><span>RISULTATO</span><strong>22:14 · Fondo Riservato F-204</strong></div><div class="demo-note"><span>✓</span><div><small>TACCUINO</small><p>L’allarme è scattato alle 22:14.</p></div></div>';
+  dialog.querySelector('.help-footer>p').innerHTML=training?'<span>?</span>Se ti blocchi, usa i suggerimenti progressivi. Ogni tentativo errato viene annullato senza danneggiare il database.':'<span>?</span>Se ti blocchi, usa i suggerimenti progressivi: l’ultimo orienta il ragionamento senza mostrare la query completa.';
+  $('beginBtn').querySelector('small').textContent=training?'ISTRUZIONI COMPLETATE':'BRIEFING COMPLETATO';
+  $('beginBtn').querySelector('strong').textContent=training?'Inizia il laboratorio':'Entra nell’archivio';
+  $('beginBtn').querySelector('.case-cta-seal').textContent=training?'00':'01';
+}
 function startGame(mode='mystery',showGuide=true){
   currentCase=mode;activeMissions=mode==='training'?trainingMissions:missions;activeClueTexts=mode==='training'?trainingVerificationTexts:clueTexts;resetDatabase(mode);
   $('brandSubtitle').textContent=mode==='training'?'LABORATORIO SQL · CASO 00':'SQL MYSTERY · CASO 01';
-  document.body.classList.add('game-active');els.hub.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.workspace.classList.remove('hidden');step=0;queryCount=0;collectedClues=[];renderNotebook();renderMission();window.scrollTo(0,0);if(showGuide&&mode==='mystery')$('helpDialog').showModal();
+  document.body.classList.add('game-active');els.hub.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.workspace.classList.remove('hidden');step=0;queryCount=0;collectedClues=[];renderNotebook();renderMission();window.scrollTo(0,0);if(showGuide){configureHelp(mode);$('helpDialog').showModal()}
 }
-function openCaseOne(){$('brandSubtitle').textContent='SQL MYSTERY · CASO 01';els.hub.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.completion.classList.add('hidden');els.intro.classList.remove('hidden');window.scrollTo(0,0)}
-function openTraining(){$('brandSubtitle').textContent='LABORATORIO SQL · CASO 00';els.hub.classList.add('hidden');els.trainingIntro.classList.remove('hidden');window.scrollTo(0,0)}
-function goHome(){document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());$('brandSubtitle').textContent='SQL MYSTERY · ARCHIVIO DEI CASI';document.body.classList.remove('game-active');els.workspace.classList.add('hidden');els.completion.classList.add('hidden');els.intro.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.hub.classList.remove('hidden');window.scrollTo(0,0);}
+function openCaseOne(){currentCase='mystery';$('brandSubtitle').textContent='SQL MYSTERY · CASO 01';els.hub.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.completion.classList.add('hidden');els.intro.classList.remove('hidden');window.scrollTo(0,0)}
+function openTraining(){currentCase='training';$('brandSubtitle').textContent='LABORATORIO SQL · CASO 00';els.hub.classList.add('hidden');els.trainingIntro.classList.remove('hidden');window.scrollTo(0,0)}
+function goHome(){currentCase='mystery';document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());$('brandSubtitle').textContent='SQL MYSTERY · ARCHIVIO DEI CASI';document.body.classList.remove('game-active');els.workspace.classList.add('hidden');els.completion.classList.add('hidden');els.intro.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.hub.classList.remove('hidden');window.scrollTo(0,0);}
 function renderConceptualSchema(){ $('schemaGrid').innerHTML=`
 <svg viewBox="0 0 1000 510" role="img" aria-labelledby="erConceptTitle erConceptDesc" preserveAspectRatio="xMidYMid meet">
   <title id="erConceptTitle">Modello entità-relazioni concettuale del database comunale</title>
@@ -396,7 +412,7 @@ function renderTrainingSchema(){$('schemaGrid').innerHTML=`
   <text class="er-independent" text-anchor="middle" x="500" y="430">OBIETTIVO DEL LABORATORIO · CREAZIONE, POPOLAMENTO E MANUTENZIONE</text>
 </svg>`}
 
-$('startTrainingBtn').onclick=openTraining;$('beginTrainingBtn').onclick=()=>startGame('training',false);$('openCaseOneBtn').onclick=openCaseOne;$('startBtn').onclick=()=>startGame('mystery',true);$('replayBtn').onclick=()=>currentCase==='training'?openCaseOne():goHome();$('runBtn').onclick=()=>{if(currentCase==='training'&&solvedCurrent){if(step===activeMissions.length-1)finish();else{step++;renderMission();window.scrollTo(0,0)}}else runQuery()};$('runBtn').disabled=true;
+$('startTrainingBtn').onclick=openTraining;$('beginTrainingBtn').onclick=()=>startGame('training',true);$('openCaseOneBtn').onclick=openCaseOne;$('startBtn').onclick=()=>startGame('mystery',true);$('replayBtn').onclick=()=>currentCase==='training'?openCaseOne():goHome();$('runBtn').onclick=()=>{if(currentCase==='training'&&solvedCurrent){if(step===activeMissions.length-1)finish();else{step++;renderMission();window.scrollTo(0,0)}}else runQuery()};$('runBtn').disabled=true;
 document.querySelector('.brand').onclick=e=>{e.preventDefault();goHome()};
 $('resetQueryBtn').onclick=()=>{els.editor.value=activeMissions[step].starter;els.editor.focus()};
 $('hintBtn').onclick=()=>setHintsOpen($('hintBox').classList.contains('hidden'));
@@ -411,7 +427,7 @@ $('trainingContinueBtn').onclick=()=>{if(currentCase!=='training'||!solvedCurren
 $('trainingSuccessDialog').addEventListener('cancel',event=>event.preventDefault());
 $('continueBtn').onclick=()=>{if(!solvedCurrent)return;const note=$('clueInput').value.trim();if(note.length<8){$('clueInputHelp').textContent='Scrivi prima una breve nota con parole tue.';$('clueInputHelp').className='input-error';return}if(!collectedClues[step])collectedClues.push(note);renderNotebook();if(step===activeMissions.length-1){finish()}else{step++;renderMission();window.scrollTo(0,0)}};
 $('schemaBtn').onclick=()=>{const training=currentCase==='training';$('schemaTitle').textContent=training?'Schema obiettivo del laboratorio':'Schema del database';$('schemaNote').innerHTML=training?'La relazione collega <strong>fascicoli.codice</strong> alla chiave esterna <strong>consultazioni.fascicolo_codice</strong>.':'Ogni associazione parte da un punto distinto di <strong>cittadini</strong> e termina sulla relativa <strong>FK</strong>.';$('schemaDialog').showModal();training?renderTrainingSchema():renderRelationalSchema()};$('closeSchemaBtn').onclick=()=>$('schemaDialog').close();
-$('helpBtn').onclick=()=>$('helpDialog').showModal();$('closeHelpBtn').onclick=()=>$('helpDialog').close();$('beginBtn').onclick=()=>{$('helpDialog').close();els.editor.focus()};
+$('helpBtn').onclick=()=>{configureHelp(currentCase);$('helpDialog').showModal()};$('closeHelpBtn').onclick=()=>$('helpDialog').close();$('beginBtn').onclick=()=>{$('helpDialog').close();els.editor.focus()};
 $('soundBtn').onclick=()=>setAudioPanel($('audioPanel').classList.contains('hidden'));
 $('musicVolume').addEventListener('input',event=>{audio.muted=false;audio.musicVolume=Number(event.target.value)/100;applyMusicVolume();ensureAudio();persistAudio();syncAudioControls()});
 $('effectsVolume').addEventListener('input',event=>{audio.muted=false;audio.effectsVolume=Number(event.target.value)/100;ensureAudio();setGain(audio.fxGain,effectiveEffectsVolume(),.03);applyMusicVolume();persistAudio();syncAudioControls()});
