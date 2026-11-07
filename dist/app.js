@@ -133,7 +133,7 @@ function renderMission(){
   $('tableChips').innerHTML=(m.explore??m.tables).map(t=>`<button type="button" data-table="${t}">${t}</button>`).join('');
   setHintsOpen(false);$('hintBtn').setAttribute('aria-label',training?'Apri i suggerimenti':'Apri gli indizi');$('hintBtn').title=training?'Suggerimenti':'Indizi';
   $('notebookBtn').classList.toggle('hidden',training);if($('trainingSuccessDialog').open)$('trainingSuccessDialog').close();
-  $('foundClue').classList.add('hidden');$('runBtn').disabled=!db;$('runBtn').querySelector('.run-step').textContent='03';$('runBtn').querySelector('.run-label').textContent='Esegui e verifica';els.editor.readOnly=false;
+  $('foundClue').classList.add('hidden');$('runBtn').disabled=!db;$('runBtn').querySelector('.run-step').textContent='03';$('runBtn').querySelector('.run-step').classList.remove('advance');$('runBtn').querySelector('.run-label').textContent='Esegui e verifica';els.editor.readOnly=false;
   $('clueInput').value='';$('continueBtn').disabled=true;
   $('notebookEyebrow').textContent=training?'REGISTRO DEL LABORATORIO':'STRUMENTI DELL’INVESTIGATORE';
   $('notebookTitle').textContent=training?'Diario di costruzione':'Taccuino degli indizi';
@@ -251,6 +251,7 @@ function runQuery(){
       $('runBtn').disabled=!training;els.editor.readOnly=true;
       if(training){
         $('runBtn').querySelector('.run-label').textContent=step===activeMissions.length-1?'Concludi':'Continua';
+        $('runBtn').querySelector('.run-step').textContent='→';$('runBtn').querySelector('.run-step').classList.add('advance');
       }else{
         $('foundClueText').textContent=activeClueTexts[step];$('foundClue').classList.remove('hidden');
         $('continueBtn').textContent='Salva';
@@ -424,7 +425,7 @@ $('notebookCloseBtn').onclick=()=>setNotebookOpen(false);
 document.addEventListener('keydown',event=>{if(event.key==='Escape'){setNotebookOpen(false);setHintsOpen(false);setAudioPanel(false)}});
 $('trainingContinueBtn').onclick=()=>{if(currentCase!=='training'||!solvedCurrent)return;if($('trainingSuccessDialog').open)$('trainingSuccessDialog').close();if(step===activeMissions.length-1){finish()}else{step++;renderMission();window.scrollTo(0,0)}};
 $('trainingSuccessDialog').addEventListener('cancel',event=>event.preventDefault());
-$('continueBtn').onclick=()=>{if(!solvedCurrent)return;const note=$('clueInput').value.trim();if(note.length<8){$('clueInputHelp').textContent='Scrivi prima una breve nota con parole tue.';$('clueInputHelp').className='input-error';return}if(!collectedClues[step])collectedClues.push(note);renderNotebook();$('clueInput').value='';$('continueBtn').disabled=true;setNotebookOpen(false);$('runBtn').disabled=false;$('runBtn').querySelector('.run-label').textContent=step===activeMissions.length-1?'Concludi':'Continua';setFeedback(step===activeMissions.length-1?'Indizio salvato. Premi «Concludi» per chiudere il caso.':'Indizio salvato nel taccuino. Premi «Continua» per passare al prossimo.','success')};
+$('continueBtn').onclick=()=>{if(!solvedCurrent)return;const note=$('clueInput').value.trim();if(note.length<8){$('clueInputHelp').textContent='Scrivi prima una breve nota con parole tue.';$('clueInputHelp').className='input-error';return}if(!collectedClues[step])collectedClues.push(note);renderNotebook();$('clueInput').value='';$('continueBtn').disabled=true;setNotebookOpen(false);$('runBtn').disabled=false;$('runBtn').querySelector('.run-label').textContent=step===activeMissions.length-1?'Concludi':'Continua';$('runBtn').querySelector('.run-step').textContent='→';$('runBtn').querySelector('.run-step').classList.add('advance');setFeedback(step===activeMissions.length-1?'Indizio salvato. Premi «Concludi» per chiudere il caso.':'Indizio salvato nel taccuino. Premi «Continua» per passare al prossimo.','success')};
 $('schemaBtn').onclick=()=>{const training=currentCase==='training';$('schemaTitle').textContent=training?'Schema obiettivo del laboratorio':'Schema del database';$('schemaNote').innerHTML=training?'La relazione collega <strong>fascicoli.codice</strong> alla chiave esterna <strong>consultazioni.fascicolo_codice</strong>.':'Ogni associazione parte da un punto distinto di <strong>cittadini</strong> e termina sulla relativa <strong>FK</strong>.';$('schemaDialog').showModal();training?renderTrainingSchema():renderRelationalSchema()};$('closeSchemaBtn').onclick=()=>$('schemaDialog').close();
 $('helpBtn').onclick=()=>{configureHelp(currentCase);$('helpDialog').showModal()};$('closeHelpBtn').onclick=()=>$('helpDialog').close();$('beginBtn').onclick=()=>{$('helpDialog').close();els.editor.focus()};
 $('soundBtn').onclick=()=>setAudioPanel($('audioPanel').classList.contains('hidden'));
