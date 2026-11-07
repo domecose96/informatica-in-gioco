@@ -83,7 +83,7 @@
       <div class="intro-copy">
         <p class="eyebrow">COMUNE DI MANERBIO · UFFICIO ARCHIVIO</p>
         <h1>Il registro<br><em>da ricostruire</em></h1>
-        <p class="lede">Le schede del vecchio archivio esistono solo su carta. Prima che inizi l’indagine, il Comune ti affida un incarico: progettare il database, popolarlo e renderlo pronto all’uso.</p>
+        <p class="lede">Le schede del vecchio archivio esistono solo su carta. Prima che inizi l’indagine, il Comune ti affida un incarico: progettare il database, popolarlo e renderlo pronto all’uso. Qui non devi trovare un colpevole: devi consegnare un archivio digitale funzionante.</p>
         <div class="how-it-works home-steps" aria-label="Le fasi del laboratorio">
           <article><b>01</b><div><span>PROGETTA</span><strong>Crea le tabelle</strong><small>Definisci campi, chiavi e vincoli.</small></div></article>
           <article><b>02</b><div><span>POPOLA</span><strong>Inserisci i dati</strong><small>Trascrivi i primi fascicoli.</small></div></article>
@@ -155,21 +155,21 @@
         </div>
         <div class="next-action"><span>PROSSIMA AZIONE</span><p id="nextAction"></p></div>
         <div class="hint-box hidden" id="hintBox" aria-live="polite">
-          <div class="hint-box-head"><span><i aria-hidden="true">✦</i> INDIZI DELL’INVESTIGATORE</span><button id="hintCloseBtn" type="button" aria-label="Chiudi indizi">×</button></div>
+          <div class="hint-box-head"><span id="hintBoxTitle"><i aria-hidden="true">✦</i> INDIZI DELL’INVESTIGATORE</span><button id="hintCloseBtn" type="button" aria-label="Chiudi indizi">×</button></div>
           <p id="hintText"></p>
           <div class="hint-navigation"><button id="hintPrevBtn" type="button" aria-label="Indizio precedente"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 4.5-5 5.5 5 5.5"/></svg></button><span id="hintCounter">1 / 3</span><button id="hintNextBtn" type="button" aria-label="Indizio successivo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 4.5 5 5.5-5 5.5"/></svg></button></div>
         </div>
         <section class="notebook-drawer hidden" id="notebookDrawer" role="dialog" aria-modal="false" aria-labelledby="notebookTitle">
           <div class="notebook-drawer-head">
-            <div><span>STRUMENTI DELL’INVESTIGATORE</span><h3 id="notebookTitle">Taccuino degli indizi</h3></div>
+            <div><span id="notebookEyebrow">STRUMENTI DELL’INVESTIGATORE</span><h3 id="notebookTitle">Taccuino degli indizi</h3></div>
             <button id="notebookCloseBtn" type="button" aria-label="Chiudi taccuino">×</button>
           </div>
           <div class="notebook-meta"><span id="notebookCaseLabel">CASO F–204</span><b id="clueCount">0 / 8</b></div>
           <div class="notebook-paper">
             <div class="found-clue hidden" id="foundClue" aria-live="polite">
-              <div class="clue-discovery"><span>✓ PROVA TROVATA</span><strong id="foundClueText"></strong><small>Osserva la tabella: cosa hai scoperto?</small></div>
+              <div class="clue-discovery"><span id="foundClueLabel">✓ PROVA TROVATA</span><strong id="foundClueText"></strong><small id="foundClueHelp">Osserva la tabella: cosa hai scoperto?</small></div>
               <div class="clue-writing">
-                <label for="clueInput">04 · SCRIVI L’INDIZIO</label>
+                <label for="clueInput" id="clueInputLabel">04 · SCRIVI L’INDIZIO</label>
                 <textarea id="clueInput" maxlength="180" aria-describedby="clueInputHelp" placeholder="Esempio: L’allarme è scattato alle…"></textarea>
                 <div><small id="clueInputHelp">Scrivi con parole tue ciò che potrà servirti dopo.</small><button class="continue-button" id="continueBtn" type="button" disabled>Salva e continua</button></div>
               </div>
@@ -258,6 +258,6 @@ WHERE data = '2026-10-31';</textarea>
 
   <audio id="ambientMusic" src="assets/moil-ruskerdax-cc0.mp3" loop preload="auto"></audio>
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js?v=50"></script>
+  <script src="app.js?v=54"></script>
 </body>
 </html>
