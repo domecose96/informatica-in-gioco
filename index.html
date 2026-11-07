@@ -204,7 +204,6 @@ WHERE data = '2026-10-31';</textarea>
         </div>
         <div class="feedback" id="feedback">
           <span id="feedbackText" role="status" aria-live="polite">Il database è pronto. Interroga le tabelle per trovare il primo indizio.</span>
-          <button class="training-next hidden" id="trainingContinueBtn" type="button">Continua <span aria-hidden="true">→</span></button>
         </div>
         <div class="results-wrap">
           <div class="results-head"><span>RISULTATI</span><span id="rowCount">0 righe</span></div>
@@ -227,6 +226,19 @@ WHERE data = '2026-10-31';</textarea>
   </main>
 
   <footer><span class="footer-status"><i aria-hidden="true"></i>DATABASE PRONTO</span><span>Un prototipo originale in italiano · SQLite nel browser</span></footer>
+
+  <dialog id="trainingSuccessDialog" class="training-success-dialog" aria-labelledby="trainingSuccessTitle">
+    <div class="training-success-card">
+      <div class="training-success-seal" aria-hidden="true">✓</div>
+      <p class="eyebrow" id="trainingSuccessEyebrow">FASE COMPLETATA</p>
+      <h2 id="trainingSuccessTitle">Operazione verificata</h2>
+      <p id="trainingSuccessText"></p>
+      <button class="case-cta case-cta-main training-success-next" id="trainingContinueBtn" type="button">
+        <span class="case-cta-copy"><small id="trainingContinueLabel">PROSSIMA FASE</small><strong id="trainingContinueText">Continua</strong></span>
+        <span class="case-cta-seal" aria-hidden="true">→</span>
+      </button>
+    </div>
+  </dialog>
 
   <dialog id="schemaDialog">
     <div class="dialog-head"><div><p class="eyebrow">DATABASE COMUNALE</p><h2 id="schemaTitle">Schema del database</h2></div><button id="closeSchemaBtn" aria-label="Chiudi schema" type="button">×</button></div>
@@ -261,6 +273,6 @@ WHERE data = '2026-10-31';</textarea>
 
   <audio id="ambientMusic" src="assets/moil-ruskerdax-cc0.mp3" loop preload="auto"></audio>
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js?v=55"></script>
+  <script src="app.js?v=56"></script>
 </body>
 </html>
