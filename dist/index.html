@@ -19,7 +19,7 @@
   <link rel="preload" href="assets/fascicolo-f204.webp" as="image" type="image/webp">
   <link rel="preload" href="assets/laboratorio-archivio-manerbio.webp" as="image" type="image/webp">
   <link rel="preload" href="assets/registro-lab00.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="styles.css?v=72">
+  <link rel="stylesheet" href="styles.css?v=73">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -208,7 +208,7 @@ WHERE data = '2026-10-31';</textarea>
         </div>
         <div class="run-row">
           <div class="feedback" id="feedback">
-            <span id="feedbackText" role="status" aria-live="polite">Il database è pronto. Interroga le tabelle per trovare il primo indizio.</span>
+            <span id="feedbackText" role="status" aria-live="polite">⌘/Ctrl + Invio per eseguire</span>
           </div>
           <button class="run-button" id="runBtn" type="button"><span class="run-step">03</span><span class="run-label">Esegui e verifica</span></button>
         </div>
@@ -280,6 +280,6 @@ WHERE data = '2026-10-31';</textarea>
 
   <audio id="ambientMusic" src="assets/moil-ruskerdax-cc0.mp3" loop preload="auto"></audio>
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js?v=61"></script>
+  <script src="app.js?v=62"></script>
 </body>
 </html>
