@@ -170,3 +170,27 @@ html{height:100%;overflow:hidden;scroll-behavior:auto;overscroll-behavior:none}b
 .training-intro .training-cover dt{color:#c5b795;font-weight:600;letter-spacing:.045em;text-align:center}
 .training-intro .training-cover dd{min-width:0;color:#f0e4ca;font-weight:700;letter-spacing:.015em;text-align:center;white-space:nowrap}
 .training-intro .training-cover dd.danger{color:#e19a78;letter-spacing:.055em}
+
+/* Riepilogo distinto dopo ogni comando corretto del laboratorio. */
+.training-success-dialog{width:min(520px,calc(100vw - 32px));padding:0;border-color:rgba(224,183,104,.55);background:linear-gradient(145deg,#102f32,#071b1d 72%);overflow:visible}
+.training-success-dialog::backdrop{background:rgba(0,8,9,.78);backdrop-filter:blur(5px)}
+.training-success-card{position:relative;padding:36px 38px 34px;text-align:center}
+.training-success-card:before{content:"";position:absolute;inset:7px;border:1px solid rgba(255,255,255,.045);pointer-events:none}
+.training-success-seal{display:grid;place-items:center;width:58px;height:58px;margin:0 auto 18px;border:1px solid var(--ok);border-radius:50%;color:var(--ok);font-size:24px;box-shadow:inset 0 0 0 5px rgba(111,184,157,.05)}
+.training-success-card .eyebrow{margin:0 0 10px}
+.training-success-card h2{margin:0 0 14px;font-size:clamp(32px,5vw,46px)}
+.training-success-card>p:not(.eyebrow){max-width:410px;margin:0 auto 26px;color:#b9c9c3;font:15px/1.6 Georgia,serif}
+.training-success-next{width:min(320px,100%);margin:0 auto}
+
+/* Conclusione interamente visibile tra intestazione e piè di pagina. */
+.completion{display:flex;flex-direction:column;align-items:center;justify-content:center;max-width:860px;height:100%;padding:22px 24px 26px;overflow:hidden}
+.completion .seal{width:62px;height:62px;margin:0 auto 16px;font-size:25px}
+.completion .eyebrow{margin:0 0 12px}
+.completion h2{margin:0 0 18px;font-size:clamp(42px,5.2vw,68px);line-height:1.02}
+.completion h2 span{display:inline-block}
+.completion>p:not(.eyebrow){max-width:820px;margin:0;font-size:clamp(14px,1.35vw,17px);line-height:1.55}
+.completion .stats{margin:26px 0 24px}
+.completion .stats div{min-width:132px;padding:14px 18px}
+.completion .stats strong{font-size:27px}
+@media(max-height:760px){.completion{padding-block:14px}.completion .seal{width:50px;height:50px;margin-bottom:12px}.completion h2{font-size:clamp(38px,5vw,58px);margin-bottom:12px}.completion .stats{margin:18px 0}.completion .stats div{padding:10px 16px}}
+@media(max-width:560px){.training-success-card{padding:28px 22px 24px}.completion{overflow:auto;justify-content:flex-start}.completion h2{font-size:40px}.completion .stats{width:100%}}

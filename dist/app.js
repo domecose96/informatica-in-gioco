@@ -132,7 +132,7 @@ function renderMission(){
   $('nextAction').textContent=training?'Scrivi il comando richiesto, eseguilo e usa il risultato per controllare il lavoro. Se ti blocchi, apri i suggerimenti progressivi.':step===0?"Esegui la query iniziale, osserva le righe ottenute e prova a restringere la ricerca fino a isolare un solo evento.":`Completa ciò che manca usando l’obiettivo e gli indizi già raccolti, poi esegui la query.`;
   $('tableChips').innerHTML=(m.explore??m.tables).map(t=>`<button type="button" data-table="${t}">${t}</button>`).join('');
   setHintsOpen(false);$('hintBtn').setAttribute('aria-label',training?'Apri i suggerimenti':'Apri gli indizi');$('hintBtn').title=training?'Suggerimenti':'Indizi';
-  $('notebookBtn').classList.toggle('hidden',training);$('trainingContinueBtn').classList.add('hidden');
+  $('notebookBtn').classList.toggle('hidden',training);if($('trainingSuccessDialog').open)$('trainingSuccessDialog').close();
   $('foundClue').classList.add('hidden');$('runBtn').disabled=!db;els.editor.readOnly=false;
   $('clueInput').value='';$('continueBtn').disabled=true;
   $('notebookEyebrow').textContent=training?'REGISTRO DEL LABORATORIO':'STRUMENTI DELL’INVESTIGATORE';
@@ -246,12 +246,17 @@ function runQuery(){
     if(m.preview){try{displayResult=db.exec(m.preview)}catch(e){}}
     renderResults(displayResult,elapsed);
     if(solved){
-      solvedCurrent=true;beep(740,.11);setFeedback(training?activeClueTexts[step]:'Query corretta. Prima di continuare, osserva con calma le righe ottenute: contengono una prova che servirà nell’indagine.','success');
+      solvedCurrent=true;beep(740,.11);setFeedback(training?'Comando corretto. Operazione verificata.':'Query corretta. Prima di continuare, osserva con calma le righe ottenute: contengono una prova che servirà nell’indagine.','success');
       updateProgress(step+1);
       $('runBtn').disabled=true;els.editor.readOnly=true;
       if(training){
-        $('trainingContinueBtn').innerHTML=step===activeMissions.length-1?'Concludi il laboratorio <span aria-hidden="true">→</span>':'Continua <span aria-hidden="true">→</span>';
-        $('trainingContinueBtn').classList.remove('hidden');
+        const last=step===activeMissions.length-1;
+        $('trainingSuccessEyebrow').textContent=`FASE ${step+1} DI ${activeMissions.length} COMPLETATA`;
+        $('trainingSuccessTitle').textContent=m.title;
+        $('trainingSuccessText').textContent=activeClueTexts[step];
+        $('trainingContinueLabel').textContent=last?'CONTROLLO FINALE':'PROSSIMA FASE';
+        $('trainingContinueText').textContent=last?'Concludi il laboratorio':'Continua';
+        $('trainingSuccessDialog').showModal();
       }else{
         $('foundClueText').textContent=activeClueTexts[step];$('foundClue').classList.remove('hidden');
         $('continueBtn').textContent=step===activeMissions.length-1?'Salva e firma il rapporto':'Salva e continua';
@@ -262,10 +267,11 @@ function runQuery(){
 }
 
 function finish(){
+  if($('trainingSuccessDialog').open)$('trainingSuccessDialog').close();
   document.body.classList.remove('game-active');els.workspace.classList.add('hidden');els.completion.classList.remove('hidden');$('queryStat').textContent=queryCount;
   const training=currentCase==='training';
   $('completionEyebrow').textContent=training?'CASO 00 · CONTROLLO FINALE':'CASO 01 · RISOLTO';
-  $('completionTitle').textContent=training?'Il registro è pronto. Ma F‑204 non c’è.':'Hai fatto parlare i dati.';
+  if(training)$('completionTitle').innerHTML='Il registro è pronto.<br><span>Ma F‑204 non c’è.</span>';else $('completionTitle').textContent='Hai fatto parlare i dati.';
   $('completionText').innerHTML=training?'Nel database la scheda del fascicolo <strong>F‑204</strong> esiste ed è classificata come riservata. Durante la verifica fisica dell’archivio, però, il fascicolo cartaceo non si trova: <strong>qualcuno lo ha sottratto</strong>. Il Caso 01 può iniziare.':'Le prove indicano <strong>Marco Riva</strong> come autore del furto e <strong>Laura Neri</strong> come complice. Hai usato filtri, ordinamenti e JOIN per ricostruire la notte.';
   $('missionStat').textContent=activeMissions.length;$('missionStatLabel').textContent=training?'fasi SQL':'indizi';$('completionStatLabel').textContent=training?'laboratorio completato':'caso risolto';$('completionSeal').textContent=training?'00':'01';
   $('replayBtn').querySelector('small').textContent=training?'NUOVA INDAGINE':'CASO ARCHIVIATO';$('replayBtn').querySelector('strong').textContent=training?'Apri il Caso 01':'Torna alla home';window.scrollTo(0,0);
@@ -406,7 +412,8 @@ $('clueInput').addEventListener('input',()=>{const training=currentCase==='train
 $('notebookBtn').onclick=()=>setNotebookOpen($('notebookDrawer').classList.contains('hidden'));
 $('notebookCloseBtn').onclick=()=>setNotebookOpen(false);
 document.addEventListener('keydown',event=>{if(event.key==='Escape'){setNotebookOpen(false);setHintsOpen(false);setAudioPanel(false)}});
-$('trainingContinueBtn').onclick=()=>{if(currentCase!=='training'||!solvedCurrent)return;if(step===activeMissions.length-1){finish()}else{step++;renderMission();window.scrollTo(0,0)}};
+$('trainingContinueBtn').onclick=()=>{if(currentCase!=='training'||!solvedCurrent)return;if($('trainingSuccessDialog').open)$('trainingSuccessDialog').close();if(step===activeMissions.length-1){finish()}else{step++;renderMission();window.scrollTo(0,0)}};
+$('trainingSuccessDialog').addEventListener('cancel',event=>event.preventDefault());
 $('continueBtn').onclick=()=>{if(!solvedCurrent)return;const note=$('clueInput').value.trim();if(note.length<8){$('clueInputHelp').textContent='Scrivi prima una breve nota con parole tue.';$('clueInputHelp').className='input-error';return}if(!collectedClues[step])collectedClues.push(note);renderNotebook();if(step===activeMissions.length-1){finish()}else{step++;renderMission();window.scrollTo(0,0)}};
 $('schemaBtn').onclick=()=>{const training=currentCase==='training';$('schemaTitle').textContent=training?'Schema obiettivo del laboratorio':'Schema del database';$('schemaNote').innerHTML=training?'La relazione collega <strong>fascicoli.codice</strong> alla chiave esterna <strong>consultazioni.fascicolo_codice</strong>.':'Ogni associazione parte da un punto distinto di <strong>cittadini</strong> e termina sulla relativa <strong>FK</strong>.';$('schemaDialog').showModal();training?renderTrainingSchema():renderRelationalSchema()};$('closeSchemaBtn').onclick=()=>$('schemaDialog').close();
 $('helpBtn').onclick=()=>$('helpDialog').showModal();$('closeHelpBtn').onclick=()=>$('helpDialog').close();$('beginBtn').onclick=()=>{$('helpDialog').close();els.editor.focus()};
