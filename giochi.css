@@ -52,7 +52,7 @@ p { line-height: 1.55; color: #c4ced0; }
 .game-art { aspect-ratio: 12 / 5; overflow: hidden; background: #122a2d; }
 .archive .game-art {
   background: linear-gradient(0deg, #18272d, transparent 70%),
-    url("assets/caso01-fascicolo-scomparso-sfondo.webp") 72% 47% / cover;
+    url("archivio-ombra/assets/caso01-fascicolo-scomparso-sfondo.webp") 72% 47% / cover;
 }
 .robot svg { display: block; width: 100%; height: 100%; }
 .game-body { flex: 1; display: flex; flex-direction: column; align-items: flex-start; padding: clamp(1rem, 3vw, 1.7rem); }
