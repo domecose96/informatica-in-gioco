@@ -7,9 +7,9 @@
   <title>Avanti · Programma il robot</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="base.css?v=1">
-  <link rel="stylesheet" href="robot.css?v=23">
+  <link rel="stylesheet" href="robot.css?v=43">
   <link rel="stylesheet" href="robot-livello.css?v=47">
-  <script src="robot-ui.js?v=3" defer></script>
+  <script src="robot-ui.js?v=4" defer></script>
   <script src="robot-levels.js?v=78" defer></script>
   <script src="robot-engine.js?v=62" defer></script>
   <script src="robot-livello.js?v=95" defer></script>
@@ -35,14 +35,14 @@
           <input id="robot-effects-volume" type="range" min="0" max="100" value="55" aria-label="Volume effetti sonori">
           <div class="robot-audio-master"><span>Audio generale</span>
           <button id="robot-music-toggle" type="button" aria-pressed="true" aria-label="Attiva audio" title="Attiva audio">
-            <svg viewBox="0 0 24 16" aria-hidden="true"><path fill="currentColor" d="M1 5h4V3h2V1h3v14H7v-2H5v-2H1V5Z"/><path class="speaker-waves" fill="currentColor" d="M13 4h2v8h-2V4Zm4-3h2v2h2v10h-2v2h-2v-2h2V3h-2V1Z"/><path class="speaker-muted" fill="currentColor" d="M14 4h2v2h2V4h2v2h-2v4h2v2h-2v-2h-2v2h-2v-2h2V6h-2V4Z"/></svg>
+            <svg viewBox="0 0 24 16" aria-hidden="true"><path fill="currentColor" d="M1 5h4V3h2V1h3v14H7v-2H5v-2H1V5Z"/><g class="speaker-waves" fill="currentColor"><path class="speaker-wave wave-1" d="M12 6h2v4h-2z"/><path class="speaker-wave wave-2" d="M15 3h2v2h1v6h-1v2h-2v-2h1V5h-1z"/><path class="speaker-wave wave-3" d="M19 1h2v2h1v10h-1v2h-2v-2h1V3h-1z"/></g><path class="speaker-muted" fill="currentColor" d="M14 4h2v2h2V4h2v2h-2v4h2v2h-2v-2h-2v2h-2v-2h2V6h-2V4Z"/></svg>
           </button>
           </div>
           <p class="robot-track-name">Brano: Circuiti in movimento</p>
           <p id="robot-audio-status" role="status">Musica disattivata</p>
         </section>
       </div>
-      <a class="robot-icon-button" href="index.html" aria-label="Mappa livelli" title="Mappa livelli">
+      <a class="robot-icon-button" data-games-home href="index.html" aria-label="Home dei giochi" title="Home dei giochi">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7 2h2v2h2v2h2v2h2v2h-2v5H9v-4H7v4H3v-5H1V8h2V6h2V4h2z"/></svg>
       </a>
     </nav>

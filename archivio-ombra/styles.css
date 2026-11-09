@@ -255,3 +255,5 @@ body.case02-active .briefing{background:linear-gradient(rgba(8,30,32,.94),rgba(7
   background: var(--amber);
   color: var(--ink);
 }
+
+@media (prefers-reduced-motion: reduce) { .sound-wave { animation: none; } }
