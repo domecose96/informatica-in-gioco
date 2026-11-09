@@ -18,4 +18,4 @@ if __name__ == "__main__":
     handler = lambda *args, **kwargs: NoCacheHandler(
         *args, directory=str(static_dir), **kwargs
     )
-    ThreadingHTTPServer(("", 8081), handler).serve_forever()
+    ThreadingHTTPServer(("127.0.0.1", 8081), handler).serve_forever()

@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="description" content="Archivio Ombra: un mistero italiano da risolvere con vere query SQL.">
+  <meta name="theme-color" content="#08191c">
+  <script>
+    if (window.location.protocol === 'file:') {
+      window.location.replace('http://127.0.0.1:8081/archivio-ombra.html');
+    }
+  </script>
+  <title>Archivio Ombra — SQL Mystery</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/caso01-fascicolo-scomparso-sfondo.webp" as="image" type="image/webp">
+  <link rel="preload" href="assets/caso01-fascicolo-scomparso-documento.webp" as="image" type="image/webp">
+  <link rel="preload" href="assets/caso00-laboratorio-sfondo.webp" as="image" type="image/webp">
+  <link rel="preload" href="assets/caso00-laboratorio-documento.webp" as="image" type="image/webp">
+  <link rel="preload" href="assets/caso02-protocollo-fantasma-sfondo.webp" as="image" type="image/webp">
+  <link rel="preload" href="assets/caso02-protocollo-fantasma-documento.webp" as="image" type="image/webp">
+  <link rel="stylesheet" href="styles.css?v=89">
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="Archivio Ombra, torna all'inizio">
+      <span class="brand-mark">AO</span>
+      <span><strong>ARCHIVIO OMBRA</strong><small id="brandSubtitle">SQL MYSTERY · ARCHIVIO DEI CASI</small></span>
+    </a>
+    <div class="top-actions">
+      <button class="text-button" id="helpBtn" type="button">Come si gioca</button>
+      <button class="text-button" id="manualBtn" type="button">Manuale SQL</button>
+      <button class="text-button hidden" id="schemaBtn" type="button">Schema database</button>
+      <div class="audio-control">
+        <button class="icon-button" id="soundBtn" type="button" aria-label="Apri controlli audio" title="Audio" aria-expanded="false" aria-controls="audioPanel">♪</button>
+        <section class="audio-panel hidden" id="audioPanel" aria-label="Controlli audio">
+          <div class="audio-panel-head"><div><small>ATMOSFERA DEL CASO</small><strong>Controlli audio</strong></div><span id="audioStatus">Pronto</span></div>
+          <label for="musicVolume"><span>Musica</span><output id="musicVolumeValue">20%</output></label>
+          <input id="musicVolume" type="range" min="0" max="100" value="20" aria-label="Volume musica">
+          <label for="effectsVolume"><span>Effetti sonori</span><output id="effectsVolumeValue">55%</output></label>
+          <input id="effectsVolume" type="range" min="0" max="100" value="55" aria-label="Volume effetti sonori">
+          <div class="audio-master-row">
+            <span>Audio generale</span>
+            <button class="audio-master-toggle" id="muteAllBtn" type="button" aria-pressed="false" aria-label="Silenzia tutto" title="Silenzia tutto">
+              <svg class="mute-icon" viewBox="0 0 28 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path class="mute-slash" d="m17 9 6 6m0-6-6 6"/><path class="sound-wave wave-1" d="M15 9.5c.8.7 1.1 1.5 1.1 2.5s-.3 1.8-1.1 2.5"/><path class="sound-wave wave-2" d="M18 7.5c1.4 1.2 2 2.7 2 4.5s-.6 3.3-2 4.5"/><path class="sound-wave wave-3" d="M21 5.5c2 1.8 3 4 3 6.5s-1 4.7-3 6.5"/></svg>
+            </button>
+          </div>
+          <p class="audio-track">Brano: “Moil”</p>
+        </section>
+      </div>
+      <a class="icon-button archive-home-link" href="index.html" aria-label="Home dei giochi" title="Home dei giochi">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m3 11 9-7 9 7M6 10v10h12V10M10 20v-6h4v6"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <main>
+    <section class="case-hub" id="caseHub" aria-labelledby="caseHubTitle">
+      <div class="case-hub-heading">
+        <p class="eyebrow">ARCHIVIO DIDATTICO · COMUNE DI MANERBIO</p>
+        <h1 id="caseHubTitle">Scegli il tuo<br><em>fascicolo</em><br><em>SQL</em></h1>
+        <p>Allenati con i comandi fondamentali, poi usa le query per ricostruire un caso. Ogni fascicolo è un percorso autonomo.</p>
+      </div>
+      <div class="case-shelf">
+        <div class="case-shelf-toolbar">
+          <span>4 casi · 00–03</span>
+          <div class="case-shelf-controls" role="group" aria-label="Scorri i casi">
+            <button id="previousCasesBtn" type="button" aria-controls="caseLibrary" aria-label="Scheda precedente" aria-disabled="true">
+              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M11.5 4 6.5 9l5 5"/></svg>
+            </button>
+            <button id="nextCasesBtn" type="button" aria-controls="caseLibrary" aria-label="Scheda successiva">
+              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="m6.5 4 5 5-5 5"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="case-library" id="caseLibrary" role="region" aria-label="Archivio dei casi, scorrimento orizzontale" tabindex="0">
+          <article class="library-card training-card">
+            <div class="library-number">00</div>
+            <p>LABORATORIO · FONDAMENTI</p>
+            <h2>Costruisci<br>il database</h2>
+            <span>Crea tabelle, popola i dati e prova INSERT, UPDATE, DELETE, ALTER e DROP.</span>
+            <div class="difficulty" aria-label="Laboratorio introduttivo, difficoltà non classificata"><i class="off"></i><i class="off"></i><i class="off"></i></div>
+            <button class="case-cta case-cta-main" id="startTrainingBtn" type="button" disabled><span class="case-cta-copy"><small>CASO 00<br>LABORATORIO</small><strong>Apri il registro</strong></span><span class="case-cta-seal" aria-hidden="true">00</span></button>
+          </article>
+          <article class="library-card mystery-card">
+            <div class="library-number">01</div>
+            <p>SQL MYSTERY · INDAGINE</p>
+            <h2>Il fascicolo<br>scomparso</h2>
+            <span>Interroga il database comunale, raccogli otto indizi e identifica colpevole e complice.</span>
+            <div class="difficulty" aria-label="Difficoltà: 1 su 3"><i></i><i class="off"></i><i class="off"></i><b>PRINCIPIANTE</b></div>
+            <button class="case-cta case-cta-main" id="openCaseOneBtn" type="button"><span class="case-cta-copy"><small>CASO 01 · DISPONIBILE</small><strong>Apri il fascicolo</strong></span><span class="case-cta-seal" aria-hidden="true">01</span></button>
+          </article>
+          <article class="library-card mystery-card case02-card">
+            <div class="library-number">02</div>
+            <p>SQL MYSTERY · INDAGINE</p>
+            <h2>Protocollo<br>fantasma</h2>
+            <span>Ricostruisci il percorso di un plico consegnato soltanto sulla carta, usando aggregazioni e sottoquery.</span>
+            <div class="difficulty" aria-label="Difficoltà: 2 su 3"><i></i><i></i><i class="off"></i><b>INTERMEDIO</b></div>
+            <button class="case-cta case-cta-main" id="openCaseTwoBtn" type="button"><span class="case-cta-copy"><small>CASO 02 · DISPONIBILE</small><strong>Apri il protocollo</strong></span><span class="case-cta-seal" aria-hidden="true">02</span></button>
+          </article>
+          <article class="library-card mystery-card" aria-labelledby="case03Title">
+            <div class="library-number">03</div>
+            <p>SQL MYSTERY · INDAGINE</p>
+            <h2 id="case03Title">L’ultima<br>rettifica</h2>
+            <span>All’ufficio protocollo di Manerbio, una voce del registro cambia durante la notte. Confronta le versioni e ricostruisci la modifica.</span>
+            <div class="difficulty" aria-label="Difficoltà: 3 su 3"><i></i><i></i><i></i><b>AVANZATO</b></div>
+            <button class="case-cta case-cta-main" type="button" disabled><span class="case-cta-copy"><small>CASO 03</small><strong>In preparazione</strong></span><span class="case-cta-seal" aria-hidden="true">03</span></button>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="intro case02-intro hidden" id="case02Intro">
+      <div class="intro-copy">
+        <p class="eyebrow">MANERBIO · SCALO MERCI · 7 NOVEMBRE 2026</p>
+        <h1>Protocollo<br><em>fantasma</em></h1>
+        <p class="lede">Il plico comunale P‑27 risulta consegnato al vecchio magazzino ferroviario. Il destinatario, però, non lo ha mai ricevuto. Ricostruisci il percorso della busta e scopri chi ha falsificato la consegna.</p>
+        <div class="how-it-works home-steps" aria-label="Come funziona il caso 02">
+          <article><b>01</b><div><span>RAGGRUPPA</span><strong>Individua le anomalie</strong><small>Conta e confronta i movimenti.</small></div></article>
+          <article><b>02</b><div><span>COLLEGA</span><strong>Ricostruisci il percorso</strong><small>Incrocia plichi, turni e scansioni.</small></div></article>
+          <article><b>03</b><div><span>DEDUCI</span><strong>Trova i responsabili</strong><small>Usa sottoquery e condizioni aggregate.</small></div></article>
+        </div>
+        <div class="difficulty" aria-label="Difficoltà: 2 su 3"><span>CASO INTERMEDIO</span><i></i><i></i><i class="off"></i></div>
+        <button class="case-cta case-cta-main" id="startCaseTwoBtn" type="button" disabled><span class="case-cta-copy"><small>CASO 02 · PREPARAZIONE</small><strong>Preparazione database…</strong></span><span class="case-cta-seal" aria-hidden="true">···</span></button>
+        <p class="privacy-note">Aggregazioni, HAVING e sottoquery trasformano i registri di transito in una sequenza verificabile.</p>
+      </div>
+      <aside class="case02-evidence" aria-label="Registro comunale e busta ferroviaria del protocollo P-27">
+        <img src="assets/caso02-protocollo-fantasma-documento.webp" alt="Registro comunale bordeaux e busta ferroviaria contrassegnata P-27 e Consegnato">
+        <svg class="protocol-copy" viewBox="0 0 1122 1402" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <g transform="rotate(-4.3 284 1015)">
+            <text x="284" y="1015">DESTINAZIONE</text>
+            <text class="protocol-value" x="903" y="1015">MAGAZZINO FERROVIARIO</text>
+            <text x="284" y="1064">PROTOCOLLO</text>
+            <text class="protocol-value" x="903" y="1064">P‑27</text>
+            <text x="284" y="1113">ESITO</text>
+            <text class="protocol-value protocol-alert" x="903" y="1113">CONTESTATO</text>
+          </g>
+        </svg>
+        <dl class="protocol-description">
+          <div><dt>Destinazione</dt><dd>Magazzino ferroviario</dd></div>
+          <div><dt>Protocollo</dt><dd>P‑27</dd></div>
+          <div><dt>Esito</dt><dd>CONTESTATO</dd></div>
+        </dl>
+      </aside>
+    </section>
+
+    <section class="intro training-intro hidden" id="trainingIntro">
+      <div class="intro-copy">
+        <p class="eyebrow">COMUNE DI MANERBIO · UFFICIO ARCHIVIO</p>
+        <h1>Il registro<br><em>da ricostruire</em></h1>
+        <p class="lede">Le schede del vecchio archivio esistono solo su carta. Prima che inizi l’indagine, il Comune ti affida un incarico: progettare il database, popolarlo e renderlo pronto all’uso. Qui non devi trovare un colpevole: devi consegnare un archivio digitale funzionante.</p>
+        <div class="how-it-works home-steps" aria-label="Le fasi del laboratorio">
+          <article><b>01</b><div><span>PROGETTA</span><strong>Crea le tabelle</strong><small>Definisci campi, chiavi e vincoli.</small></div></article>
+          <article><b>02</b><div><span>POPOLA</span><strong>Inserisci i dati</strong><small>Trascrivi i primi fascicoli.</small></div></article>
+          <article><b>03</b><div><span>GESTISCI</span><strong>Modifica l’archivio</strong><small>Aggiorna, elimina e collega.</small></div></article>
+        </div>
+        <div class="difficulty" aria-label="Laboratorio guidato, difficoltà non classificata"><span>LABORATORIO GUIDATO</span><i class="off"></i><i class="off"></i><i class="off"></i></div>
+        <button class="case-cta case-cta-main" id="beginTrainingBtn" type="button" disabled><span class="case-cta-copy"><small>CASO 00 · INCARICO PRONTO</small><strong>Inizia il laboratorio</strong></span><span class="case-cta-seal" aria-hidden="true">00</span></button>
+        <p class="privacy-note">Ogni tentativo errato viene annullato: puoi sperimentare senza danneggiare il database.</p>
+      </div>
+      <aside class="case-card training-cover" aria-label="Registro da digitalizzare">
+        <p class="municipal-mark"><span>COMUNE DI MANERBIO</span><small>PIANO DI DIGITALIZZAZIONE</small></p>
+        <p class="stamp">DA TRASCRIVERE</p>
+        <p class="file-label">REGISTRO</p>
+        <strong>LAB–00</strong>
+        <div class="red-line"></div>
+        <dl>
+          <div><dt>Ufficio</dt><dd>Archivio Civico</dd></div>
+          <div><dt>Incarico</dt><dd>Nuovo database</dd></div>
+          <div><dt>Stato</dt><dd class="danger">DA COSTRUIRE</dd></div>
+        </dl>
+      </aside>
+    </section>
+
+    <section class="intro hidden" id="intro">
+      <div class="intro-copy">
+        <p class="eyebrow">COMUNE DI MANERBIO · 1 NOVEMBRE 2026</p>
+        <h1>Il fascicolo<br><em>scomparso</em></h1>
+        <p class="lede">Nella notte, qualcuno è entrato nell’Archivio Civico e ha sottratto il fascicolo F-204. Le tracce sono tutte nel database comunale. Il tuo strumento d’indagine è SQL.</p>
+        <div class="how-it-works home-steps" aria-label="Come funziona il gioco">
+          <article><b>01</b><div><span>OSSERVA</span><strong>Leggi l’obiettivo</strong><small>Ogni indizio ti dice cosa cercare.</small></div></article>
+          <article><b>02</b><div><span>INTERROGA</span><strong>Completa la query</strong><small>Parti dal codice già preparato.</small></div></article>
+          <article><b>03</b><div><span>DEDUCI</span><strong>Interpreta e annota</strong><small>Trasforma il risultato in un indizio.</small></div></article>
+        </div>
+        <div class="difficulty" aria-label="Difficoltà: 1 su 3"><span>CASO PER PRINCIPIANTI</span><i></i><i class="off"></i><i class="off"></i></div>
+        <button class="case-cta case-cta-main" id="startBtn" type="button" disabled><span class="case-cta-copy"><small>CASO 01 · PREPARAZIONE</small><strong>Preparazione database…</strong></span><span class="case-cta-seal" aria-hidden="true">···</span></button>
+        <p class="privacy-note">Nessun account. Le query vengono eseguite sul tuo dispositivo.</p>
+      </div>
+      <aside class="case-card" aria-label="Fascicolo del caso">
+        <p class="municipal-mark"><span>COMUNE DI MANERBIO</span><small>PROTOCOLLO RISERVATO · 01/11/2026</small></p>
+        <p class="stamp">RISERVATO</p>
+        <p class="file-label">FASCICOLO</p>
+        <strong>F–204</strong>
+        <div class="red-line"></div>
+        <dl>
+          <div><dt>Luogo</dt><dd>Archivio Civico</dd></div>
+          <div><dt>Evento</dt><dd>Furto documenti</dd></div>
+          <div><dt>Stato</dt><dd class="danger">IRRISOLTO</dd></div>
+        </dl>
+      </aside>
+    </section>
+
+    <section class="workspace hidden" id="workspace" aria-label="Area investigativa">
+      <aside class="briefing">
+        <div class="briefing-topline">
+          <p class="panel-step" id="briefingLabel"><b>01</b> LEGGI QUI COSA CERCARE</p>
+          <div class="investigation-tools" aria-label="Strumenti dell’investigatore">
+            <button class="notebook-toggle" id="notebookBtn" type="button" aria-label="Apri il taccuino: 0 indizi su 8" title="Taccuino" aria-expanded="false" aria-controls="notebookDrawer"><span class="notebook-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M7 4.5h10.5a2 2 0 0 1 2 2v13H7z"/><path d="M4.5 6.5H7v13H6.5a2 2 0 0 1-2-2zM10 8h6M10 11h6M10 14h4"/><path d="M5.5 9h2M5.5 13h2M5.5 17h2"/></svg></span><b id="notebookButtonCount">0 / 8</b></button>
+            <button class="hint-button" id="hintBtn" type="button" aria-label="Apri gli indizi" title="Indizi" aria-expanded="false" aria-controls="hintBox"><span class="clue-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m14.6 14.6 4.4 4.4M8.3 10.7l1.5 1.5 3-3.2M18 4v3M16.5 5.5h3"/></svg></span></button>
+          </div>
+        </div>
+        <div class="case-progress"><span id="stepCount">INDIZIO 1 DI 8</span><span id="progressPercent">0%</span></div>
+        <div class="progress-track"><span id="progressBar"></span></div>
+        <p class="eyebrow" id="missionSkill">SELECT · WHERE</p>
+        <h2 id="missionTitle">Ricostruisci l’allarme</h2>
+        <p class="mission-text" id="missionText"></p>
+        <div class="objective">
+          <span>OBIETTIVO</span>
+          <p id="missionObjective"></p>
+        </div>
+        <div class="next-action"><span>PROSSIMA AZIONE</span><p id="nextAction"></p></div>
+        <div class="hint-box hidden" id="hintBox" aria-live="polite">
+          <div class="hint-box-head"><span id="hintBoxTitle"><i aria-hidden="true">✦</i> INDIZI DELL’INVESTIGATORE</span><button id="hintCloseBtn" type="button" aria-label="Chiudi indizi">×</button></div>
+          <p id="hintText"></p>
+          <div class="hint-navigation"><button id="hintPrevBtn" type="button" aria-label="Indizio precedente"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 4.5-5 5.5 5 5.5"/></svg></button><span id="hintCounter">1 / 3</span><button id="hintNextBtn" type="button" aria-label="Indizio successivo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 4.5 5 5.5-5 5.5"/></svg></button></div>
+        </div>
+        <section class="notebook-drawer hidden" id="notebookDrawer" role="dialog" aria-modal="false" aria-labelledby="notebookTitle">
+          <div class="notebook-drawer-head">
+            <div><span id="notebookEyebrow">STRUMENTI DELL’INVESTIGATORE</span><h3 id="notebookTitle">Taccuino degli indizi</h3></div>
+            <button id="notebookCloseBtn" type="button" aria-label="Chiudi taccuino">×</button>
+          </div>
+          <div class="notebook-meta"><span id="notebookCaseLabel">CASO F–204</span><b id="clueCount">0 / 8</b></div>
+          <div class="notebook-paper">
+            <div class="found-clue hidden" id="foundClue" aria-live="polite">
+              <div class="clue-discovery"><span id="foundClueLabel">✓ PROVA TROVATA</span><strong id="foundClueText"></strong><small id="foundClueHelp">Osserva la tabella: cosa hai scoperto?</small></div>
+              <div class="clue-writing">
+                <label for="clueInput" id="clueInputLabel">04 · SCRIVI L’INDIZIO</label>
+                <textarea id="clueInput" maxlength="180" aria-describedby="clueInputHelp" placeholder="Esempio: L’allarme è scattato alle…"></textarea>
+                <div><small id="clueInputHelp">Scrivi liberamente ciò che hai scoperto.</small><button class="continue-button" id="continueBtn" type="button" disabled>Salva</button></div>
+              </div>
+            </div>
+            <div id="clueList"><p class="notebook-empty">Le prove corrette verranno annotate qui e resteranno disponibili per gli enigmi successivi.</p></div>
+          </div>
+        </section>
+      </aside>
+
+      <section class="terminal-panel">
+        <div class="query-topline">
+          <p class="panel-step" id="queryLabel"><b>02</b> COMPLETA LA QUERY QUI SOTTO</p>
+          <div class="data-shortcuts" aria-label="Tabelle disponibili">
+            <span>ESPLORA I DATI</span>
+            <div class="table-chips" id="tableChips"></div>
+          </div>
+        </div>
+        <div class="terminal-head">
+          <div class="terminal-lights" aria-hidden="true"><i></i><i></i><i></i></div>
+          <span id="queryFilename">query_indagine.sql</span>
+          <button id="resetQueryBtn" type="button">Ripristina</button>
+        </div>
+        <div class="editor-wrap">
+          <div class="line-number">1</div>
+          <textarea id="sqlEditor" aria-label="Editor query SQL" spellcheck="false" autocapitalize="off" autocomplete="off">SELECT *
+FROM eventi
+WHERE data = '2026-10-31';</textarea>
+        </div>
+        <div class="run-row">
+          <div class="feedback" id="feedback">
+            <span id="feedbackText" role="status" aria-live="polite">Completa il comando e premi «Esegui e verifica». Se è corretto, il pulsante diventerà «Continua».</span>
+          </div>
+          <button class="run-button" id="runBtn" type="button"><span class="run-step">03</span><span class="run-label">Esegui e verifica</span></button>
+        </div>
+        <div class="results-wrap">
+          <div class="results-head"><span>RISULTATI</span><span id="rowCount">0 righe</span></div>
+          <div class="table-scroll" id="results"><div class="empty-state">I risultati della query appariranno qui.</div></div>
+        </div>
+      </section>
+    </section>
+
+    <section class="completion hidden" id="completion">
+      <div class="seal">✓</div>
+      <p class="eyebrow" id="completionEyebrow">CASO 01 · RISOLTO</p>
+      <h2 id="completionTitle">Hai fatto parlare i dati.</h2>
+      <p id="completionText">Le prove indicano <strong>Marco Riva</strong> come autore del furto e <strong>Laura Neri</strong> come complice. Hai usato filtri, ordinamenti, raggruppamenti e JOIN per ricostruire la notte.</p>
+      <div class="stats"><div><strong id="missionStat">8</strong><span id="missionStatLabel">indizi</span></div><div><strong id="queryStat">0</strong><span>comandi eseguiti</span></div><div><strong>100%</strong><span id="completionStatLabel">caso risolto</span></div></div>
+      <button class="case-cta case-cta-main case-cta-compact" id="replayBtn" type="button">
+        <span class="case-cta-copy"><small>CASO ARCHIVIATO</small><strong>Torna alla home</strong></span>
+        <span class="case-cta-seal" id="completionSeal" aria-hidden="true">01</span>
+      </button>
+    </section>
+  </main>
+
+  <footer><span class="footer-status db-status loading" id="dbStatus" role="status" aria-live="polite"><i aria-hidden="true"></i><span>DATABASE IN CARICAMENTO</span></span><span>LABORATORIO DIDATTICO SQL</span></footer>
+
+  <dialog id="trainingSuccessDialog" class="training-success-dialog" aria-labelledby="trainingSuccessTitle">
+    <div class="training-success-card">
+      <div class="training-success-seal" aria-hidden="true">✓</div>
+      <p class="eyebrow" id="trainingSuccessEyebrow">FASE COMPLETATA</p>
+      <h2 id="trainingSuccessTitle">Operazione verificata</h2>
+      <p id="trainingSuccessText"></p>
+      <button class="case-cta case-cta-main training-success-next" id="trainingContinueBtn" type="button">
+        <span class="case-cta-copy"><small id="trainingContinueLabel">PROSSIMA FASE</small><strong id="trainingContinueText">Continua</strong></span>
+        <span class="case-cta-seal" aria-hidden="true">→</span>
+      </button>
+    </div>
+  </dialog>
+
+  <dialog id="schemaDialog">
+    <div class="dialog-head"><div><p class="eyebrow" id="schemaEyebrow">DATABASE COMUNALE</p><h2 id="schemaTitle">Schema del database</h2></div><button id="closeSchemaBtn" aria-label="Chiudi schema" type="button">×</button></div>
+    <div class="er-legend">
+      <span><i class="pk-dot"></i> Chiave primaria</span>
+      <span><i class="fk-dot"></i> Chiave esterna</span>
+      <span><i class="crow-foot-icon"></i> Molti (N)</span>
+      <span>Uno (1)</span>
+      <span><i class="rel-line required"></i> Obbligatorio (minimo 1)</span>
+      <span><i class="rel-line optional"></i> Facoltativo (minimo 0)</span>
+    </div>
+    <p class="er-legend-note" id="schemaNote">Ogni associazione parte da un punto distinto di <strong>cittadini</strong> e termina sulla relativa <strong>FK</strong>.</p>
+    <div class="er-diagram" id="schemaGrid"></div>
+  </dialog>
+
+  <dialog id="manualDialog" class="manual-dialog" aria-labelledby="manualTitle">
+    <div class="dialog-head manual-head">
+      <div><p class="eyebrow">ARCHIVIO DI CONSULTAZIONE</p><h2 id="manualTitle">Manuale SQL</h2><p>Comandi, sintassi ed esempi da consultare durante tutti i casi.</p></div>
+      <button id="closeManualBtn" aria-label="Chiudi manuale SQL" type="button">×</button>
+    </div>
+    <div class="manual-tools">
+      <label class="manual-search"><span>Cerca</span><input id="manualSearch" type="search" placeholder="Es. JOIN, chiave primaria, GROUP BY…" autocomplete="off"></label>
+      <div class="manual-filters" id="manualFilters" aria-label="Filtra i comandi SQL"></div>
+    </div>
+    <p class="manual-sqlite-note"><strong>Nota SQLite:</strong> il database esiste già nel browser; per questo il manuale parte da <code>CREATE TABLE</code>. I tipi sono flessibili e alcune varianti di <code>ALTER TABLE</code> sono più limitate rispetto ad altri DBMS.</p>
+    <div class="manual-results-head"><span id="manualCount">0 comandi</span><small>Seleziona una scheda per leggere l’esempio</small></div>
+    <section class="manual-grid" id="manualGrid" aria-live="polite"></section>
+    <p class="manual-empty hidden" id="manualEmpty">Nessun comando corrisponde alla ricerca.</p>
+  </dialog>
+
+  <dialog id="helpDialog" class="help-dialog">
+    <div class="dialog-head help-head"><div><p class="eyebrow">BRIEFING DELL’INVESTIGATORE</p><h2>Indaga in tre mosse</h2><p>Il codice è già iniziato. A te il compito di trasformare i dati in prove.</p></div><button id="closeHelpBtn" aria-label="Chiudi guida" type="button">×</button></div>
+    <div class="help-layout">
+      <div class="help-steps" aria-label="Le tre fasi del gioco">
+        <article><b>01</b><div><span>OSSERVA</span><h3>Leggi la missione</h3><p>L’obiettivo ti dice quale informazione devi far emergere dal database.</p></div></article>
+        <article><b>02</b><div><span>INTERROGA</span><h3>Completa la query</h3><p>Modifica il codice e premi <strong>Esegui</strong>. Un tentativo errato mostra comunque risultati utili.</p></div></article>
+        <article><b>03</b><div><span>DEDUCI</span><h3>Annota la prova</h3><p>Salva la risposta nel taccuino; poi lo stesso pulsante diventa Continua.</p></div></article>
+      </div>
+      <div class="help-demo" aria-label="Esempio di indagine SQL">
+        <div class="demo-bar"><i></i><i></i><i></i><span>prova_01.sql</span></div>
+        <div class="demo-code"><span>1</span><code><em>SELECT</em> ora, descrizione<br><em>FROM</em> eventi<br><em>WHERE</em> tipo = <mark>'allarme'</mark>;</code></div>
+        <div class="demo-result"><span>RISULTATO</span><strong>22:14 · Fondo Riservato F-204</strong></div>
+        <div class="demo-note"><span>✓</span><div><small>TACCUINO</small><p>L’allarme è scattato alle 22:14.</p></div></div>
+      </div>
+    </div>
+    <div class="help-footer"><p><span>?</span>Se ti blocchi, usa i suggerimenti progressivi: l’ultimo orienta il ragionamento senza mostrare la query completa.</p><button class="case-cta case-cta-main case-cta-compact" id="beginBtn" type="button"><span class="case-cta-copy"><small>BRIEFING COMPLETATO</small><strong>Entra nell’archivio</strong></span><span class="case-cta-seal" aria-hidden="true">01</span></button></div>
+  </dialog>
+
+  <audio id="ambientMusic" src="assets/moil-ruskerdax-cc0.mp3" loop preload="auto"></audio>
+  <script src="vendor/sql-wasm.js"></script>
+  <script src="app.js?v=90"></script>
+</body>
+</html>
