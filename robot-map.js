@@ -20,7 +20,7 @@ const coordinates=new Map([
  [40,{x:300,y:2140}],[41,{x:100,y:2140}],[38,{x:700,y:2140}],[39,{x:700,y:2330}],
  [42,{x:100,y:2330}],[43,{x:500,y:2330}]
 ]);
-document.querySelector('.map-hint-overview').textContent=`${ROBOT_LEVELS.length} livelli · Movimenti, energia, guida autonoma e monete`;
+document.querySelector('.map-hint-overview').textContent=`27 livelli principali · 18 sfide facoltative`;
 const access=new Map(ROBOT_LEVELS.map(level=>[level.number,robotLevelAccess(level,read)]));
 function path(from,to,route) {
   const a=coordinates.get(from),b=coordinates.get(to);
@@ -55,22 +55,22 @@ path(20,16,'M100 240H20V430H100');path(16,21);
 // Movement and sensors: labyrinths on the left, functions on the right.
 const movementRoute=[10,11,12,19,18,13,14,44];
 for(let i=1;i<movementRoute.length;i++)path(movementRoute[i-1],movementRoute[i]);
-path(21,44,'M100 620V810H300');
+
 // Energy and destination.
 fork(44,15,17);
 path(15,24);path(24,23);path(23,22);path(22,36);
 path(36,45);
 path(17,25);path(25,26);path(26,27);
-path(27,45);
+
 // Autonomous guidance.
 fork(45,28,31);
 path(28,29);path(29,30);
 path(30,35);
-path(31,32);path(32,33);path(33,34);path(34,37);path(37,35);
+path(31,32);path(32,33);path(33,34);path(34,37);
 // Coins.
 fork(35,38,40);
 path(38,39);path(40,41);path(41,42);
-path(42,43);
+
 path(39,43);
 for(const level of ROBOT_LEVELS) {
  const state=access.get(level.number),point=coordinates.get(level.number);
@@ -88,7 +88,7 @@ for(const level of ROBOT_LEVELS) {
   number.prepend(badge);
  }
  const label=document.createElement('strong');label.textContent=(level.checkpoint || level.coinFinal || level.transition) ? level.title.replace(/^Collaudo\s*/,'') : level.title;
- const detail=document.createElement('small');detail.className='route-function';detail.textContent=level.maze?'Missione':`${level.functionName}(${level.arity?'…':''})`;
+ const detail=document.createElement('small');detail.className='route-function';detail.textContent=level.optional?'Facoltativo':level.maze?'Collaudo':`${level.functionName}(${level.arity?'…':''})`;
  if (level.number === 38) detail.classList.add('route-function-long');
  detail.title=detail.textContent;
  const progress=document.createElement('small');progress.className='level-status';progress.textContent=completed?'Completato':state.unlocked?'Disponibile':`Richiede ${state.missing.map(n=>ROBOT_LEVELS[n-1].displayNumber).join(' + ')}`;
@@ -145,6 +145,6 @@ viewport.addEventListener('scroll',()=>{
 for(const event of ['wheel','pointerdown','touchstart'])viewport.addEventListener(event,()=>{requestedScroll=null;},{passive:true});
 new ResizeObserver(sizeMap).observe(viewport);sizeMap();
 if(read('robot.level.6.solution')){
- status.textContent='Scegli il percorso: nuove funzioni in azzurro, labirinti in giallo. Ogni tappa bloccata indica i livelli richiesti.';
+ status.textContent='Prosegui nel percorso principale in azzurro. Le sfide L in giallo sono facoltative e si sbloccano con le funzioni richieste.';
 
 }

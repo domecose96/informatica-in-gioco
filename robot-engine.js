@@ -443,6 +443,7 @@ const RobotEngine = (() => {
       } else {
         if (!result.calls.includes('arrivato')) throw new Error('Usa arrivato() per fermarti sulla stella.');
         if (!hasNode(entry,'if') || !result.calls.includes('ricarica')) throw new Error('Controlla la batteria con un if e richiama ricarica() quando è scarica.');
+        if (!result.calls.includes('indietro')) throw new Error('Riparti in retromarcia con indietro(), conservando l’orientamento verso sinistra.');
         if (!result.trace.some(frame=>frame.teleport && frame.x===0 && frame.y===4 && frame.energia===12) || result.energia !== 9) throw new Error('Ricarica alla base prima di ripartire: dopo tre passi devono restare 9 unità.');
         for (const goal of [level.goal, {x:2,y:4}]) {
           const charged = run(functions,'main',{x:0,y:4},level.checks[0],{...level,goal,energiaIniziale:12});
@@ -784,7 +785,7 @@ const RobotEngine = (() => {
     } else {
       const variants = [level];
       if (level.number === 37) {
-        variants.push({...level, goal:{x:4,y:1}}, {...level, goal:{x:2,y:2}});
+        variants.push({...level, goal:{x:4,y:1}}, {...level, goal:{x:2,y:2}}, {...level, goal:{...level.start}});
       } else if (!level.transition) {
         variants.push({...level, start:{x:0,y:4}, goal:{x:2,y:2}, tiles:levelCatalogue()[32].tiles, baseTiles:levelCatalogue()[32].baseTiles});
       }
@@ -795,6 +796,7 @@ const RobotEngine = (() => {
         if(result.x!==options.goal.x||result.y!==options.goal.y||JSON.stringify(movementTrace(result.trace))!==JSON.stringify(movementTrace(expected)))throw new Error('Segui la regola della destra a ogni decisione e fermati appena raggiungi il traguardo.');
       }
     }
+    if (level.number === 34 && !preview.calls.includes('giraIndietro')) throw new Error('Lascia che passoAutomatico() gestisca il dietrofront nel vicolo.');
     if(level.number===35){
       if(!hasNode(entry,'if')||!preview.calls.includes('batteriaScarica')||preview.calls.includes('ricarica'))throw new Error('Controlla la batteria prima del percorso e richiama ricarica() soltanto quando è scarica.');
       if (!preview.calls.includes('arrivato')) throw new Error('Usa arrivato() per riconoscere il traguardo dopo la ricarica.');

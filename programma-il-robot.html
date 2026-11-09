@@ -10,8 +10,8 @@
   <link rel="stylesheet" href="giochi.css?v=3">
   <link rel="stylesheet" href="robot.css?v=42">
   <script src="robot-ui.js?v=3" defer></script>
-  <script src="robot-levels.js?v=77" defer></script>
-  <script src="robot-map.js?v=51" defer></script>
+  <script src="robot-levels.js?v=78" defer></script>
+  <script src="robot-map.js?v=52" defer></script>
 </head>
 <body class="robot-home robot-paths">
   <header class="site-header robot-header">
@@ -51,7 +51,7 @@
       <li><strong>Costruisci i comandi</strong><p>Completa la funzione richiesta nell’editor C++. Il simulatore esegue le istruzioni C++ usate negli esercizi e mostra come reagisce il robot.</p></li>
       <li><strong>Esegui e osserva</strong><p>Premi «Esegui e verifica». Leggi il risultato, correggi il codice e riprova. I numeri della griglia indicano x e y: aumentano verso destra e verso il basso.</p></li>
       <li><strong>Consulta i suggerimenti</strong><p>Trovi spunti per ragionare e, quando servono, i pulsanti per leggere le funzioni che hai già costruito.</p></li>
-      <li><strong>Scegli il tuo percorso</strong><p>Dopo Collaudo puoi continuare nell’officina avanzata o affrontare i labirinti. Ogni tappa indica le funzioni e i livelli da completare prima.</p></li>
+      <li><strong>Scegli il tuo percorso</strong><p>Segui i livelli numerati e i collaudi. Le sfide L sono facoltative: si sbloccano quando hai costruito le funzioni necessarie e non bloccano il percorso principale.</p></li>
     </ol>
     <p class="robot-help-footer">I progressi vengono salvati in questo browser. Il nome del gioco in alto a sinistra riporta alla mappa; la casa apre la Home dei giochi.</p>
   </dialog>
@@ -81,20 +81,20 @@
       </div>
       <p class="map-hint" id="map-hint">
         <span class="map-hint-scroll">Scorri la mappa verso il basso con due dita o usa le frecce.</span>
-        <span class="map-hint-overview">45 livelli · Movimenti, energia, guida autonoma e monete</span>
+        <span class="map-hint-overview">27 livelli principali · 18 sfide facoltative</span>
       </p>
       <div class="map-viewport" id="level-map" role="region" aria-label="Mappa dei percorsi di Programma il robot" aria-describedby="map-hint" tabindex="0">
         <div class="robot-route-map" id="robot-route-map">
           <svg class="robot-routes" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"></svg>
           <span class="route-zone route-zone-base">Officina · Primi movimenti</span>
           <span class="route-zone route-zone-advanced">Officina · Movimento e sensori</span>
-          <span class="route-zone route-zone-maze">Labirinti · missioni progressive</span>
+          <span class="route-zone route-zone-maze">Labirinti · Sfide facoltative</span>
           <span class="route-zone route-zone-energy">Officina · Energia e destinazione</span>
           <span class="route-zone route-zone-guidance">Officina · Guida autonoma</span>
           <span class="route-zone route-zone-coins">Monete · Distribuzione e raccolta</span>
         </div>
       </div>
-      <p id="robot-map-status" role="status">Completa Collaudo per aprire i due percorsi.</p>
+      <p id="robot-map-status" role="status">Prosegui nei livelli numerati. Le sfide L sono facoltative e si sbloccano con le funzioni richieste.</p>
     </section>
   </main>
 </body>
