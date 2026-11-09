@@ -474,3 +474,13 @@
 /* Keep connector strokes behind the readable label area. */
 .robot-route-map .route-node strong,
 .robot-route-map .route-node small { background: #141e37; padding-inline: .2rem; }
+
+#robot-music-toggle .speaker-wave { animation: robot-sound-pulse 1.35s ease-in-out infinite; }
+#robot-music-toggle .wave-2 { animation-delay: .12s; }
+#robot-music-toggle .wave-3 { animation-delay: .24s; }
+#robot-music-toggle[data-waves="0"] .speaker-wave,
+#robot-music-toggle[data-waves="1"] .wave-2,
+#robot-music-toggle[data-waves="1"] .wave-3,
+#robot-music-toggle[data-waves="2"] .wave-3 { display: none; }
+@keyframes robot-sound-pulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { #robot-music-toggle .speaker-wave { animation: none; } }

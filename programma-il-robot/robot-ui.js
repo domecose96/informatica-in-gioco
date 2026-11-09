@@ -27,15 +27,17 @@
     } catch { /* Storage is optional. */ }
   }
   function sync() {
-    const muted = !enabled;
+    const muted = !enabled || (volume === 0 && effectsVolume === 0);
+    const masterLevel = enabled ? Math.max(volume, effectsVolume) : 0;
+    toggle.dataset.waves = String(masterLevel === 0 ? 0 : masterLevel <= .2 ? 1 : masterLevel <= .5 ? 2 : 3);
     output.textContent = `${Math.round(volume * 100)}%`;
     effectsOutput.textContent = `${Math.round(effectsVolume * 100)}%`;
     toggle.setAttribute('aria-pressed', String(muted));
     toggle.dataset.muted = String(muted);
-    const label = enabled ? 'Silenzia tutto' : 'Attiva audio';
+    const label = muted ? 'Attiva audio' : 'Silenzia tutto';
     toggle.setAttribute('aria-label', label); toggle.title = label;
     if (effectsGain) effectsGain.gain.setValueAtTime(enabled ? effectsVolume : 0, context.currentTime);
-    status.textContent = !enabled ? 'Audio disattivato' : audio.paused && volume > 0 ? 'Audio attivo · musica in attesa' : 'Audio attivo';
+    status.textContent = muted ? 'Audio disattivato' : audio.paused && volume > 0 ? 'Audio attivo · musica in attesa' : 'Audio attivo';
   }
   function effect(kind = 'click') {
     if (!enabled || effectsVolume === 0) return;
@@ -73,7 +75,12 @@
     open.setAttribute('aria-expanded', String(!panel.hidden));
   });
   toggle.addEventListener('click', () => {
-    enabled = !enabled;
+    const silent = !enabled || (volume === 0 && effectsVolume === 0);
+    if (silent && volume === 0 && effectsVolume === 0) {
+      volume = .2; effectsVolume = .55; audio.volume = volume;
+      slider.value = 20; effectsSlider.value = 55;
+    }
+    enabled = silent;
     if (enabled) { play(); effect('click'); }
     else audio.pause();
     save(); sync();
@@ -113,4 +120,18 @@
   });
   instructions.addEventListener('close', () => help.focus());
   sync();
+})();
+
+// Home returns to the shared hub when present; standalone copies keep their own home.
+(() => {
+  const home = document.querySelector('[data-games-home]');
+  if (!home || location.protocol === 'file:') return;
+  const hub = new URL('../index.html', location.href);
+  fetch(hub, {cache: 'no-store'})
+    .then(response => response.ok ? response.text() : '')
+    .then(html => {
+      if (html.includes('<meta name="games-hub" content="informatica-in-gioco">')) {
+        home.href = hub.href;
+      }
+    }).catch(() => {});
 })();

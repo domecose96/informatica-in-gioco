@@ -1,11 +1,26 @@
 #!/usr/bin/env python3
 """Avvia una cartella di gioco o la home comune con Python 3."""
 import argparse
+from urllib.parse import urlsplit
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 class NoCacheHandler(SimpleHTTPRequestHandler):
+    def do_GET(self):
+        path = urlsplit(self.path)
+        redirects = {
+            '/archivio-ombra.html': '/archivio-ombra/index.html',
+            '/programma-il-robot.html': '/programma-il-robot/index.html',
+            '/robot-livello.html': '/programma-il-robot/robot-livello.html',
+        }
+        if path.path in redirects and (Path(self.directory) / 'programma-il-robot').is_dir():
+            self.send_response(302)
+            self.send_header('Location', redirects[path.path] + ('?' + path.query if path.query else ''))
+            self.end_headers()
+            return
+        super().do_GET()
+
     def end_headers(self):
         self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
         super().end_headers()

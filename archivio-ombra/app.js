@@ -146,10 +146,11 @@ function ensureAudio(){
     }else syncAudioStatus();
   }catch(e){$('audioStatus').textContent='Non disponibile'}
 }
-function syncAudioStatus(){const musicLevel=Math.round(audio.musicVolume*100);$('audioStatus').textContent=audio.muted?'Tutto in muto':!audio.started?'Pronto':musicLevel?'In riproduzione':'Musica a zero'}
+function isAudioSilent(){return audio.muted || (audio.musicVolume === 0 && audio.effectsVolume === 0)}
+function syncAudioStatus(){const musicLevel=Math.round(audio.musicVolume*100);$('audioStatus').textContent=isAudioSilent()?'Tutto in muto':!audio.started?'Pronto':musicLevel?'In riproduzione':'Musica a zero'}
 function persistAudio(){try{localStorage.setItem('ao-music-volume',String(audio.musicVolume));localStorage.setItem('ao-effects-volume',String(audio.effectsVolume));localStorage.setItem('ao-muted',String(audio.muted))}catch(e){}}
-function syncAudioControls(){const storedMusic=Math.round(audio.musicVolume*100),storedEffects=Math.round(audio.effectsVolume*100),musicLevel=audio.muted?0:storedMusic,effectsLevel=audio.muted?0:storedEffects;const musicControl=$('musicVolume'),effectsControl=$('effectsVolume');musicControl.value=musicLevel;effectsControl.value=effectsLevel;musicControl.disabled=false;effectsControl.disabled=false;$('musicVolumeValue').textContent=`${musicLevel}%`;$('effectsVolumeValue').textContent=`${effectsLevel}%`;const muteButton=$('muteAllBtn'),action=audio.muted?'Riattiva tutto':'Silenzia tutto',waveCount=musicLevel===0?0:musicLevel<=20?1:musicLevel<=50?2:3;muteButton.setAttribute('aria-pressed',String(audio.muted));muteButton.setAttribute('data-waves',String(waveCount));muteButton.setAttribute('aria-label',action);muteButton.title=`${action} · musica ${musicLevel}%`;$('soundBtn').title=audio.muted?'Audio in muto':`Musica ${musicLevel}%`;syncAudioStatus()}
-function toggleMuteAll(){audio.muted=!audio.muted;applyMusicVolume();setGain(audio.fxGain,effectiveEffectsVolume(),.03);persistAudio();syncAudioControls()}
+function syncAudioControls(){const storedMusic=Math.round(audio.musicVolume*100),storedEffects=Math.round(audio.effectsVolume*100),musicLevel=audio.muted?0:storedMusic,effectsLevel=audio.muted?0:storedEffects;const musicControl=$('musicVolume'),effectsControl=$('effectsVolume');musicControl.value=musicLevel;effectsControl.value=effectsLevel;musicControl.disabled=false;effectsControl.disabled=false;$('musicVolumeValue').textContent=`${musicLevel}%`;$('effectsVolumeValue').textContent=`${effectsLevel}%`;const muteButton=$('muteAllBtn'),silent=isAudioSilent(),action=silent?'Riattiva tutto':'Silenzia tutto',masterLevel=Math.max(musicLevel,effectsLevel),waveCount=masterLevel===0?0:masterLevel<=20?1:masterLevel<=50?2:3;muteButton.setAttribute('aria-pressed',String(silent));muteButton.setAttribute('data-waves',String(waveCount));muteButton.setAttribute('aria-label',action);muteButton.title=`${action} · musica ${musicLevel}%`;$('soundBtn').title=isAudioSilent()?'Audio in muto':`Musica ${musicLevel}%`;syncAudioStatus()}
+function toggleMuteAll(){const silent=isAudioSilent();if(silent && audio.musicVolume===0 && audio.effectsVolume===0){audio.musicVolume=.20;audio.effectsVolume=.55}audio.muted=!silent;applyMusicVolume();setGain(audio.fxGain,effectiveEffectsVolume(),.03);persistAudio();syncAudioControls()}
 
 function includes(rows,key,needle){ return rows.some(r => Object.entries(r).some(([k,v]) => (!key || k===key) && String(v).toLowerCase().includes(String(needle).toLowerCase()))); }
 function has(rows,key,value){ return rows.some(r => String(r[key])===String(value)); }
@@ -637,3 +638,17 @@ document.addEventListener('click',event=>{const button=event.target.closest('but
 syncAudioControls();
 els.editor.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();$('runBtn').click()}if(e.key==='Tab'){e.preventDefault();const s=e.target.selectionStart;e.target.value=e.target.value.slice(0,s)+'  '+e.target.value.slice(e.target.selectionEnd);e.target.selectionStart=e.target.selectionEnd=s+2}});
 renderRelationalSchema();initDb().catch(err=>{$('dbStatus').className='footer-status db-status error';$('dbStatus').innerHTML='<i></i><span>DATABASE NON DISPONIBILE</span>';$('startBtn').innerHTML='Errore caricamento <span>!</span>';setFeedback('Impossibile avviare SQLite: '+err.message,'error')});
+
+// Home returns to the shared hub when present; standalone copies keep their own home.
+(() => {
+  const home = document.querySelector('[data-games-home]');
+  if (!home || location.protocol === 'file:') return;
+  const hub = new URL('../index.html', location.href);
+  fetch(hub, {cache: 'no-store'})
+    .then(response => response.ok ? response.text() : '')
+    .then(html => {
+      if (html.includes('<meta name="games-hub" content="informatica-in-gioco">')) {
+        home.href = hub.href;
+      }
+    }).catch(() => {});
+})();
