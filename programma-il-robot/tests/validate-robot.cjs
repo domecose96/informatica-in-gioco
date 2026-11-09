@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
-const engine = require('../dist/robot-engine.js');
-const { ROBOT_LEVELS: levels, robotLevelAccess } = require('../dist/robot-levels.js');
+const engine = require('../robot-engine.js');
+const { ROBOT_LEVELS: levels, robotLevelAccess } = require('../robot-levels.js');
 const forward = 'void avanza() { x += dx; y += dy; }';
 const backward = 'void indietro() { x -= dx; y -= dy; }';
 const right = 'void giraDestra() { int prima = dx; dx = -dy; dy = prima; }';

@@ -1,10 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
-const initSqlJs = require('../dist/vendor/sql-wasm.js');
+const initSqlJs = require('../vendor/sql-wasm.js');
 
 const root = path.resolve(__dirname, '..');
-const source = fs.readFileSync(path.join(root, 'dist/app.js'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
 const missionMatch = source.match(/const case02Missions = (\[[\s\S]*?\n\]);/);
 const seedMatch = source.match(/const case02Seed = `([\s\S]*?)`;/);
 assert(missionMatch && seedMatch, 'Impossibile leggere il Caso 02');
@@ -84,7 +84,7 @@ const solutions = [
 ];
 
 (async () => {
-  const SQL = await initSqlJs({locateFile: file => path.join(root, 'dist/vendor', file)});
+  const SQL = await initSqlJs({locateFile: file => path.join(root, 'vendor', file)});
   const db = new SQL.Database();
   db.run(seedMatch[1]);
   const getRows = sql => {

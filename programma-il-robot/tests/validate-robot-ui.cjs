@@ -1,7 +1,7 @@
 const fs=require('node:fs'), vm=require('node:vm'), assert=require('node:assert/strict');
-const path=process.cwd();
-const {ROBOT_LEVELS:levels,robotLevelAccess}=require(path+'/dist/robot-levels.js');
-const engine=require(path+'/dist/robot-engine.js');
+const path=require('node:path').resolve(__dirname,'..');
+const {ROBOT_LEVELS:levels,robotLevelAccess}=require(path+'/robot-levels.js');
+const engine=require(path+'/robot-engine.js');
 const {solutions}=require(path+'/tests/validate-robot.cjs');
 class Element {
   constructor(tag){this.tag=tag;this.children=[];this.dataset={};this.events={};this.selectors=new Map();this.attrs={};this.style={setProperty:(k,v)=>this.style[k]=v};this.classList={add(){},remove(){},toggle(){}};}
@@ -15,7 +15,7 @@ class Element {
   setSelectionRange(){}
   createElement(tag){return new Element(tag);}
 }
-const read=f=>fs.readFileSync(path+'/dist/'+f,'utf8');
+const read=f=>fs.readFileSync(path+'/'+f,'utf8');
 const allSaved=new Map(levels.map(l=>[l.progressKey,solutions[l.number-1]]));
 const failures=[];
 let trialCount=0;
@@ -55,7 +55,7 @@ async function runLevel(level, saved, expected, source) {
   const next = await runLevel(l,new Map(allSaved),true);
   const nextDisplay=String(parseInt(l.displayNumber)+1).padStart(l.optional?1:2,'0')+(l.optional?'L':'');
   const destination=levels.find(item=>item.displayNumber===nextDisplay);
-  assert.equal(next,destination?'robot-livello.html?livello='+destination.number:'programma-il-robot.html#percorso-robot');
+  assert.equal(next,destination?'robot-livello.html?livello='+destination.number:'index.html#percorso-robot');
   const prereqs=new Map(allSaved); prereqs.delete(l.progressKey);
   if(l.requires.length){
    prereqs.delete(levels[l.requires[0]-1].progressKey);
@@ -73,7 +73,7 @@ async function runLevel(level, saved, expected, source) {
   const next=await runLevel(l,mainSaved,true,source);
   assert.deepEqual(failures,[],l.displayNumber);
   const destination=levels.find(item=>!item.optional&&parseInt(item.displayNumber)===parseInt(l.displayNumber)+1);
-  assert.equal(next,destination?'robot-livello.html?livello='+destination.number:'programma-il-robot.html#percorso-robot');
+  assert.equal(next,destination?'robot-livello.html?livello='+destination.number:'index.html#percorso-robot');
  }
  console.log(trialCount+' prove UI',failures);
  assert.deepEqual(failures,[]);

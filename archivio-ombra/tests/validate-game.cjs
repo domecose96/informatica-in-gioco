@@ -1,10 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
-const initSqlJs = require('../dist/vendor/sql-wasm.js');
+const initSqlJs = require('../vendor/sql-wasm.js');
 
 const root = path.resolve(__dirname, '..');
-const source = fs.readFileSync(path.join(root, 'dist/app.js'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
 const missionMatch = source.match(/const missions = (\[[\s\S]*?\n\]);\n\nconst clueTexts/);
 const seedMatch = source.match(/const seed = `([\s\S]*?)`;/);
 assert(missionMatch && seedMatch, 'Impossibile leggere missioni o database dal gioco');
@@ -26,7 +26,7 @@ const solutions = [
 ];
 
 (async()=>{
-  const SQL = await initSqlJs({locateFile:file=>path.join(root,'dist/vendor',file)});
+  const SQL = await initSqlJs({locateFile:file=>path.join(root,'vendor',file)});
   const db = new SQL.Database();db.run(seedMatch[1]);
   const getRows = sql => {const result=db.exec(sql);if(!result.length)return [];const last=result[result.length-1];return last.values.map(values=>Object.fromEntries(last.columns.map((column,i)=>[column,values[i]])))};
   const solvedRows = solutions.map(getRows);

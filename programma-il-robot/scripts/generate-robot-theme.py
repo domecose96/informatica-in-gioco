@@ -39,6 +39,6 @@ for b in range(64):
         for j in range(min(int(.10*rate),len(samples)-start)):
             samples[start+j]+=.035*(rng.random()*2-1)*math.exp(-j/(rate*.025))
 pcm=array.array('h',(int(max(-1,min(1,v))*32767) for v in samples))
-with wave.open(str(Path(__file__).resolve().parents[1] / 'dist/assets/robot-officina-arcade.wav'),'wb') as output:
+with wave.open(str(Path(__file__).resolve().parents[1] / 'assets/robot-officina-arcade.wav'),'wb') as output:
     output.setnchannels(1);output.setsampwidth(2);output.setframerate(rate);output.writeframes(pcm.tobytes())
 print('Original arcade loop:',round(length,2),'seconds')

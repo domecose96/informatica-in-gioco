@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const {ROBOT_LEVELS:levels}=require(process.cwd()+'/dist/robot-levels.js');
+const {ROBOT_LEVELS:levels}=require(require('node:path').resolve(__dirname,'..')+'/robot-levels.js');
 class Element{
  constructor(tag){this.tag=tag;this.children=[];this.attrs={};this.style={};this.dataset={};this.events={};this.items=new Map();this.classList={add(){}};}
  append(...nodes){this.children.push(...nodes);}
@@ -26,7 +26,7 @@ canvas.querySelector('.route-zone-coins').offsetTop=2075;
 canvas.querySelector('.route-zone-energy').offsetTop=935;
 canvas.querySelector('.route-zone-guidance').offsetTop=1505;
 const ctx=vm.createContext({document:doc,localStorage:{getItem:key=>saved.get(key)},matchMedia:()=>({matches:true}),ResizeObserver:class{observe(){}}});
-for(const f of ['robot-levels.js','robot-map.js'])vm.runInContext(fs.readFileSync('dist/'+f,'utf8'),ctx);
+for(const f of ['robot-levels.js','robot-map.js'])vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'..',f),'utf8'),ctx);
 assert.equal(canvas.children.length,45);
 assert.equal(canvas.querySelector('svg').children.length,47);
 assert.equal(new Set(canvas.children.map(e=>e.style.left+','+e.style.top)).size,45);

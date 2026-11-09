@@ -1,10 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
-const initSqlJs = require('../dist/vendor/sql-wasm.js');
+const initSqlJs = require('../vendor/sql-wasm.js');
 
 const root = path.resolve(__dirname, '..');
-const source = fs.readFileSync(path.join(root, 'dist/app.js'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
 const seedMatch = source.match(/const trainingSeed = `([\s\S]*?)`;/);
 assert(seedMatch, 'Impossibile leggere il database del laboratorio');
 
@@ -40,7 +40,7 @@ const solutions = [
 ];
 
 (async () => {
-  const SQL = await initSqlJs({locateFile:file => path.join(root, 'dist/vendor', file)});
+  const SQL = await initSqlJs({locateFile:file => path.join(root, 'vendor', file)});
   const db = new SQL.Database();
   db.run(seedMatch[1]);
 

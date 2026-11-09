@@ -94,7 +94,7 @@ function mountRobotLevel(level) {
   const nextLevel = ROBOT_LEVELS.find(item => item.displayNumber === nextDisplayNumber);
   function updateFinishLink() {
     const canContinue = nextLevel && robotLevelAccess(nextLevel, read).unlocked;
-    finish.href = canContinue ? `robot-livello.html?livello=${nextLevel.number}` : 'programma-il-robot.html#percorso-robot';
+    finish.href = canContinue ? `robot-livello.html?livello=${nextLevel.number}` : 'index.html#percorso-robot';
     finish.textContent = canContinue ? `Vai al livello ${nextLevel.displayNumber} →` : 'Torna alla mappa →';
   }
   const savedCode = read(level.progressKey);

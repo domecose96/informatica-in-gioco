@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#10152b">
   <title>Avanti · Programma il robot</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="giochi.css?v=3">
+  <link rel="stylesheet" href="base.css?v=1">
   <link rel="stylesheet" href="robot.css?v=23">
   <link rel="stylesheet" href="robot-livello.css?v=47">
   <script src="robot-ui.js?v=3" defer></script>
@@ -16,7 +16,7 @@
 </head>
 <body class="robot-home robot-level">
   <header class="site-header robot-header">
-    <a class="robot-brand" href="programma-il-robot.html" aria-label="Programma il robot, torna alla mappa">
+    <a class="robot-brand" href="index.html" aria-label="Programma il robot, torna alla mappa">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11 1h2v3h5v2h3v13h-3v3H6v-3H3V6h3V4h5V1Zm-4 7v9h10V8H7Zm1 2h3v3H8v-3Zm5 0h3v3h-3v-3Z"/></svg>
       <span><strong>Programma il robot</strong><small>C++ · Officina robotica</small></span>
     </a>
@@ -42,7 +42,7 @@
           <p id="robot-audio-status" role="status">Musica disattivata</p>
         </section>
       </div>
-      <a class="robot-icon-button" href="index.html" aria-label="Home dei giochi" title="Home dei giochi">
+      <a class="robot-icon-button" href="index.html" aria-label="Mappa livelli" title="Mappa livelli">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7 2h2v2h2v2h2v2h2v2h-2v5H9v-4H7v4H3v-5H1V8h2V6h2V4h2z"/></svg>
       </a>
     </nav>
@@ -55,7 +55,7 @@
       <li><strong>Consulta i suggerimenti</strong><p>Trovi spunti per ragionare e, quando servono, i pulsanti per leggere le funzioni che hai già costruito.</p></li>
       <li><strong>Scegli il tuo percorso</strong><p>Dopo Collaudo puoi continuare nell’officina avanzata o affrontare i labirinti. Ogni tappa indica le funzioni e i livelli da completare prima.</p></li>
     </ol>
-    <p class="robot-help-footer">I progressi vengono salvati in questo browser. Il nome del gioco in alto a sinistra riporta alla mappa; la casa apre la Home dei giochi.</p>
+    <p class="robot-help-footer">I progressi vengono salvati in questo browser. Il nome del gioco in alto a sinistra riporta alla mappa; la casa apre la Mappa livelli.</p>
   </dialog>
   <dialog class="robot-instructions" id="robot-api" aria-labelledby="robot-api-title">
     <div class="robot-help-heading"><h2 id="robot-api-title">Riferimenti C++</h2><button class="robot-icon-button" id="robot-api-close" type="button" aria-label="Chiudi riferimenti">×</button></div>
@@ -127,7 +127,7 @@
       </div>
       <div class="simulation-results">
         <p id="robot-feedback" role="status" aria-atomic="true">Esegui il codice per far avanzare il robot di una casella verso destra.</p>
-        <a id="robot-finish" href="programma-il-robot.html#percorso-robot" hidden>Torna alla mappa →</a>
+        <a id="robot-finish" href="index.html#percorso-robot" hidden>Torna alla mappa →</a>
       </div>
     </section>
   </main>
