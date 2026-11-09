@@ -1,0 +1,138 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  color: #f3efe7;
+  background: #10191e;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: inherit; }
+a:focus-visible { outline: 2px solid #fff; outline-offset: 5px; }
+
+.site-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem max(6vw, calc((100vw - 70rem) / 2));
+  border-bottom: 1px solid #35434a;
+}
+
+.site-header a { text-decoration: none; }
+main { width: min(88%, 70rem); margin: auto; padding-block: 3rem; }
+h1, h2 { font-family: Georgia, serif; line-height: 1.08; }
+h1 { margin: .4rem 0 .9rem; font-size: clamp(2.8rem, 6vw, 5.2rem); }
+h2 { margin: .4rem 0 .75rem; font-size: clamp(1.8rem, 4vw, 2.5rem); }
+p { line-height: 1.55; color: #c4ced0; }
+.label {
+  margin: 0;
+  color: var(--accent, #94e4cf);
+  font: 700 .77rem/1.5 ui-monospace, monospace;
+  letter-spacing: .1em;
+}
+
+.games, .chapters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.game {
+  --accent: #94e4cf;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #18272d;
+  border: 1px solid #3a5056;
+  border-radius: .9rem;
+  text-decoration: none;
+}
+
+.archive { --accent: #f3c477; }
+.game-art { aspect-ratio: 12 / 5; overflow: hidden; background: #122a2d; }
+.archive .game-art {
+  background: linear-gradient(0deg, #18272d, transparent 70%),
+    url("assets/caso01-fascicolo-scomparso-sfondo.webp") 72% 47% / cover;
+}
+.robot svg { display: block; width: 100%; height: 100%; }
+.game-body { flex: 1; display: flex; flex-direction: column; align-items: flex-start; padding: clamp(1rem, 3vw, 1.7rem); }
+.game:hover { border-color: var(--accent); }
+
+.chapters h3 { margin-bottom: .5rem; }
+.chapters ol { padding-inline-start: 1.45rem; color: #c4ced0; line-height: 1.65; }
+.chapters li { padding-bottom: .4rem; }
+code { color: #94e4cf; }
+
+.arcade-home {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 50% 10%, #282044, transparent 60%),
+    repeating-linear-gradient(0deg, #ffffff06 0 1px, transparent 1px 4px),
+    #101020;
+}
+
+.arcade-home .site-header {
+  align-items: center;
+  border-color: #3b3456;
+  background: #101020;
+  font: 700 .85rem/1.4 ui-monospace, monospace;
+  text-transform: uppercase;
+}
+
+.arcade-brand span, .arcade-nav { color: #a6ffe5; }
+.arcade-intro { margin-bottom: 2rem; }
+.arcade-intro h1 {
+  margin-bottom: 0;
+  font-family: ui-monospace, monospace;
+  font-size: clamp(2rem, 6vw, 4.5rem);
+  text-transform: uppercase;
+}
+
+.arcade-home .game {
+  --accent: #a6ffe5;
+  border: 2px solid #494061;
+  border-radius: .35rem;
+  background: #181629;
+  box-shadow: 0 .45rem 0 #090815;
+}
+
+.arcade-home .archive { --accent: #ffd084; }
+.arcade-home .game:hover,
+.arcade-home .game:focus-visible { border-color: var(--accent); }
+
+.arcade-home .game-art {
+  position: relative;
+  margin: .75rem .75rem 0;
+  border: 2px solid #0a0a14;
+  border-radius: .25rem;
+}
+
+.arcade-home .game-art::after {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, #0003 0 1px, transparent 1px 4px);
+  content: "";
+  pointer-events: none;
+}
+
+.arcade-home .game h2 {
+  font: 700 clamp(1.2rem, 2.7vw, 2rem)/1.2 ui-monospace, monospace;
+}
+
+.arcade-open {
+  display: flex;
+  align-self: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: auto;
+  padding: .5rem .7rem;
+  color: #141225;
+  background: var(--accent);
+  font: 700 .8rem/1.25 ui-monospace, monospace;
+  text-transform: uppercase;
+}
+
+@media (max-width: 650px) {
+  main { padding-block: 2rem; }
+  .games, .chapters { grid-template-columns: 1fr; }
+}
