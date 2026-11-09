@@ -257,3 +257,8 @@ body.case02-active .briefing{background:linear-gradient(rgba(8,30,32,.94),rgba(7
 }
 
 @media (prefers-reduced-motion: reduce) { .sound-wave { animation: none; } }
+
+/* Il logo segnala il ritorno all’archivio soltanto fuori dalla scelta dei casi. */
+body:has(#caseHub.hidden) .brand:is(:hover, :focus-visible) { color: var(--amber); }
+body:has(#caseHub.hidden) .brand:is(:hover, :focus-visible) .brand-mark { background: var(--amber); color: #071719; }
+body:has(#caseHub.hidden) .brand:focus-visible { outline: 1px solid var(--amber); outline-offset: 6px; }

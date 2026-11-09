@@ -125,8 +125,10 @@
 // Home returns to the shared hub when present; standalone copies keep their own home.
 (() => {
   const home = document.querySelector('[data-games-home]');
-  if (!home || location.protocol === 'file:') return;
+  if (!home) return;
   const hub = new URL('../index.html', location.href);
+  // fetch non può verificare la home con file://: usa il percorso relativo del laboratorio.
+  if (location.protocol === 'file:') { home.href = hub.href; return; }
   fetch(hub, {cache: 'no-store'})
     .then(response => response.ok ? response.text() : '')
     .then(html => {

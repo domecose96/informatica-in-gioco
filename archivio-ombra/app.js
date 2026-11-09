@@ -169,7 +169,19 @@ function resetDatabase(mode=currentCase){
 }
 
 async function initDb(){
-  SQLRuntime=await initSqlJs({locateFile:file=>`vendor/${file}`});
+  const sqliteOptions={locateFile:file=>`vendor/${file}`};
+  if(location.protocol==='file:'){
+    await new Promise((resolve,reject)=>{
+      const script=document.createElement('script');
+      script.src='vendor/sql-wasm-local.js';
+      script.onload=resolve;
+      script.onerror=()=>reject(new Error('Runtime SQLite locale non disponibile.'));
+      document.head.append(script);
+    });
+    if(!(window.ArchivioSqlWasm instanceof Uint8Array))throw new Error('Runtime SQLite locale non valido.');
+    sqliteOptions.wasmBinary=window.ArchivioSqlWasm;
+  }
+  SQLRuntime=await initSqlJs(sqliteOptions);
   resetDatabase('mystery');
   $('runBtn').disabled=false;$('startBtn').disabled=false;$('startTrainingBtn').disabled=false;$('beginTrainingBtn').disabled=false;$('startCaseTwoBtn').disabled=false;
   $('startBtn').innerHTML='<span class="case-cta-copy"><small>CASO 01 · PRONTO</small><strong>Avvia il gioco</strong></span><span class="case-cta-seal" aria-hidden="true">01</span>';
@@ -642,8 +654,10 @@ renderRelationalSchema();initDb().catch(err=>{$('dbStatus').className='footer-st
 // Home returns to the shared hub when present; standalone copies keep their own home.
 (() => {
   const home = document.querySelector('[data-games-home]');
-  if (!home || location.protocol === 'file:') return;
+  if (!home) return;
   const hub = new URL('../index.html', location.href);
+  // fetch non può verificare la home con file://: usa il percorso relativo del laboratorio.
+  if (location.protocol === 'file:') { home.href = hub.href; return; }
   fetch(hub, {cache: 'no-store'})
     .then(response => response.ok ? response.text() : '')
     .then(html => {

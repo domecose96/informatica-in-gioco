@@ -136,3 +136,13 @@ code { color: #94e4cf; }
   main { padding-block: 2rem; }
   .games, .chapters { grid-template-columns: 1fr; }
 }
+
+.arcade-home .network { --accent: #8ccfe0; }
+.network .game-art svg { display:block; width:100%; height:100%; }
+.game-description { margin:0 0 1rem; font-size:.85rem; }
+
+.network .game-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.arcade-home .game.coming-soon { cursor: default; }
+.arcade-home .game.coming-soon:hover { border-color: #494061; }
+.game-availability { margin: 1rem 0 0; color: var(--accent); font: 700 .8rem/1.5 ui-monospace, monospace; text-transform: uppercase; letter-spacing: .04em; }
