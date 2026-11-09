@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');
+const {buildings,lessons,isBuildingDiscovered}=require('../data.js');
+const known=(completed,studied)=>buildings.filter(site=>isBuildingDiscovered(site.id,completed,studied)).map(site=>site.id);
+assert.deepEqual(known(0,[]),['school']);
+assert.deepEqual(known(0,lessons.slice(0,3).map(l=>l.id)),['school']);
+const certificate=lessons.map(l=>l.id);
+assert.deepEqual(known(0,certificate),['school','hq','hospital']);
+assert.deepEqual(known(1,certificate),['school','hq','hospital','rescue']);
+assert.deepEqual(known(2,certificate),['school','hq','hospital','rescue','townhall']);
+assert.equal(isBuildingDiscovered('unknown',0,certificate),false);
+console.log('OK: edifici scoperti progressivamente, senza anticipare gli incarichi.');

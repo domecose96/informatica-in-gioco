@@ -9,8 +9,8 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="base.css?v=1">
   <link rel="stylesheet" href="robot.css?v=43">
-  <script src="robot-ui.js?v=4" defer></script>
-  <script src="robot-levels.js?v=78" defer></script>
+  <script src="robot-ui.js?v=5" defer></script>
+  <script src="robot-levels.js?v=102" defer></script>
   <script src="robot-map.js?v=52" defer></script>
 </head>
 <body class="robot-home robot-paths">
@@ -48,12 +48,12 @@
   <dialog class="robot-instructions" id="robot-instructions" aria-labelledby="robot-help-title">
     <div class="robot-help-heading"><h2 id="robot-help-title">Come si gioca</h2><button class="robot-icon-button" id="robot-help-close" type="button" aria-label="Chiudi istruzioni">×</button></div>
     <ol>
-      <li><strong>Costruisci i comandi</strong><p>Completa la funzione richiesta nell’editor C++. Il simulatore esegue le istruzioni C++ usate negli esercizi e mostra come reagisce il robot.</p></li>
-      <li><strong>Esegui e osserva</strong><p>Premi «Esegui e verifica». Leggi il risultato, correggi il codice e riprova. I numeri della griglia indicano x e y: aumentano verso destra e verso il basso.</p></li>
-      <li><strong>Consulta i suggerimenti</strong><p>Trovi spunti per ragionare e, quando servono, i pulsanti per leggere le funzioni che hai già costruito.</p></li>
-      <li><strong>Scegli il tuo percorso</strong><p>Segui i livelli numerati e i collaudi. Le sfide L sono facoltative: si sbloccano quando hai costruito le funzioni necessarie e non bloccano il percorso principale.</p></li>
+      <li><strong>Leggi cosa fare</strong><p>La consegna dice quale funzione completare. Scrivi le istruzioni dentro le sue graffe nell’editor C++.</p></li>
+      <li><strong>Guarda la griglia</strong><p>x è la colonna e aumenta verso destra. y è la riga e aumenta verso il basso. I numeri partono da 0. Dal livello 2, dx e dy indicano quanto cambiano x e y con un passo.</p></li>
+      <li><strong>Prova e correggi</strong><p>Premi «Esegui e verifica». Il gioco controlla il codice e ti dice cosa correggere. Puoi riprovare. Nei suggerimenti trovi esempi e le funzioni già costruite.</p></li>
+      <li><strong>Continua sulla mappa</strong><p>Segui i livelli numerati. Le sfide con la L sono facoltative e si aprono quando hai le funzioni necessarie.</p></li>
     </ol>
-    <p class="robot-help-footer">I progressi vengono salvati in questo browser. Il nome del gioco in alto a sinistra riporta alla mappa; la casa apre la Mappa livelli.</p>
+    <p class="robot-help-footer">I progressi vengono salvati in questo browser. Il nome del gioco in alto a sinistra riporta alla mappa; la casa apre il laboratorio con tutti i giochi.</p>
   </dialog>
   <audio id="robot-background-music" src="assets/robot-officina-arcade.wav" loop preload="metadata"></audio>
   <main>

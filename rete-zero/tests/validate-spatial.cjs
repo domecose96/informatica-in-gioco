@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict');
+const {cameraLimits,createLayout,circleIntersectsBox}=require('../spatial.js');
+const layout=createLayout();layout.reserve(0,0,6,4);
+assert.equal(layout.canPlant(0,0,1),false,'Un albero non può essere piantato nel palazzo.');
+assert.equal(layout.canPlant(3.5,0,1),false,'Anche la chioma deve rimanere fuori dalla facciata.');
+assert.equal(layout.canPlant(3.5,2.5,.9),false,'Controlla anche gli angoli dell’edificio.');
+assert.equal(layout.plant(5,4,1),true);
+assert.equal(layout.plant(5.2,4.2,1),false,'Evita chiome sovrapposte.');
+assert.equal(layout.plant(-5,-4,1),true);
+assert.equal(layout.treeCount,2);
+assert.equal(layout.treeOverlaps(),0);
+assert.equal(circleIntersectsBox(0,0,1,{minX:-3,maxX:3,minZ:-2,maxZ:2}),true);
+assert.equal(circleIntersectsBox(7,0,1,{minX:-3,maxX:3,minZ:-2,maxZ:2}),false);
+assert.ok(cameraLimits.minZoom>=1,'Non allontanare oltre la vista generale.');
+assert.ok(cameraLimits.maxZoom<=2.2,'Evita di entrare dentro gli edifici.');
+assert.ok(cameraLimits.minElevation>.7,'Mantieni la camera sufficientemente sopra la città.');
+assert.ok(cameraLimits.maxElevation<Math.PI/2);
+console.log('OK: ingombri di palazzi e chiome, distanza tra alberi e limiti della camera verificati.');

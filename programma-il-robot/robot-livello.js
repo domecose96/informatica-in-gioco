@@ -5,9 +5,7 @@ function mountRobotLevel(level) {
   const board = find('#robot-board'), actor = find('#robot-actor'), goal = find('#robot-goal');
   const directionControls = find('#robot-directions'), stepValues = find('#robot-step-values');
   const read = key => { try { return localStorage.getItem(key); } catch { return null; } };
-  const collectionDemo = level.coinMode === 'collect'
-    ? '\n\n// Sequenza del banco già pronta.\n' + RobotEngine.collectionMain() : '';
-  const starter = RobotEngine.starter(level, ROBOT_LEVELS, read) + collectionDemo;
+  const starter = RobotEngine.starter(level, ROBOT_LEVELS, read);
   const access = robotLevelAccess(level, read);
 
   const coinMode = level.coinMode;
@@ -41,7 +39,7 @@ function mountRobotLevel(level) {
   const previewOptions = RobotEngine.previewOptions(level);
   const trials = coinMode === 'collect'
     ? [{...level.checks[0], name:'Tre monete', start:level.start, steps:3},
-       {...level.checks[0], name:'Casella vuota', start:{x:0,y:3}, steps:1}]
+       {...level.checks[0], name:'Casella vuota', start:{x:0,y:3}, steps:3}]
     : coinMode ? [level.checks[0]]
     : level.functionName === 'arrivato'
     ? [{...level.checks[0], name: 'Prima della stella', start: level.start},
@@ -73,10 +71,11 @@ function mountRobotLevel(level) {
       ]
     : level.checks;
   const initialMessage = coinMode === 'place' ? 'Ogni esecuzione estrae di nuovo le posizioni delle monete.'
-    : coinMode === 'collect' ? 'Scegli la prova. Il robot avanza e richiama raccogliMoneta() dopo ogni passo.'
+    : coinMode === 'collect' ? 'Scegli la prova, poi esegui: il banco fa tre passi e controlla la moneta dopo ciascuno.'
     : checksConsumption ? 'Il banco esegue tre comandi tra passi e svolte: energia scende da 12 a 9 e la batteria passa a tre tacche.' : checksBattery ? 'Scegli la carica iniziale. Il banco esegue passi e svolte e controlla la batteria a ogni comando.' : checksRecharge ? 'Scegli lo stato del robot, poi verifica ricarica().' : checksCoordinates
     ? 'Scegli una prova, poi esegui il codice.'
     : level.functionName === 'arrivato' ? 'Scegli la posizione del robot rispetto alla stella, poi esegui il codice.'
+    : level.number === 6 ? 'Completa collaudo(), poi esegui il codice.'
     : 'Scegli una direzione, poi esegui il codice.';
   let selectedTrial = trials[0], runId = 0;
   document.title = `${level.title} · Programma il robot`;
@@ -88,6 +87,15 @@ function mountRobotLevel(level) {
     const row = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd');
     dt.textContent = name; dd.textContent = description; row.append(dt, dd); return row;
   }));
+  if (level.number <= 5) {
+    const guide = document.createElement('div'); guide.className = 'robot-direction-guide';
+    const title = document.createElement('p'); title.textContent = 'Un passo cambia x e y così:'; guide.append(title);
+    const table = document.createElement('table'); table.setAttribute('aria-label', 'Valori di dx e dy per un passo nelle quattro direzioni');
+    const header = document.createElement('tr');
+    for (const label of ['Direzione', 'dx: cambia x', 'dy: cambia y']) { const th = document.createElement('th'); th.textContent = label; header.append(th); } table.append(header);
+    for (const direction of ROBOT_DIRECTIONS) { const row = document.createElement('tr'); for (const text of [direction.arrow + ' ' + direction.name, String(direction.dx), String(direction.dy)]) { const cell = document.createElement('td'); cell.textContent = text; row.append(cell); } table.append(row); }
+    guide.append(table); find('.robot-hint-panel').append(guide);
+  }
   find('#simulation-title').textContent = level.maze ? 'Pista di missione' : 'Banco di prova';
   const nextNumber = Number.parseInt(level.displayNumber, 10) + 1;
   const nextDisplayNumber = level.optional ? `${nextNumber}L` : String(nextNumber).padStart(2, '0');
@@ -101,7 +109,6 @@ function mountRobotLevel(level) {
   editor.value = ((level.referenceHelpers || level.advanced || (level.number >= 3 && level.number <= 5)) && savedCode
     ? RobotEngine.extractFunction(savedCode, level.functionName, level.arity || 0)
     : savedCode) || RobotEngine.starter(level, ROBOT_LEVELS, read);
-  editor.value += collectionDemo;
   if (!savedCode && level.number > 2) {
     requestAnimationFrame(() => {
       const signature = level.functionName === 'main' ? 'int main()' : `${level.returnType || "void"} ${level.functionName}(${level.parameters || ""})`;
@@ -119,22 +126,62 @@ function mountRobotLevel(level) {
     const preview = find('#robot-function-preview');
     const code = find('#robot-function-code');
     container.hidden = false;
-    for (const reference of visibleReferences) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.textContent = reference.label;
-      button.setAttribute('aria-expanded', 'false');
-      button.setAttribute('aria-controls', 'robot-function-preview');
-      button.addEventListener('click', () => {
-        const open = button.getAttribute('aria-expanded') !== 'true';
-        for (const sibling of buttons.children) sibling.setAttribute('aria-expanded', 'false');
-        button.setAttribute('aria-expanded', String(open));
-        preview.hidden = !open;
-        code.textContent = reference.code || `Completa il livello ${reference.displayNumber} per salvare ${reference.name}().`;
-        preview.setAttribute('aria-label', `Funzione ${reference.name}`);
-      });
-      buttons.append(button);
+    const categories = [
+      {label:'Movimenti', names:['avanza','indietro','giraDestra','giraSinistra','giraIndietro','avanzaSicuro']},
+      {label:'Sensori', names:['dentroGriglia','cellaMuro','casellaLibera','davantiLibero','destraLibera','sinistraLibera']},
+      {label:'Energia e arrivo', names:['cellaBase','consumaEnergia','batteriaScarica','ricarica','arrivato']},
+      {label:'Guida automatica', names:['passoAutomatico']},
+      {label:'Monete', names:['distribuisciMonete','raccogliMoneta']}
+    ];
+    const groups = categories.map(category => ({...category,
+      references:visibleReferences.filter(reference => category.names.includes(reference.name))
+    })).filter(group => group.references.length);
+    const uncategorized = visibleReferences.filter(reference => !categories.some(category => category.names.includes(reference.name)));
+    if (uncategorized.length) groups.push({label:'Altre funzioni',references:uncategorized});
+    function renderReferences(items) {
+      buttons.replaceChildren();
+      preview.hidden = true;
+      code.textContent = '';
+      for (const reference of items) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = reference.label;
+        button.setAttribute('aria-expanded', 'false');
+        button.setAttribute('aria-controls', 'robot-function-preview');
+        button.addEventListener('click', () => {
+          const open = button.getAttribute('aria-expanded') !== 'true';
+          for (const sibling of buttons.children) sibling.setAttribute('aria-expanded', 'false');
+          button.setAttribute('aria-expanded', String(open));
+          preview.hidden = !open;
+          code.textContent = reference.code || `Completa il livello ${reference.displayNumber} per salvare ${reference.name}().`;
+          preview.setAttribute('aria-label', `Funzione ${reference.name}`);
+        });
+        buttons.append(button);
+      }
     }
+    if (visibleReferences.length > 6 && groups.length > 1) {
+      const navigation = document.createElement('div');
+      navigation.className = 'robot-function-groups';
+      navigation.setAttribute('role','group');
+      navigation.setAttribute('aria-label','Gruppi di funzioni');
+      for (const [index, group] of groups.entries()) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = `${group.label} (${group.references.length})`;
+        button.setAttribute('aria-pressed',String(index === 0));
+        button.setAttribute('aria-controls','robot-function-buttons');
+        button.addEventListener('click', () => {
+          for (const sibling of navigation.children) sibling.setAttribute('aria-pressed','false');
+          button.setAttribute('aria-pressed','true');
+          buttons.setAttribute('aria-label',group.label);
+          renderReferences(group.references);
+        });
+        navigation.append(button);
+      }
+      container.prepend(navigation);
+      buttons.setAttribute('aria-label',groups[0].label);
+      renderReferences(groups[0].references);
+    } else renderReferences(visibleReferences);
   }
   const apiDialog = find('#robot-api');
   const apiButton = find('#robot-api-open');
@@ -145,7 +192,7 @@ function mountRobotLevel(level) {
     'int y;  // riga del robot'
   ];
   if (level.number > 1) {
-    apiLines.push('int dx; // passo orizzontale', 'int dy; // passo verticale');
+    apiLines.push('int dx; // cambia x: +1 destra, -1 sinistra, 0 nessun cambio', 'int dy; // cambia y: +1 basso, -1 alto, 0 nessun cambio');
   }
   if (level.number >= 12) {
     apiLines.push(
@@ -209,10 +256,11 @@ function mountRobotLevel(level) {
   }
   function place(element, point) { element.style.setProperty('--x', point.x); element.style.setProperty('--y', point.y); }
   if (level.number === 4 || level.number === 5) find('.board-legend span').textContent = level.number === 4 ? '↻ Ruota a destra' : '↺ Ruota a sinistra';
+  const collaudoWalls = [];
   const walls = level.tiles && new Set(level.tiles.map(([x,y]) => `${x},${y}`));
   if (walls) for (let y = 0; y < level.size; y++) for (let x = 0; x < level.size; x++) {
-    if (!walls.has(`${x},${y}`)) {
-      const wall = document.createElement('span'); wall.className = 'robot-wall'; wall.setAttribute('aria-hidden','true'); place(wall,{x,y}); board.prepend(wall);
+    if (level.number === 6 || !walls.has(`${x},${y}`)) {
+      const wall = document.createElement('span'); wall.className = 'robot-wall'; wall.setAttribute('aria-hidden','true'); place(wall,{x,y}); board.prepend(wall); if (level.number === 6) collaudoWalls.push({wall,x,y});
     }
   }
   for (const [x,y] of level.baseTiles || []) {
@@ -226,7 +274,7 @@ function mountRobotLevel(level) {
   }
   const coinCounter = find('#robot-coin-counter');
   coinCounter.hidden = !coinMode;
-  directionControls.hidden = (coinMode && coinMode !== 'collect') || level.number === 1 || (level.maze && !hasChargeTrials);
+  directionControls.hidden = (coinMode && coinMode !== 'collect') || level.number === 1 || level.number === 6 || (level.maze && !hasChargeTrials);
   if (coinMode === 'collect' || hasChargeTrials || checksBattery || checksConsumption || level.functionName === 'arrivato') {
     directionControls.classList.add('coordinate-trials');
     directionControls.style.setProperty('--coordinate-trial-count', trials.length);
@@ -250,14 +298,47 @@ function mountRobotLevel(level) {
     goal.hidden = !(level.exposeGoal && level.goal);
     find('.board-legend span:first-child').textContent = goal.hidden ? '▣ Moneta' : '▣ Moneta · ✦ Traguardo';
   }
-  for (const trial of trials) {
+  const collectionSequence = find('#robot-collection-sequence');
+  function highlightCollectionStep(index) {
+    if (coinMode === 'collect') collectionSequence.setAttribute('data-active',String(index >= 0));
+  }
+  const consumptionSteps = [];
+  if (checksConsumption) {
+    directionControls.classList.add('consumption-sequence');
+    directionControls.setAttribute('aria-label', 'Sequenza del banco, eseguita automaticamente');
+    const labels = {avanza:'Avanza', giraDestra:'Gira a destra', indietro:'Indietro', giraSinistra:'Gira a sinistra'};
+    for (const [index, command] of selectedTrial.commands.entries()) {
+      const step = document.createElement('span');
+      step.className = 'robot-demo-step';
+      step.textContent = `${index + 1}. ${labels[command]}`;
+      step.setAttribute('aria-current','false');
+      directionControls.append(step);
+      consumptionSteps.push(step);
+    }
+  }
+  function highlightConsumptionStep(index) {
+    consumptionSteps.forEach((step, i) => {
+      step.setAttribute('aria-current',i === index ? 'step' : 'false');
+      step.classList.toggle('completed',i < index);
+    });
+  }
+  for (const trial of checksConsumption ? [] : trials) {
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = coinMode === 'collect' || hasChargeTrials || checksBattery || checksConsumption || level.functionName === 'arrivato' ? trial.name : checksCoordinates ? `${trial.name} (${trial.args.join(', ')})` : `${trial.arrow} ${trial.name}`;
     button.dataset.direction = trial.name;
     button.addEventListener('click', () => { selectedTrial = trial; clearTrial(); }); directionControls.append(button);
   }
+  if (coinMode === 'collect') {
+    collectionSequence.hidden = false;
+    collectionSequence.textContent = '3 passi automatici';
+    collectionSequence.setAttribute('title','Il banco controlla la moneta dopo ogni passo.');
+    collectionSequence.setAttribute('aria-label','Tre passi automatici, con controllo della moneta dopo ciascun passo');
+    directionControls.style.setProperty('--coordinate-trial-count',3);
+    directionControls.append(collectionSequence);
+  }
   function target(trial) {
+    if (level.number === 6) return RobotEngine.collaudoCourse(level,trial).goal;
     if (coinMode) return level.goal || previewStart(trial);
     if (checksCoordinates) return {x: trial.args[0], y: trial.args[1]};
     if (level.sideSensor) {
@@ -326,7 +407,7 @@ function mountRobotLevel(level) {
       board.prepend(marker);
       coinMarkers.set(cell,marker);
     }
-    if (position.command === 'raccogliMoneta') {
+    if (position.command === 'raccogliMoneta' && position.coinCollected !== false) {
       robotSprite.src = 'assets/robot-cuoricini.png';
     }
     const count = `Raccolte ${position.moneteRaccolte || 0}/${level.coinTotal} · Disponibili ${remaining.length}`;
@@ -335,6 +416,12 @@ function mountRobotLevel(level) {
   }
 
   function showTrial(trial, position) {
+    if (coinMode === 'collect' && !position) highlightCollectionStep(-1);
+    if (checksConsumption && !position) highlightConsumptionStep(-1);
+    if (level.number === 6) {
+      const course = RobotEngine.collaudoCourse(level, trial), free = new Set(course.tiles.map(([x,y])=>`${x},${y}`));
+      for (const {wall,x,y} of collaudoWalls) wall.hidden = free.has(`${x},${y}`);
+    }
     const start = previewStart(trial);
     position ??= {...start, ...trial, ...(hasEnergy ? {energia: trial.energia ?? level.energiaIniziale ?? level.caricaMassima} : {})};
     const direction = ROBOT_DIRECTIONS.find(d => d.dx === position.dx && d.dy === position.dy);
@@ -347,6 +434,12 @@ function mountRobotLevel(level) {
       : checksCoordinates
       ? `Punto da verificare · colonna = ${trial.args[0]} · riga = ${trial.args[1]}`
       : `Passo verso ${direction?.name || trial.name} · dx = ${position.dx} · dy = ${position.dy}${level.number === 10 ? ` · passi = ${level.forwardRoom}` : ""}`;
+    const directionText = stepValues.textContent.match(/^(Passo verso .*?|Punto da verificare)( · (?:dx = -?\d+ · dy = -?\d+|colonna = -?\d+ · riga = -?\d+))(.*)$/);
+    if (directionText) {
+      const prefix = document.createElement('span'), values = document.createElement('strong'), suffix = document.createElement('span');
+      prefix.textContent = directionText[1]; values.textContent = directionText[2]; suffix.textContent = directionText[3];
+      stepValues.replaceChildren(prefix, values, suffix);
+    }
     for (const button of directionControls.querySelectorAll('button')) button.setAttribute('aria-pressed', String(button.dataset.direction === trial.name));
     place(goal, target(trial));
     goal.textContent = level.number === 4 ? '↻' : level.number === 5 ? '↺' : '✦';
@@ -385,7 +478,7 @@ function mountRobotLevel(level) {
       board.setAttribute('aria-label', `Griglia ${level.size} per ${level.size}. Coordinate da verificare (${trial.args.join(', ')}).${checksBase ? ` Robot in (${displayedPosition.x}, ${displayedPosition.y}).` : ''}`);
       return;
     }
-    board.setAttribute('aria-label', `Griglia ${level.size} per ${level.size}. Robot in (${position.x}, ${position.y}), rivolto verso ${direction?.name || trial.name}. Traguardo (${target(trial).x}, ${target(trial).y}).${level.battery ? ` Batteria in (${level.battery.x}, ${level.battery.y})${position.collected ? ', raccolta' : ''}.` : ''}${level.maze ? ' I blocchi scuri sono muri.' : ''}`);
+    board.setAttribute('aria-label', `Griglia ${level.size} per ${level.size}. Robot in (${position.x}, ${position.y}), rivolto verso ${direction?.name || trial.name}. Traguardo (${target(trial).x}, ${target(trial).y}).${level.battery ? ` Batteria in (${level.battery.x}, ${level.battery.y})${position.collected ? ', raccolta' : ''}.` : ''}${level.maze || level.number===6 ? ' I blocchi scuri sono muri.' : ''}`);
   }
   function report(message, state = '') { feedback.textContent = message; feedback.dataset.state = state; if (state) window.RobotAudio?.effect(state); }
   function clearTrial() {
@@ -399,11 +492,12 @@ function mountRobotLevel(level) {
     event.preventDefault(); if (!access.unlocked) return; clearTrial();
     window.RobotAudio?.effect('run');
     const token = runId, trial = selectedTrial;
+    if (coinMode === 'collect') highlightCollectionStep(0);
     const submit = form.querySelector('[type="submit"]'); submit.disabled = true;
     try {
       const functions = RobotEngine.program(level, editor.value, references);
       let preview, failure;
-      const options = { ...level, ...previewOptions };
+      const options = { ...level, ...previewOptions, ...RobotEngine.collaudoCourse(level,trial) };
       if (coinMode === 'place') changeCoinSeed();
       if (coinMode) Object.assign(options, {coinSeed, coinTiles});
       if (coinMode === 'collect') options.collectionSteps = trial.steps;
@@ -418,16 +512,24 @@ function mountRobotLevel(level) {
       const frames = preview?.trace.slice(1) || [];
       // Long runs show the first moves and then the actual final state.
       const frameLimit = ['sweep','expedition'].includes(level.coinMode) ? frames.length : 20;
+      let consumptionStepIndex = 0;
       for (const frame of frames.slice(0, frameLimit)) {
         if (token !== runId) return;
         if (!reduced) await pause(180);
         if (token !== runId) return;
         if (frame.teleport) actor.classList.add('robot-reset');
+        if (checksConsumption) highlightConsumptionStep(consumptionStepIndex++);
+        if (coinMode === 'collect') highlightCollectionStep(frame.command === 'raccogliMoneta' ? 1 : 0);
         showTrial(trial,frame);
         const fullyChargedAtStation = hasEnergy && (level.transition || ['sweep','expedition'].includes(level.coinMode)) && frame.energia === level.caricaMassima
           && level.baseTiles.some(([x, y]) => x === frame.x && y === frame.y);
         if (fullyChargedAtStation) {
           report(['sweep','expedition'].includes(level.coinMode) ? `Stazione raggiunta. Batteria ricaricata · ${frame.energia}/${level.caricaMassima}.` : `Tappa 1 di 2 completata. Stazione raggiunta · ${frame.energia}/${level.caricaMassima}. Prossima tappa: la stella.`);
+        }
+        if (coinMode === 'collect') {
+          report(frame.command === 'raccogliMoneta'
+            ? (frame.coinCollected ? 'Moneta raccolta: conteggio aumentato di 1.' : 'Casella vuota: conteggio invariato.')
+            : 'Il banco fa avanzare il robot di una casella.');
         }
         if (checksConsumption) {
           report(`${frame.command}() · Energia ${frame.energia}/${level.caricaMassima}. Anche le svolte consumano una unità.`);
@@ -449,6 +551,8 @@ function mountRobotLevel(level) {
         if (!reduced) await pause(fullyChargedAtStation ? 1200 : checksRecharge && frame.energia === 0 && !frame.teleport ? 1800 : checksBattery ? 300 : 720);
       }
       if (token !== runId) return;
+      if (coinMode === 'collect') highlightCollectionStep(-1);
+      if (checksConsumption) highlightConsumptionStep(-1);
       if (frames.length > frameLimit) {
         actor.classList.add('robot-reset');
         showTrial(trial, frames.at(-1));
@@ -500,7 +604,7 @@ function mountRobotLevel(level) {
   editor.addEventListener('input', clearTrial);
   find('#reset-code').addEventListener('click', () => {
     editor.value = starter;
-    clearTrial();
+      clearTrial();
     editor.focus();
   });
   clearTrial();

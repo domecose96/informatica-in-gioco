@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Prepara dist/ con la home e i due giochi; esclude test e strumenti locali."""
+"""Prepara dist/ con la home e i giochi; esclude test e strumenti locali."""
 from pathlib import Path
 import shutil
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "dist"
-GAMES = ("archivio-ombra", "programma-il-robot")
+GAMES = ("archivio-ombra", "programma-il-robot", "rete-zero")
 
 def build():
     if OUTPUT.exists():

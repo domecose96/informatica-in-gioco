@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verifica collegamenti, risorse e autonomia delle due cartelle di gioco."""
+"""Verifica collegamenti, risorse e autonomia delle cartelle di gioco."""
 from pathlib import Path
 from html.parser import HTMLParser
 from urllib.parse import unquote, urlsplit
@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-GAMES = ("archivio-ombra", "programma-il-robot")
+GAMES = ("archivio-ombra", "programma-il-robot", "rete-zero")
 
 class References(HTMLParser):
     def __init__(self):
@@ -46,9 +46,17 @@ def check_folder(folder, boundary):
             used.add(target)
     return used
 
+# A cover can be owned by a game but used only by the shared home.
+home_references = References()
+home_references.feed((ROOT / 'index.html').read_text())
+home_assets = {(ROOT / unquote(urlsplit(ref).path)).resolve()
+               for ref in home_references.urls
+               if not urlsplit(ref).scheme and urlsplit(ref).path}
+
 for name in GAMES:
     game = ROOT / name
     used = check_folder(game, game)
+    used.update(asset for asset in home_assets if asset.is_relative_to(game))
     # Battery images are selected dynamically at runtime.
     if name == "programma-il-robot":
         used.update((game / "assets" / f"robot-batteria-{charge}.webp").resolve()
@@ -62,7 +70,7 @@ for name in GAMES:
         for test in sorted((copy / "tests").glob("*.cjs")):
             result = subprocess.run(["node", str(test)], cwd=tmp, capture_output=True, text=True)
             assert result.returncode == 0, result.stdout + result.stderr
-    print(f"OK: {name} funziona copiato da solo, senza dipendenze dall’altro gioco.")
+    print(f"OK: {name} funziona copiato da solo, senza dipendenze dagli altri giochi.")
 
 if (ROOT / "dist").exists():
     check_folder(ROOT / "dist", ROOT / "dist")

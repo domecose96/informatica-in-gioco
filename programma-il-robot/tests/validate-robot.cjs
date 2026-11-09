@@ -14,7 +14,7 @@ const solutions = [
   `${forward}\n${backward}`,
   `${forward}\n${backward}\n${right}`,
   helpers,
-  `${helpers}\nvoid collaudo() { avanza(); giraDestra(); avanza(); indietro(); giraSinistra(); avanza(); }`,
+  `${helpers}\nvoid collaudo() { indietro(); giraDestra(); avanza(); avanza(); giraSinistra(); avanza(); }`,
   route('avanza(); avanza(); giraSinistra(); avanza(); avanza(); giraDestra(); avanza(); avanza();'),
   route('avanza(); avanza(); giraSinistra(); avanza(); avanza(); indietro(); giraDestra(); avanza(); avanza();'),
   route('for (int i = 0; i < 6; i++) { avanza(); } giraSinistra(); for (int i = 0; i < 6; i++) { avanza(); }')
@@ -429,7 +429,7 @@ for (const [checkpointId, nextId, required] of [[44,15,[14]],[45,28,[36]]]) {
 }
 assert.throws(()=>engine.validate(levels[43],engine.parse(solutions[43].replace('giraSinistra(); while','giraDestra(); while'))));
 assert.throws(()=>engine.validate(levels[44],engine.parse(solutions[44].replace('if(batteriaScarica()){ ricarica(); }','ricarica();'))),/batteriaScarica|soltanto/);
-console.log('Collaudi 14 e 20: sensori ruotati, carica 0/1/12, traguardi variabili e sblocchi dei capitoli verificati.');
+console.log('Collaudi 14 e 20: sensori ruotati, carica zero/minima/piena, traguardi variabili e sblocchi dei capitoli verificati.');
 
 const normalNumbers = levels.filter(level=>!level.displayNumber.endsWith('L')).map(level=>Number(level.displayNumber)).sort((a,b)=>a-b);
 assert.deepEqual(normalNumbers,Array.from({length:27},(_,i)=>i+1));
@@ -463,3 +463,17 @@ for(const l of levels.filter(l=>l.optional)){
 assert.throws(()=>engine.validate(levels[31],engine.parse(solutions[31].replace('aperture==2','aperture==1'))));
 assert.throws(()=>engine.validate(levels[36],engine.parse(solutions[36].replace('while(!arrivato())','do').replace('passoAutomatico(); } return','passoAutomatico(); } while(!arrivato()); return'))));
 console.log('27 livelli principali senza sfide L; 18 sfide indipendenti, strumenti salvati, seconda apertura e arresto anticipato verificati.');
+
+// Il collaudo parte davvero in un vicolo cieco in tutte le direzioni.
+for(const direction of levels[5].checks){
+ const level=levels[5],start=engine.trialStart(level,direction),course=engine.collaudoCourse(level,direction);
+ const free=new Set(course.tiles.map(point=>point.join(',')));
+ assert.equal(free.has(`${start.x+direction.dx},${start.y+direction.dy}`),false);
+ const neighbours=[[1,0],[-1,0],[0,1],[0,-1]].filter(([dx,dy])=>free.has(`${start.x+dx},${start.y+dy}`));
+ assert.deepEqual(neighbours,[[-direction.dx||0,-direction.dy||0]]);
+ const result=engine.run(engine.parse(solutions[5]),'collaudo',start,direction,course);
+ assert.deepEqual([result.x,result.y],[course.goal.x,course.goal.y]);
+ assert.equal(result.calls.filter(name=>['avanza','indietro','giraDestra','giraSinistra'].includes(name))[0],'indietro');
+ assert.throws(()=>engine.run(engine.parse(solutions[5].replace('indietro(); giraDestra();','avanza(); giraDestra();')),'collaudo',start,direction,course),/Muro/);
+}
+console.log('Collaudo 06: vicolo cieco, primo passo indietro, muri e stella verificati in quattro orientamenti.');

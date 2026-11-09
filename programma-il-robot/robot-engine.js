@@ -237,8 +237,8 @@ const RobotEngine = (() => {
         }
         trace.push({...snapshot(),collected,command:name});
       }
-      if (coins && name === 'raccogliMoneta' && globals.moneteRaccolte !== before.moneteRaccolte) {
-        trace.push({...snapshot(), command:name});
+      if (coins && name === 'raccogliMoneta' && (options.coinMode === 'collect' || globals.moneteRaccolte !== before.moneteRaccolte)) {
+        trace.push({...snapshot(), command:name, coinCollected:globals.moneteRaccolte > before.moneteRaccolte});
       }
       if (name === 'ricarica') trace.push({...globals, command:name, teleport:globals.x !== before.x || globals.y !== before.y});
       if(fn.type!=='void'&&!(name==='main'&&!result)){
@@ -373,6 +373,17 @@ const RobotEngine = (() => {
     return {x: coordinate(dx), y: coordinate(dy)};
   }
 
+  // Il percorso del collaudo ruota insieme alla direzione iniziale.
+  function collaudoCourse(level, trial) {
+    if (level.number !== 6) return {};
+    const start = trialStart(level, trial), right = {x:-trial.dy, y:trial.dx};
+    const exit = {x:start.x-trial.dx, y:start.y-trial.dy};
+    const middle = {x:exit.x+right.x, y:exit.y+right.y};
+    const corner = {x:exit.x+2*right.x, y:exit.y+2*right.y};
+    const goal = {x:corner.x+trial.dx, y:corner.y+trial.dy};
+    return {size:level.size, goal, tiles:[[start.x,start.y],[exit.x,exit.y],[middle.x,middle.y],[corner.x,corner.y],[goal.x,goal.y]]};
+  }
+
   function validate(level, functions) {
     const entryFunction = functions.get(key(level.functionName, level.arity));
     const returnType = level.returnType || (level.functionName === 'main' ? 'int' : 'void');
@@ -398,10 +409,10 @@ const RobotEngine = (() => {
       if (level.number <= 5) result = checkPrimitive(level.number, functions, level.functionName, start, trial);
       else {
         const entry = functions.get(level.functionName).body;
-        result = run(functions, level.functionName, start, trial, level.maze ? level : {size:level.size});
-        const goal = level.goal || {x:start.x+2*trial.dx,y:start.y+2*trial.dy};
+        result = run(functions, level.functionName, start, trial, level.number === 6 ? collaudoCourse(level,trial) : level.maze ? level : {size:level.size});
+        const goal = level.number === 6 ? collaudoCourse(level,trial).goal : level.goal || {x:start.x+2*trial.dx,y:start.y+2*trial.dy};
         if (result.x !== goal.x || result.y !== goal.y) throw new Error(`Il robot arriva a (${result.x}, ${result.y}). Il traguardo è (${goal.x}, ${goal.y}).`);
-        if (level.number === 6 && (result.dx !== trial.dx || result.dy !== trial.dy || result.calls.filter(name => ['avanza','indietro','giraDestra','giraSinistra'].includes(name)).join(',') !== 'avanza,giraDestra,avanza,indietro,giraSinistra,avanza')) throw new Error('Segui le sei chiamate del collaudo nell’ordine richiesto, mantenendo l’orientamento iniziale.');
+        if (level.number === 6 && (result.dx !== trial.dx || result.dy !== trial.dy || result.calls.filter(name => ['avanza','indietro','giraDestra','giraSinistra'].includes(name)).join(',') !== 'indietro,giraDestra,avanza,avanza,giraSinistra,avanza')) throw new Error('Segui le sei chiamate del collaudo nell’ordine richiesto, mantenendo l’orientamento iniziale.');
         if (level.battery && (!result.collected || !result.usedBackAtBattery)) throw new Error('Raccogli la batteria ed esci dal vicolo usando indietro(), poi raggiungi la stella.');
         if (level.number === 20) {
           const loop = result.loops.find(item => item.type === 'for' && item.functionName === 'main'
@@ -747,9 +758,9 @@ const RobotEngine = (() => {
         tiles = tiles.map(([x,y]) => { const p = rotate({x,y}); return [p.x,p.y]; });
       }
     } else {
-      for (const energiaIniziale of [0,1,12]) for (const goal of [level.goal,{x:3,y:4}]) {
+      for (const energiaIniziale of [0,level.baseTiles[0][0] - level.start.x,12]) for (const goal of [level.goal,{x:3,y:4}]) {
         const result = run(functions,'main',level.start,level.checks[0],{...level,energiaIniziale,goal});
-        if (result.x !== goal.x || result.y !== goal.y || result.energia !== 12-(goal.x-1)) throw new Error('Ricaricati alla stazione e fermati sulla stella, anche quando la carica iniziale o il traguardo cambiano.');
+        if (result.x !== goal.x || result.y !== goal.y || result.energia !== level.caricaMassima-(goal.x-level.baseTiles[0][0])) throw new Error('Ricaricati alla stazione e fermati sulla stella, anche quando la carica iniziale o il traguardo cambiano.');
         if (!hasNode(body,'if') || !result.calls.includes('batteriaScarica') || !result.calls.includes('arrivato') || !result.calls.includes('avanzaSicuro')) throw new Error('Riusa batteriaScarica(), arrivato() e avanzaSicuro(). Un if gestisce la ricarica iniziale.');
         const recharges = result.calls.filter(name => name === 'ricarica').length;
         if (recharges !== (energiaIniziale===0 ? 1 : 0)) throw new Error('Richiama ricarica() soltanto quando il robot è scarico.');
@@ -838,6 +849,6 @@ const RobotEngine = (() => {
       if(!r.calls.includes(sensor))throw new Error(`Usa ${sensor}() per controllare il ciclo.`);
     }
   }
-  return { collectionMain, parse, run, starter, validate, blank, extractFunction, referenceFunctions, program, previewOptions, trialStart };
+  return { collectionMain, parse, run, starter, validate, blank, extractFunction, referenceFunctions, program, previewOptions, trialStart, collaudoCourse };
 })();
 if (typeof module !== 'undefined') module.exports = RobotEngine;

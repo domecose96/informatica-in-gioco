@@ -65,3 +65,7 @@ La cartella generata `dist/` contiene esclusivamente i file web. Il ramo GitHub 
 Sito: https://domecose96.github.io/informatica-in-gioco/
 
 Progressi e preferenze restano nel browser del visitatore. Le chiavi dei salvataggi non sono cambiate. Non occorre un server applicativo.
+
+## Prototipo Sistemi e reti
+
+`rete-zero/` contiene **Rete Zero — La città isolata**, un primo episodio autonomo con tre missioni su IPv4 e subnetting. È accessibile dalla home locale; non è stato pubblicato.
