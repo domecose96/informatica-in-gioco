@@ -21,14 +21,14 @@ viewport.scrollTo=({top})=>{viewport.scrollTop=top;viewport.events.scroll();};
 const canvas=doc.querySelector('#robot-route-map');
 canvas.querySelector('.route-zone-maze').offsetTop=170;
 canvas.querySelector('.route-zone-advanced').offsetTop=365;
-for (const l of levels)if(![34,37,35].includes(l.number))saved.set(l.progressKey,'done');
+for (const l of levels)if(![30,34,37,35].includes(l.number))saved.set(l.progressKey,'done');
 canvas.querySelector('.route-zone-coins').offsetTop=2075;
 canvas.querySelector('.route-zone-energy').offsetTop=935;
 canvas.querySelector('.route-zone-guidance').offsetTop=1505;
 const ctx=vm.createContext({document:doc,localStorage:{getItem:key=>saved.get(key)},matchMedia:()=>({matches:true}),ResizeObserver:class{observe(){}}});
 for(const f of ['robot-levels.js','robot-map.js'])vm.runInContext(fs.readFileSync('dist/'+f,'utf8'),ctx);
 assert.equal(canvas.children.length,45);
-assert.equal(canvas.querySelector('svg').children.length,51);
+assert.equal(canvas.querySelector('svg').children.length,47);
 assert.equal(new Set(canvas.children.map(e=>e.style.left+','+e.style.top)).size,45);
 const last=canvas.children[34].children[0];
 assert.equal(last.tag,'button');assert.equal(last.disabled,true);
@@ -36,7 +36,7 @@ const stops=[0];
 while(down.attrs['aria-disabled']!==true){down.events.click();stops.push(viewport.scrollTop);assert.ok(stops.length<=13);}
 assert.equal(stops.length,13);
 for(const expected of stops.slice(0,-1).reverse()){up.events.click();assert.equal(viewport.scrollTop,expected);}
-console.log('45 tessere, 51 tratti, 13 righe, collaudo bloccato e frecce verificati');
+console.log('45 tessere, 47 tratti, 13 righe, collaudo bloccato e frecce verificati');
 
 const point=id=>({x:parseFloat(canvas.children[id-1].style.left)*10,y:parseFloat(canvas.children[id-1].style.top)});
 assert.equal(point(44).x,300);
@@ -103,3 +103,8 @@ assert.equal(point(30).y-point(29).y,190);
 assert.equal(point(43).y,point(42).y);
 assert.equal(point(43).y,point(39).y);
 assert.ok(point(43).x>point(42).x && point(43).x<point(39).x);
+
+for(const edge of canvas.querySelector('svg').children){
+ const from=levels[Number(edge.attrs['data-from'])-1],to=levels[Number(edge.attrs['data-to'])-1];
+ if(from && to)assert.ok(!from.optional || to.optional,'Le sfide non confluiscono nei collaudi obbligatori');
+}

@@ -37,13 +37,13 @@ Il gioco blocca istruzioni SQL distruttive e query multiple: il database del cas
 
 Aprire `dist/programma-il-robot.html` per la mappa, oppure `dist/robot-livello.html?livello=1` per iniziare. Funziona anche aprendo i file direttamente nel browser.
 
-Il percorso ha 45 livelli: 27 tappe numerate, inclusi i collaudi, e 18 missioni nei labirinti. I primi sei sono comuni; dopo Collaudo si separano Officina avanzata e Labirinti. La mappa scorre verticalmente dentro il pannello. I progressi sono salvati con gli stessi identificatori dei primi nove livelli. Ogni tappa verifica i propri prerequisiti, anche aprendo direttamente il relativo URL. I labirinti con sensori richiedono sia la missione precedente sia le funzioni costruite in officina.
+Il percorso principale comprende 27 tappe numerate, inclusi i collaudi. Le 18 missioni L sono sfide facoltative: ciascuna si sblocca con le funzioni necessarie del percorso principale, senza richiedere altre sfide. Nessuna missione L blocca i livelli numerati o i collaudi. La mappa distingue le sfide con l’etichetta «Facoltativo». Identificatori e chiavi dei progressi rimangono invariati.
 
 L’officina avanzata introduce parametri, sovraccarico di avanza, dietrofront, valori bool, controlli dei bordi, sensori e avanzamento condizionale. Le missioni verificano for, while e do…while anche con percorsi e basi di lunghezza diversa. Le funzioni precedenti si consultano dai suggerimenti e vengono caricate dal salvataggio; l’editor mostra solo la funzione dell’esercizio.
 
 `robot-levels.js` contiene consegne, percorsi e prerequisiti; `robot-engine.js` interpreta un sottoinsieme didattico di C++ senza eseguire JavaScript fornito dall’utente. Supporta funzioni void/int/bool, parametri per valore, chiamate, assegnazioni, espressioni aritmetiche e logiche, return, if/else, for, while e do…while. Le funzioni costruite e verificate in officina vengono riutilizzate nelle missioni successive. Non è un compilatore C++ completo; istruzioni, ricorsione e movimenti sono limitati.
 
-Controllo della logica: `node tests/validate-robot.cjs`. Controllo della mappa: `node tests/validate-robot-map.cjs`.
+Controllo della logica: `node tests/validate-robot.cjs`. Controllo della mappa: `node tests/validate-robot-map.cjs`. Simulazione degli editor e dei collegamenti tra livelli: `node tests/validate-robot-ui.cjs`.
 
 La testata del robot include istruzioni, Home dei giochi e controlli musicali in stile pixel. Il brano originale «Circuiti in movimento» è generato da `scripts/generate-robot-theme.py`. Musica inizialmente disattivata; volume e scelta di ascolto sono indipendenti da Archivio Ombra e salvati nel browser.
 

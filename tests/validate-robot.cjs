@@ -43,7 +43,7 @@ solutions.push(
 );
 solutions.push(`${helpers} ${bounds} ${wall} ${freeCell} ${sensor} ${safe} ${base} ${solutions[23]} int main(){ while(davantiLibero()){ avanzaSicuro(); } giraSinistra(); while(!cellaBase(x,y)){ avanzaSicuro(); } return 0; }`);
 solutions.push(`${helpers} ${bounds} ${wall} ${freeCell} ${sensor} ${safe} ${base} ${solutions[23]} ${solutions[22]} int main(){ while(!batteriaScarica()){ if(davantiLibero()){ avanzaSicuro(); } else { giraSinistra(); } } return 0; }`);
-solutions.push(`${helpers} ${bounds} ${wall} ${freeCell} ${sensor} ${safe} ${base} ${solutions[23]} ${solutions[22]} ${engine.extractFunction(solutions[21],'ricarica')} ${arrival} int main(){ if(batteriaScarica()){ ricarica(); } while(!arrivato()){ avanzaSicuro(); } return 0; }`);
+solutions.push(`${helpers} ${bounds} ${wall} ${freeCell} ${sensor} ${safe} ${base} ${solutions[23]} ${solutions[22]} ${engine.extractFunction(solutions[21],'ricarica')} ${arrival} int main(){ if(batteriaScarica()){ ricarica(); } while(!arrivato()){ indietro(); } return 0; }`);
 const rightSensor = 'bool destraLibera(){ return casellaLibera(x - dy, y + dx); }';
 const leftSensor = 'bool sinistraLibera(){ return casellaLibera(x + dy, y - dx); }';
 const decisionBody = 'if(destraLibera()){ giraDestra(); } else if(davantiLibero()){} else if(sinistraLibera()){ giraSinistra(); } else { giraIndietro(); } avanzaSicuro();';
@@ -53,7 +53,7 @@ solutions.push(`${autonomousHelpers} ${rightSensor}`);
 solutions.push(`${autonomousHelpers} ${rightSensor} ${leftSensor}`);
 solutions.push(`${autonomousHelpers} ${rightSensor} ${leftSensor} ${autoStep}`);
 solutions.push(`${autonomousHelpers} ${rightSensor} ${arrival} int main(){ while(!arrivato()){ if(destraLibera()){giraDestra();} avanzaSicuro(); } return 0; }`);
-solutions.push(`${autonomousHelpers} ${rightSensor} ${leftSensor} ${arrival} int main(){ while(!arrivato()){ if(sinistraLibera()){giraSinistra();} avanzaSicuro(); } return 0; }`);
+solutions.push(`${autonomousHelpers} ${rightSensor} ${leftSensor} ${arrival} int main(){ int aperture=0; while(!arrivato()){ if(sinistraLibera()){ aperture++; if(aperture==2){giraSinistra();} } avanzaSicuro(); } return 0; }`);
 solutions.push(`${autonomousHelpers} ${rightSensor} ${leftSensor} ${arrival} int main(){ while(!arrivato()){ ${decisionBody} } return 0; }`);
 solutions.push(`${autonomousHelpers} ${rightSensor} ${leftSensor} ${autoStep} ${arrival} int main(){ while(!arrivato()){ passoAutomatico(); } return 0; }`);
 solutions.push(`${autonomousHelpers} ${rightSensor} ${leftSensor} ${autoStep} ${arrival} int main(){ if(batteriaScarica()){ricarica();} while(!cellaBase(x,y)){ passoAutomatico(); } while(!arrivato()){ passoAutomatico(); } return 0; }`);
@@ -92,6 +92,7 @@ solutions.push(
 );
 solutions.push(`${helpers} ${base} ${solutions[23]} ${collect}
   int main() {
+    giraSinistra(); avanza(); raccogliMoneta(); giraDestra(); avanza(); giraDestra(); avanza(); giraSinistra();
     while (!cellaBase(x, y)) {
       avanza();
       raccogliMoneta();
@@ -182,36 +183,20 @@ for (const level of levels.filter(item => item.maze)) {
 console.log('Labirinti: solo main(), quattro riferimenti e vecchie soluzioni preservate.');
 
 const read = number => key => number.includes(Number(key.split('.')[2])) ? 'saved' : null;
-assert.equal(robotLevelAccess(levels[9], read([1,2,3,4,5,6])).unlocked, true);
-assert.equal(robotLevelAccess(levels[6], read([1,2,3,4,5,6])).unlocked, true);
-assert.equal(robotLevelAccess(levels[15], read([1,2,3,4,5,6,7,8,9])).unlocked, false);
-assert.equal(robotLevelAccess(levels[15], read(Array.from({length:14},(_,i)=>i+1).concat(18, 19, 20))).unlocked, true);
-assert.equal(robotLevelAccess(levels[16], read(Array.from({length:14},(_,i)=>i+1).concat(16))).unlocked, false);
-assert.equal(robotLevelAccess(levels[16], read(Array.from({length:16},(_,i)=>i+1).concat(18, 19, 20, 21, 44))).unlocked, true);
 assert.throws(()=>engine.validate(levels[11],engine.parse('bool dentroGriglia(int c,int r) { return c>=0 && r>=0 && c<5 && r<5; }')),/prova non superata/);
 assert.throws(()=>engine.validate(levels[12],engine.parse(`${bounds} bool davantiLibero() { return true; }`)),/prova non superata|Riusa/);
 assert.throws(()=>engine.validate(levels[15],engine.parse(`${helpers} ${bounds} ${wall} ${freeCell} ${sensor} ${safe} int main(){ for(int i=0;i<6;i++){ avanzaSicuro(); } return 0; }`)),/while/);
 assert.throws(()=>engine.validate(levels[16],engine.parse(`${helpers} ${base} int main(){ while(!cellaBase(x, y)){ avanza(); } return 0; }`)),/do/);
 assert.throws(()=>engine.run(engine.parse('int main(){while(true){} return 0;}'),'main',{x:0,y:0},{dx:1,dy:0}),/ciclo/);
 assert.throws(()=>engine.run(engine.parse('int main(){do {} while(true); return 0;}'),'main',{x:0,y:0},{dx:1,dy:0}),/ciclo/);
-assert.equal(robotLevelAccess(levels[18], read(Array.from({length:12},(_,i)=>i+1))).unlocked, true);
-assert.equal(robotLevelAccess(levels[12], read(Array.from({length:12},(_,i)=>i+1))).unlocked, false);
 assert.throws(() => engine.validate(levels[17], engine.parse(`${bounds} ${wall} bool casellaLibera(int colonna, int riga) { return !cellaMuro(colonna, riga); }`)), /Indice fuori|Usa dentroGriglia/);
 assert.throws(() => engine.validate(levels[18], engine.parse(wall.replace('[riga][colonna]', '[colonna][riga]'))), /prova non superata/);
-assert.equal(robotLevelAccess(levels[19], read([1,2,3,4,5,6,7,8,9,10,11])).unlocked, false);
-assert.equal(robotLevelAccess(levels[19], read([1,2,3,4,5,6,7,8,9,10,11,12])).unlocked, true);
-assert.equal(robotLevelAccess(levels[19], read([1,2,3,4,5,6,7,8,10,11,12])).unlocked, false);
 const through11 = [...Array.from({length:12}, (_, i) => i + 1), 18, 19, 20];
-assert.equal(robotLevelAccess(levels[15], read(through11)).unlocked, true);
-assert.equal(robotLevelAccess(levels[20], read([...through11, 16])).unlocked, false);
-assert.equal(robotLevelAccess(levels[20], read([...through11, 16, 13])).unlocked, true);
-assert.equal(robotLevelAccess(levels[16], read([...through11, 13, 14, 16, 21])).unlocked, false);
-assert.equal(robotLevelAccess(levels[16], read([...through11, 13, 14, 15, 16, 21, 44])).unlocked, true);
 const recharge = levels[21];
 const chargeRun = engine.run(engine.parse(solutions[21]), 'ricarica', recharge.start, recharge.checks[0], recharge);
 assert.deepEqual(chargeRun.trace.map(frame => frame.energia), [0, 12]);
 assert.equal(chargeRun.trace.at(-1).teleport, true);
-console.log('37 livelli: parametri, bool, sensori, while, do…while e prerequisiti dei due rami verificati.');
+console.log('Parametri, bool, sensori, while e do…while verificati.');
 
 const energyCheck = levels[22];
 assert.equal(energyCheck.displayNumber, '17');
@@ -222,7 +207,6 @@ assert.throws(() => engine.validate(energyCheck, engine.parse('bool batteriaScar
 const batteryDemo = engine.run(engine.parse(helpers + solutions[23] + solutions[22]), 'batteriaScarica', energyCheck.start, energyCheck.checks[0], {...energyCheck, batteryDemo:true});
 assert.equal(batteryDemo.value, true);
 assert.deepEqual(batteryDemo.trace.map(frame => frame.energia).filter((energy,index,array) => index === 0 || energy !== array[index-1]), Array.from({length:13}, (_,index) => 12-index));
-assert.equal(robotLevelAccess(levels[21], read(levels.filter(level => level.number !== 23).map(level=>level.number))).unlocked, false);
 console.log('Batteria: 12 movimenti, controllo di ogni carica e prerequisito del livello 17 verificati.');
 
 assert.equal(levels[23].displayNumber, '16');
@@ -300,8 +284,6 @@ assert.match(rechargeReferences.find(reference=>reference.name==='consumaEnergia
 console.log('Controllo batteria: nessun consumo o modifica, anche con carica residua; entrambe le funzioni disponibili nel 17.');
 
 assert.equal(levels[24].displayNumber,'8L');
-assert.equal(robotLevelAccess(levels[24],read(levels.filter(l=>l.number!==24).map(l=>l.number))).unlocked,false);
-assert.equal(robotLevelAccess(levels[24],read(levels.filter(l=>![22,23].includes(l.number)).map(l=>l.number))).unlocked,true);
 const maze8Program=engine.program(levels[24],engine.extractFunction(solutions[24],'main'),engine.referenceFunctions(levels[24],levels,key=>saved.get(key)));
 const maze8=engine.validate(levels[24],maze8Program)[0];
 assert.deepEqual(maze8.trace.map(frame=>frame.energia),[6,5,4,3,2,1,0]);
@@ -339,10 +321,9 @@ for (const id of [28,29,30,31,32,33,34,35]) {
   const program=engine.program(level,engine.extractFunction(solutions[id-1],level.functionName),references);
   assert.ok(engine.validate(level,program).length);
 }
-for(const [id,required] of [[28,22],[29,28],[30,33],[31,28],[32,29],[33,32],[34,30],[37,34],[35,37],[35,30]]){
+for(const [id,required] of [[28,22],[29,28],[30,29],[31,28],[32,29],[33,29],[34,30],[37,30],[35,30]]){
   assert.equal(robotLevelAccess(levels[id-1],read(levels.filter(level=>level.number!==required).map(level=>level.number))).unlocked,false,`${id} requires ${required}`);
 }
-assert.equal(robotLevelAccess(levels[34],read(levels.map(level=>level.number))).unlocked,true);
 const rightReferences=engine.referenceFunctions(levels[27],levels,key=>saved.get(key));
 assert.throws(()=>engine.validate(levels[27],engine.program(levels[27],'bool destraLibera(){ return davantiLibero(); }',rightReferences)),/prova non superata/);
 const leftReferences=engine.referenceFunctions(levels[28],levels,key=>saved.get(key));
@@ -398,9 +379,9 @@ console.log('Monete: quattro livelli, 100 disposizioni, raccolta senza duplicati
 
 const delivery = levels[40];
 assert.equal(engine.validate(delivery, engine.parse(solutions[40]))[0].energia, 2);
-const detour = solutions[40].replace('while (!cellaBase(x, y)) {',
-  'giraSinistra(); avanza(); giraDestra(); avanza(); giraDestra(); avanza(); while (!cellaBase(x, y)) {');
-assert.throws(() => engine.validate(delivery, engine.parse(detour)), /Batteria scarica prima della consegna/);
+const directDelivery = `${helpers} ${base} ${solutions[23]} ${collect}
+int main(){ while(!cellaBase(x,y)){ avanza(); raccogliMoneta(); } return 0; }`;
+assert.throws(() => engine.validate(delivery, engine.parse(directDelivery)), /tutte le monete/);
 
 for (const id of [42,43]) {
   const level = levels[id-1];
@@ -431,10 +412,10 @@ for (const id of [42,43]) {
     assert.throws(()=>engine.validate(level,engine.parse(solutions[id-1].replace('moneteRaccolte < NUMERO_MONETE || !arrivato()', 'moneteRaccolte < NUMERO_MONETE'))));
   }
 }
-console.log('18L e collaudo 25: 200 disposizioni sparse, serpentina ed esplorazione con ricariche e stella separate verificate.');
+console.log('18L e collaudo 27: 200 disposizioni sparse, serpentina ed esplorazione con ricariche e stella separate verificate.');
 
 // Intermediate checkpoints gate their chapter without changing saved level IDs.
-for (const [checkpointId, nextId, required] of [[44,15,[14,21]],[45,28,[36,27]]]) {
+for (const [checkpointId, nextId, required] of [[44,15,[14]],[45,28,[36]]]) {
   const checkpoint = levels[checkpointId-1];
   assert.deepEqual(checkpoint.requires,required);
   assert.equal(checkpoint.transition,true);
@@ -458,3 +439,27 @@ assert.equal(levels[44].displayNumber,'20');
 assert.equal(levels[34].displayNumber,'24');
 assert.equal(levels[42].displayNumber,'27');
 console.log('Numerazione continua 01–27: collaudi integrati, etichette univoche e ID dei salvataggi preservati.');
+
+// All 27 main stages can be completed with no optional mission saved.
+const mainPath=levels.filter(l=>!l.optional).sort((a,b)=>parseInt(a.displayNumber)-parseInt(b.displayNumber));
+const mainSaved=new Map();
+for(const l of mainPath){
+ assert.equal(robotLevelAccess(l,k=>mainSaved.get(k)).unlocked,true,`Main ${l.displayNumber} must not require L missions`);
+ assert.ok(l.requires.every(id=>!levels[id-1].optional));
+ const refs=engine.referenceFunctions(l,levels,k=>mainSaved.get(k));
+ const program=engine.program(l,engine.extractFunction(solutions[l.number-1],l.functionName,l.arity||0),refs);
+ assert.ok(engine.validate(l,program).length,`Main-only helpers: ${l.displayNumber}`);
+ mainSaved.set(l.progressKey,solutions[l.number-1]);
+}
+assert.equal(levels.filter(l=>l.optional).length,18);
+for(const l of levels.filter(l=>l.optional)){
+ assert.ok(l.requires.length>0 && l.requires.every(id=>!levels[id-1].optional));
+ assert.equal(robotLevelAccess(l,()=>null).unlocked,false);
+ assert.equal(robotLevelAccess(l,k=>mainSaved.get(k)).unlocked,true);
+ const refs=engine.referenceFunctions(l,levels,k=>mainSaved.get(k));
+ assert.ok(engine.validate(l,engine.program(l,engine.extractFunction(solutions[l.number-1],'main'),refs)).length);
+ for(const id of l.requires)assert.equal(robotLevelAccess(l,k=>k===levels[id-1].progressKey?null:mainSaved.get(k)).unlocked,false);
+}
+assert.throws(()=>engine.validate(levels[31],engine.parse(solutions[31].replace('aperture==2','aperture==1'))));
+assert.throws(()=>engine.validate(levels[36],engine.parse(solutions[36].replace('while(!arrivato())','do').replace('passoAutomatico(); } return','passoAutomatico(); } while(!arrivato()); return'))));
+console.log('27 livelli principali senza sfide L; 18 sfide indipendenti, strumenti salvati, seconda apertura e arresto anticipato verificati.');

@@ -80,7 +80,7 @@ function mountRobotLevel(level) {
     : 'Scegli una direzione, poi esegui il codice.';
   let selectedTrial = trials[0], runId = 0;
   document.title = `${level.title} · Programma il robot`;
-  find('#level-kicker').textContent = `${level.checkpoint ? 'COLLAUDO INTERMEDIO' : (level.transition || level.coinFinal) ? 'COLLAUDO FINALE' : level.maze ? 'LABIRINTI' : level.advanced ? 'OFFICINA AVANZATA' : 'OFFICINA'} · LIVELLO ${level.displayNumber}`;
+  find('#level-kicker').textContent = `${level.checkpoint ? 'COLLAUDO INTERMEDIO' : (level.transition || level.coinFinal) ? 'COLLAUDO FINALE' : level.optional ? 'SFIDA FACOLTATIVA' : level.maze ? 'LABIRINTI' : level.advanced ? 'OFFICINA AVANZATA' : 'OFFICINA'} · LIVELLO ${level.displayNumber}`;
   find('#level-title').textContent = level.title;
   find('#level-task').textContent = level.task;
   find('#level-hint').textContent = level.hint;
@@ -90,26 +90,12 @@ function mountRobotLevel(level) {
   }));
   find('#simulation-title').textContent = level.maze ? 'Pista di missione' : 'Banco di prova';
   const nextNumber = Number.parseInt(level.displayNumber, 10) + 1;
-  const nextDisplayNumber = level.maze && !level.checkpoint
-    ? `${nextNumber}L` : String(nextNumber).padStart(2, '0');
-  // Cross-branch destinations use stable IDs so visible numbering can evolve.
-  const nextLevelId = ({39:40,42:43,37:35})[level.number];
-  const nextLevel = level.number === 6 || (level.transition && !level.checkpoint) || level.coinFinal
-    ? null
-    : nextLevelId ? ROBOT_LEVELS[nextLevelId-1]
-    : ROBOT_LEVELS.find(item => item.displayNumber === nextDisplayNumber);
-
+  const nextDisplayNumber = level.optional ? `${nextNumber}L` : String(nextNumber).padStart(2, '0');
+  const nextLevel = ROBOT_LEVELS.find(item => item.displayNumber === nextDisplayNumber);
   function updateFinishLink() {
-    const mazeToPlay = !coinMode && !level.maze && ROBOT_LEVELS.some(mission =>
-      mission.maze && !mission.transition && mission.requires.includes(level.number)
-      && !read(mission.progressKey) && robotLevelAccess(mission, read).unlocked
-    );
-    const canContinue = (!mazeToPlay || nextLevel?.checkpoint || level.checkpoint) && nextLevel && robotLevelAccess(nextLevel, read).unlocked;
+    const canContinue = nextLevel && robotLevelAccess(nextLevel, read).unlocked;
     finish.href = canContinue ? `robot-livello.html?livello=${nextLevel.number}` : 'programma-il-robot.html#percorso-robot';
-    finish.textContent = canContinue ? `Vai al livello ${nextLevel.displayNumber} →`
-      : level.coinFinal ? 'Torna alla mappa →'
-      : level.number === 6 || level.transition ? 'Scegli il percorso →'
-      : !level.maze ? 'Vai alla mappa →' : 'Torna alla mappa →';
+    finish.textContent = canContinue ? `Vai al livello ${nextLevel.displayNumber} →` : 'Torna alla mappa →';
   }
   const savedCode = read(level.progressKey);
   editor.value = ((level.referenceHelpers || level.advanced || (level.number >= 3 && level.number <= 5)) && savedCode
