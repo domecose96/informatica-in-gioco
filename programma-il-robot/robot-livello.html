@@ -8,11 +8,11 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="base.css?v=1">
   <link rel="stylesheet" href="robot.css?v=43">
-  <link rel="stylesheet" href="robot-livello.css?v=91">
+  <link rel="stylesheet" href="robot-livello.css?v=95">
   <script src="robot-ui.js?v=5" defer></script>
-  <script src="robot-levels.js?v=102" defer></script>
-  <script src="robot-engine.js?v=68" defer></script>
-  <script src="robot-livello.js?v=100" defer></script>
+  <script src="robot-levels.js?v=103" defer></script>
+  <script src="robot-engine.js?v=69" defer></script>
+  <script src="robot-livello.js?v=107" defer></script>
 </head>
 <body class="robot-home robot-level">
   <header class="site-header robot-header">
@@ -22,7 +22,6 @@
     </a>
     <nav class="robot-header-actions" aria-label="Menu del gioco">
       <button class="robot-icon-button robot-help-button" id="robot-help-open" type="button" aria-haspopup="dialog">Come si gioca</button>
-      <button class="robot-icon-button robot-help-button" id="robot-api-open" type="button" aria-haspopup="dialog">Riferimenti</button>
       <div class="robot-audio-control">
         <button class="robot-icon-button" id="robot-audio-open" type="button" aria-label="Apri controlli musica" title="Musica arcade" aria-expanded="false" aria-controls="robot-audio-panel">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6 1h8v9h-2V4H8v9H6v2H2v-2H0v-2h2V9h4V1Zm4 9h4v2h2v2h-2v2h-4v-2H8v-2h2v-2Z"/></svg>
@@ -52,7 +51,8 @@
     <ol>
       <li><strong>Leggi cosa fare</strong><p>La consegna dice quale funzione completare. Scrivi le istruzioni dentro le sue graffe nell’editor C++.</p></li>
       <li><strong>Guarda la griglia</strong><p>x è la colonna e aumenta verso destra. y è la riga e aumenta verso il basso. I numeri partono da 0. Dal livello 2, dx e dy indicano quanto cambiano x e y con un passo.</p></li>
-      <li><strong>Prova e correggi</strong><p>Premi «Esegui e verifica». Il gioco controlla il codice e ti dice cosa correggere. Puoi riprovare. Nei suggerimenti trovi esempi e le funzioni già costruite.</p></li>
+      <li><strong>Prova e correggi</strong><p>Premi «Esegui e verifica». Il gioco controlla il codice e ti dice cosa correggere. Puoi correggere il codice e riprovare.</p></li>
+      <li><strong>Usa gli aiuti accanto alla consegna</strong><p>In «Suggerimenti» trovi un aiuto per il livello. In «Riferimenti» trovi tutte le variabili e le funzioni che il gioco mette a disposizione per quella prova.</p></li>
       <li><strong>Continua sulla mappa</strong><p>Segui i livelli numerati. Le sfide con la L sono facoltative e si aprono quando hai le funzioni necessarie.</p></li>
     </ol>
     <p class="robot-help-footer">I progressi vengono salvati in questo browser. Il nome del gioco in alto a sinistra riporta alla mappa; la casa apre il laboratorio con tutti i giochi.</p>
@@ -61,22 +61,27 @@
     <div class="robot-help-heading"><h2 id="robot-api-title">Riferimenti C++</h2><button class="robot-icon-button" id="robot-api-close" type="button" aria-label="Chiudi riferimenti">×</button></div>
     <p>Il gioco prepara le variabili e le funzioni elencate qui. Nell’editor puoi usarle direttamente nella funzione che stai scrivendo.</p>
     <pre class="robot-api-code" tabindex="0"><code id="robot-api-code"></code></pre>
+    <div id="robot-function-references" hidden>
+      <h3>Consulta le funzioni</h3>
+      <div id="robot-function-buttons" role="group" aria-label="Consulta le funzioni già costruite"></div>
+      <pre id="robot-function-preview" tabindex="0" hidden><code id="robot-function-code"></code></pre>
+    </div>
   </dialog>
   <audio id="robot-background-music" src="assets/robot-officina-arcade.wav" loop preload="metadata"></audio>
   <main>
     <section class="robot-map level-workspace" aria-labelledby="level-title">
       <div class="level-workspace-heading">
         <p class="label" id="level-kicker"></p>
-        <details class="robot-hint">
-          <summary>Suggerimento</summary>
-          <div class="robot-hint-panel">
-            <p id="level-hint"></p>
-            <div id="robot-function-references" hidden>
-              <div id="robot-function-buttons" role="group" aria-label="Consulta le funzioni già costruite"></div>
-              <pre id="robot-function-preview" tabindex="0" hidden><code id="robot-function-code"></code></pre>
+        <div class="level-help-actions">
+          <button id="robot-tutorial-open" type="button" aria-controls="robot-tutorial" hidden>Tutorial</button>
+          <details class="robot-hint">
+            <summary>Suggerimenti</summary>
+            <div class="robot-hint-panel">
+              <p id="level-hint"></p>
             </div>
-          </div>
-        </details>
+          </details>
+          <button id="robot-api-open" type="button" aria-haspopup="dialog">Riferimenti</button>
+        </div>
       </div>
       <h1 id="level-title"></h1>
       <p id="level-task"></p>
@@ -131,5 +136,19 @@
       </div>
     </section>
   </main>
+  <div id="robot-tutorial" hidden>
+    <div class="robot-tour-highlight" aria-hidden="true"></div>
+    <section class="robot-tour-card" aria-labelledby="robot-tutorial-title">
+      <p class="robot-tour-step"></p>
+      <div role="status">
+        <h2 id="robot-tutorial-title"></h2>
+        <p class="robot-tour-copy"></p>
+      </div>
+      <div class="robot-tour-actions">
+        <button type="button" id="robot-tour-skip">Salta</button>
+        <button type="button" id="robot-tour-next">Avanti</button>
+      </div>
+    </section>
+  </div>
 </body>
 </html>

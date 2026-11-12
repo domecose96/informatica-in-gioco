@@ -13,6 +13,8 @@ class Element {
   setAttribute(k,v){this.attrs[k]=v;}
   getAttribute(k){return this.attrs[k];}
   addEventListener(k,fn){this.events[k]=fn;}
+  showModal(){this.open=true;}
+  focus(){this.focused=true;}
   setSelectionRange(){}
   createElement(tag){return new Element(tag);}
 }
@@ -22,10 +24,26 @@ const allSaved=new Map(levels.map(l=>[l.progressKey,solutions[l.number-1]]));
 const failures=[];
 let trialCount=0;
 async function runLevel(level, saved, expected, source) {
+ const shouldOpen=!saved.get('robot-level-one-intro-v3');
  const document=new Element();
- const context=vm.createContext({document, window:{location:{search:'?livello='+level.number}}, Image:Element, URLSearchParams, localStorage:{getItem:k=>saved.get(k),setItem:(k,v)=>saved.set(k,v)},requestAnimationFrame(){},matchMedia:()=>({matches:true}),setTimeout});
+ const context=vm.createContext({document, window:{addEventListener(){},location:{search:'?livello='+level.number}}, Image:Element, URLSearchParams, localStorage:{getItem:k=>saved.get(k),setItem:(k,v)=>saved.set(k,v)},requestAnimationFrame(){},matchMedia:()=>({matches:true}),setTimeout});
  for(const file of ['robot-levels.js','robot-engine.js','robot-livello.js'])vm.runInContext(read(file),context);
  const q=key=>document.querySelector(key);
+ if(level.number===1){
+  assert.equal(q('#robot-tutorial-open').hidden,false);
+  assert.equal(!q('#robot-tutorial').hidden,shouldOpen);
+  if(shouldOpen){
+   assert.equal(saved.get('robot-level-one-intro-v3'),'seen');
+   const next=q('#robot-tour-next');
+   assert.equal(q('#robot-tutorial-title').textContent,'Consegna');
+   for(let i=0;i<5;i++)next.events.click();
+   assert.equal(next.textContent,'Fine');
+   assert.equal(q('#robot-tutorial-title').textContent,'Esegui e verifica');
+   next.events.click();
+   assert.equal(q('#robot-tutorial').hidden,true);
+   assert.equal(q('#robot-code').focused,true);
+  }
+ }
  const form=q('#robot-form'), feedback=q('#robot-feedback'), editor=q('#robot-code');
  if(!expected){assert.equal(editor.disabled,true);return;}
  assert.equal(editor.disabled,undefined);

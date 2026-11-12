@@ -356,7 +356,7 @@ const RobotEngine = (() => {
     }
     if (!level.referenceHelpers && !level.advanced) return functions;
     if (functions.size !== 1 || !functions.has(key(level.functionName, level.arity))) {
-      throw new Error(`Nell’editor scrivi solo ${level.functionName}(): gli altri comandi sono già disponibili nei suggerimenti.`);
+      throw new Error(`Nell’editor scrivi solo ${level.functionName}(): gli altri comandi sono già disponibili in «Riferimenti».`);
     }
     for (const reference of references) {
       if (!reference.code) throw new Error(`Manca la funzione salvata ${reference.name}(). Completa il livello ${reference.displayNumber} per usarla in questo livello.`);
