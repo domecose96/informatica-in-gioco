@@ -1,4 +1,4 @@
-function mountRobotLevel(level) {
+function mountRobotLevel(level, replayIntro) {
   const find = selector => document.querySelector(selector);
   const form = find('#robot-form'), editor = find('#robot-code');
   const feedback = find('#robot-feedback'), finish = find('#robot-finish');
@@ -241,7 +241,10 @@ function mountRobotLevel(level) {
       'int moneteRaccolte; // parte da zero', 'int casuale(int limite); // da 0 a limite escluso');
   }
   find('#robot-api-code').textContent = apiLines.join('\n');
-  apiButton.addEventListener('click', () => apiDialog.showModal());
+  apiButton.addEventListener('click', () => {
+    hint.open = false;
+    apiDialog.showModal();
+  });
   apiClose.addEventListener('click', () => apiDialog.close());
   apiDialog.addEventListener('close', () => apiButton.focus());
   editor.maxLength = 12000;
@@ -485,7 +488,7 @@ function mountRobotLevel(level) {
     runId++; finish.hidden = true;
     form.querySelector('[type="submit"]').disabled = false;
     actor.classList.add('robot-reset'); showTrial(selectedTrial); void actor.offsetWidth; actor.classList.remove('robot-reset');
-    report(checksConsumption ? `Sequenza del banco: ${selectedTrial.commands.map(command => command + '()').join(' → ')}.` : checksRecharge ? (selectedTrial.energia > 0 ? 'Robot carico: ricarica() deve lasciarlo fermo senza modificare energia.' : 'Robot scarico: ricarica() deve riportarlo alla base e ripristinare energia.') : level.number === 1 ? 'Esegui il codice per fare un passo verso destra.' : level.checkpoint === 'sensors' ? 'Percorri i due tratti con i sensori e fermati sulla stella.' : level.transition ? (selectedTrial.energia > 0 ? 'Prova a batteria carica. Segui la pista fino alla stazione, poi raggiungi la stella.' : 'Prova a batteria scarica. Ricaricati alla stazione, poi raggiungi la stella.') : coinMode === 'delivery' ? 'Raccogli tre monete e raggiungi la base con energia residua.' : coinMode === 'hunt' ? 'Scrivi il percorso nel main() e raccogli tutte le monete.' : level.maze ? 'Scrivi il percorso nel main(), poi esegui. Puoi consultare le tue funzioni nei suggerimenti.' : initialMessage);
+    report(checksConsumption ? `Sequenza del banco: ${selectedTrial.commands.map(command => command + '()').join(' → ')}.` : checksRecharge ? (selectedTrial.energia > 0 ? 'Robot carico: ricarica() deve lasciarlo fermo senza modificare energia.' : 'Robot scarico: ricarica() deve riportarlo alla base e ripristinare energia.') : level.number === 1 ? 'Esegui il codice per fare un passo verso destra.' : level.checkpoint === 'sensors' ? 'Percorri i due tratti con i sensori e fermati sulla stella.' : level.transition ? (selectedTrial.energia > 0 ? 'Prova a batteria carica. Segui la pista fino alla stazione, poi raggiungi la stella.' : 'Prova a batteria scarica. Ricaricati alla stazione, poi raggiungi la stella.') : coinMode === 'delivery' ? 'Raccogli tre monete e raggiungi la base con energia residua.' : coinMode === 'hunt' ? 'Scrivi il percorso nel main() e raccogli tutte le monete.' : level.maze ? 'Scrivi il percorso nel main(), poi esegui. Puoi consultare le tue funzioni in «Riferimenti».' : initialMessage);
   }
   const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
   form.addEventListener('submit', async event => {
@@ -616,6 +619,110 @@ function mountRobotLevel(level) {
     form.querySelectorAll('button').forEach(button=>button.disabled=true);
     directionControls.querySelectorAll('button').forEach(button=>button.disabled=true);
   }
+  if (level.number === 1 && access.unlocked) mountRobotTutorial(replayIntro, read);
 }
-const requestedLevel = Number(new URLSearchParams(window.location.search).get('livello') || 1);
-mountRobotLevel(ROBOT_LEVELS.find(level => level.number === requestedLevel) || ROBOT_LEVELS[0]);
+
+function mountRobotTutorial(replayIntro, read) {
+  const find = selector => document.querySelector(selector);
+  const introKey = 'robot-level-one-intro-v3';
+  const tutorial = find('#robot-tutorial');
+  const launcher = find('#robot-tutorial-open');
+  const highlight = find('.robot-tour-highlight');
+  const card = find('.robot-tour-card');
+  const next = find('#robot-tour-next');
+  const steps = [
+    ['#level-task', 'Consegna', 'Qui leggi cosa deve fare il robot per superare il livello.'],
+    ['.robot-hint summary', 'Suggerimenti', 'Apri questo pulsante se ti serve un aiuto per l’esercizio.'],
+    ['#robot-api-open', 'Riferimenti', 'Qui trovi le variabili e le funzioni che puoi usare nel livello.'],
+    ['#robot-code', 'Editor C++', 'Scrivi la tua istruzione tra le graffe di avanza().'],
+    ['#robot-board', 'Banco di prova', 'Qui vedi il robot, il traguardo e il risultato del tuo codice.'],
+    ['#robot-form [type="submit"]', 'Esegui e verifica', 'Premi qui quando il codice è pronto. Puoi correggerlo e riprovare.']
+  ];
+  let step = 0;
+
+  function position() {
+    if (tutorial.hidden) return;
+    const target = find(steps[step][0]).getBoundingClientRect();
+    const { width, height } = card.getBoundingClientRect();
+    const gap = 14;
+    const clamp = (value, max) => Math.max(gap, Math.min(value, max - gap));
+    const centerX = target.left + target.width / 2;
+    const centerY = target.top + target.height / 2;
+    const vertical = [
+      ['below', centerX - width / 2, target.bottom + gap],
+      ['above', centerX - width / 2, target.top - height - gap]
+    ];
+    const horizontal = [
+      ['right', target.right + gap, centerY - height / 2],
+      ['left', target.left - width - gap, centerY - height / 2]
+    ];
+    const candidates = step === 1 || step === 2
+      ? [...vertical, ...horizontal]
+      : [...horizontal, ...vertical];
+    const placement = candidates.find(([side, x, y]) =>
+      side === 'right' || side === 'left'
+        ? x >= gap && x + width <= window.innerWidth - gap
+        : y >= gap && y + height <= window.innerHeight - gap);
+    const [side, x, y] = placement || ['none', centerX - width / 2, target.bottom + gap];
+    const left = clamp(x, window.innerWidth - width);
+    const top = clamp(y, window.innerHeight - height);
+    card.style.left = left + 'px';
+    card.style.top = top + 'px';
+    card.dataset.side = side;
+    card.style.setProperty('--tour-pointer-x', clamp(centerX - left, width) - card.clientLeft + 'px');
+    card.style.setProperty('--tour-pointer-y', clamp(centerY - top, height) + 'px');
+    Object.assign(highlight.style, {
+      left: target.left - 4 + 'px',
+      top: target.top - 4 + 'px',
+      width: target.width + 8 + 'px',
+      height: target.height + 8 + 'px'
+    });
+  }
+
+  function showStep() {
+    const [selector, title, copy] = steps[step];
+    find('.robot-tour-step').textContent = (step + 1) + ' / ' + steps.length;
+    find('#robot-tutorial-title').textContent = title;
+    find('.robot-tour-copy').textContent = copy;
+    next.textContent = step === steps.length - 1 ? 'Fine' : 'Avanti';
+    requestAnimationFrame(() => {
+      if (tutorial.hidden) return;
+      find(selector).scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+      position();
+    });
+  }
+
+  function start() {
+    step = 0;
+    try { localStorage.setItem(introKey, 'seen'); } catch {}
+    tutorial.hidden = false;
+    showStep();
+    next.focus({ preventScroll: true });
+  }
+
+  function finish() {
+    tutorial.hidden = true;
+    find('#robot-code').focus();
+  }
+
+  tutorial.hidden = true;
+  launcher.hidden = false;
+  launcher.addEventListener('click', start);
+  next.addEventListener('click', () => {
+    if (step === steps.length - 1) finish();
+    else {
+      step += 1;
+      showStep();
+    }
+  });
+  find('#robot-tour-skip').addEventListener('click', finish);
+  window.addEventListener('resize', position);
+  window.addEventListener('scroll', position, true);
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !tutorial.hidden) finish();
+  });
+  if (replayIntro || !read(introKey)) start();
+}
+const levelParams = new URLSearchParams(window.location.search);
+const requestedLevel = Number(levelParams.get('livello') || 1);
+mountRobotLevel(ROBOT_LEVELS.find(level => level.number === requestedLevel) || ROBOT_LEVELS[0], levelParams.get('tutorial') === '1');

@@ -66,9 +66,15 @@
   gap: .5rem 1rem;
 }
 
-.robot-hint { margin-inline-start: auto; }
+.level-help-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .4rem;
+  margin-inline-start: auto;
+}
 
-.robot-hint summary {
+.robot-hint summary, #robot-api-open, #robot-tutorial-open {
   list-style: none;
   padding: .4rem .65rem;
   border: 1px solid #58718f;
@@ -82,7 +88,9 @@
 .robot-hint summary::-webkit-details-marker { display: none; }
 .robot-hint summary::after { content: " ▾"; }
 .robot-hint[open] summary::after { content: " ▴"; }
-.robot-hint summary:hover, .robot-hint[open] summary { border-color: var(--mint); }
+.robot-hint summary:hover, .robot-hint[open] summary, #robot-api-open:hover, #robot-tutorial-open:hover { border-color: var(--mint); }
+
+.level-help-actions :focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
 
 .robot-hint-panel {
   position: absolute;
@@ -455,3 +463,53 @@
 #robot-collection-sequence[data-active="true"]::before { background: var(--mint); box-shadow: 0 0 .4rem #a0ffe380; }
 .board-legend > span[hidden] { display: none; }
 #robot-collection-sequence[hidden] { display: none; }
+
+#robot-tutorial { position: fixed; inset: 0; z-index: 20; pointer-events: none; }
+.robot-tour-highlight {
+  position: fixed;
+  border: 2px solid var(--mint);
+  box-shadow: 0 0 0 200vmax #080d20a6;
+}
+.robot-tour-card {
+  position: fixed;
+  width: min(20rem, calc(100vw - 2rem));
+  padding: .85rem 1rem;
+  border: 2px solid var(--mint);
+  background: #141e37;
+  color: #f3efe7;
+  box-shadow: 5px 5px #090d1e;
+  font: .82rem/1.4 ui-monospace, monospace;
+  pointer-events: auto;
+}
+.robot-tour-card p { margin: 0; }
+.robot-tour-card h2 { margin: .25rem 0 .35rem; font-size: 1rem; }
+.robot-tour-step { color: var(--mint); }
+.robot-tour-actions { display: flex; justify-content: space-between; gap: .5rem; margin-top: .8rem; }
+.robot-tour-actions button { padding: .3rem .65rem; border: 1px solid #58718f; background: #202d4a; color: var(--mint); font: inherit; cursor: pointer; }
+#robot-tour-next { background: var(--mint); color: #10152b; }
+.robot-tour-actions button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+#robot-tutorial-open[hidden] { display: none; }
+.robot-tour-card[data-side]:not([data-side="none"])::before {
+  content: "";
+  position: absolute;
+  width: .55rem;
+  height: .55rem;
+  background: #141e37;
+  border: solid var(--mint);
+  border-width: 2px 0 0 2px;
+}
+.robot-tour-card[data-side="below"]::before,
+.robot-tour-card[data-side="above"]::before {
+  left: var(--tour-pointer-x);
+  translate: -50% 0;
+}
+.robot-tour-card[data-side="below"]::before { top: -.4rem; rotate: 45deg; }
+.robot-tour-card[data-side="above"]::before { bottom: -.4rem; rotate: 225deg; }
+.robot-tour-card[data-side="right"]::before,
+.robot-tour-card[data-side="left"]::before {
+  top: var(--tour-pointer-y);
+  translate: 0 -50%;
+}
+.robot-tour-card[data-side="right"]::before { left: -.4rem; rotate: -45deg; }
+.robot-tour-card[data-side="left"]::before { right: -.4rem; rotate: 135deg; }
