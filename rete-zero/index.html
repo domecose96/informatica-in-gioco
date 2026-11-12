@@ -4,23 +4,25 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101c22">
 <meta name="description" content="Una città 3D da riconnettere. Studia reti e subnetting alla scuola Galilei e diventa tecnico sul campo.">
 <title>Rete Zero · La città isolata</title>
-<link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=10">
-<script src="vendor/three.min.js" defer></script><script src="network.js?v=10" defer></script><script src="data.js?v=10" defer></script><script src="spatial.js?v=10" defer></script><script src="city.js?v=10" defer></script><script src="game.js?v=10" defer></script><script src="ui.js?v=10" defer></script>
+<link rel="icon" href="assets/favicon.svg?v=36" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=45"><link rel="stylesheet" href="school-v2.css?v=100">
+<script src="vendor/three.min.js" defer></script><script src="network.js?v=16" defer></script><script src="data.js?v=51" defer></script><script src="spatial.js?v=11" defer></script><script src="city.js?v=22" defer></script><script src="routing.js?v=7" defer></script><script src="game.js?v=180" defer></script><script src="ui.js?v=12" defer></script>
 </head>
 <body>
 <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
 <symbol id="weather-sun" viewBox="0 0 32 32"><circle cx="16" cy="16" r="6"/><path d="M16 2v4m0 20v4M2 16h4m20 0h4M6 6l3 3m14 14 3 3M6 26l3-3M23 9l3-3"/></symbol>
+<symbol id="weather-moon" viewBox="0 0 32 32"><path d="M28 19A12 12 0 0 1 13 4a12 12 0 1 0 15 15Z"/></symbol>
 <symbol id="weather-cloud" viewBox="0 0 32 32"><path d="M9 24a6 6 0 1 1 1-12 8 8 0 0 1 15 3 4.5 4.5 0 0 1-1 9Z"/></symbol>
 <symbol id="weather-clearing" viewBox="0 0 32 32"><circle cx="11" cy="11" r="5"/><path d="M11 1v3M1 11h3m.5-6.5 2 2M18 4l-2 2M8 27a5.5 5.5 0 1 1 1-11 7 7 0 0 1 13 2 4.5 4.5 0 0 1 0 9Z"/></symbol>
 <symbol id="weather-rain" viewBox="0 0 32 32"><path d="M8 20a5 5 0 1 1 1-10 7 7 0 0 1 13 2 4 4 0 0 1 0 8ZM10 24l-2 5m10-5-2 5m10-5-2 5"/></symbol>
 <symbol id="weather-wind" viewBox="0 0 32 32"><path d="M3 11h18a4 4 0 1 0-4-4M3 17h22a3 3 0 1 1-3 3M3 23h10a3 3 0 1 1-3 3"/></symbol>
+<symbol id="icon-tools" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18m-12-1v3m6-3v3"/></symbol>
 <symbol id="icon-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></symbol><symbol id="icon-music" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13M9 8l11-2"/><ellipse cx="6" cy="18" rx="3" ry="3"/><ellipse cx="17" cy="16" rx="3" ry="3"/></symbol><symbol id="icon-speaker" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4Z"/><path class="sound-waves" d="M16 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/><path class="sound-cross" d="m17 9 5 6m0-6-5 6"/></symbol></defs></svg>
-<header class="topbar"><a class="brand" href="index.html" aria-label="Rete Zero, città"><span class="brand-icon" aria-hidden="true">⌁</span><span>RETE ZERO<small>SISTEMI E RETI</small></span></a><nav aria-label="Strumenti"><button id="help-open" class="toolbar-text">Come si gioca</button><button data-action="school" class="toolbar-text">Scuola</button><button data-action="calculator" class="toolbar-text">Calcolatore</button><button id="audio-open" class="toolbar-icon" aria-label="Controlli audio" title="Controlli audio" aria-expanded="false" aria-controls="audio-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-music"/></svg></button><a href="index.html" data-games-home class="toolbar-icon" aria-label="Home dei giochi" title="Home dei giochi"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-home"/></svg></a></nav></header>
+<header class="topbar"><a class="brand" href="index.html" aria-label="Rete Zero, città"><span class="brand-icon" aria-hidden="true"><img src="assets/favicon.svg?v=36" alt="" width="28" height="28"></span><span>RETE ZERO<small>SISTEMI E RETI</small></span></a><nav aria-label="Menu principale"><button id="help-open" class="toolbar-text">Come si gioca</button><button type="button" data-action="calculator" class="toolbar-icon" aria-label="Strumenti" title="Strumenti" aria-haspopup="dialog" aria-controls="calculator-dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-tools"/></svg></button><button id="audio-open" class="toolbar-icon" aria-label="Controlli audio" title="Controlli audio" aria-expanded="false" aria-controls="audio-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-music"/></svg></button><a href="index.html" data-games-home class="toolbar-icon" aria-label="Home dei giochi" title="Home dei giochi"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-home"/></svg></a></nav></header>
 <section id="audio-panel" class="audio-panel" aria-labelledby="audio-title" hidden><div class="audio-heading"><h2 id="audio-title">Controlli audio</h2><button id="audio-close" aria-label="Chiudi controlli audio">×</button></div><label for="music-volume">Musica <output id="music-output" for="music-volume">20%</output></label><input id="music-volume" type="range" min="0" max="100" value="20"><label for="effects-volume">Effetti sonori <output id="effects-output" for="effects-volume">40%</output></label><input id="effects-volume" type="range" min="0" max="100" value="40"><div class="audio-master"><span>Audio generale</span><button id="audio-mute" class="toolbar-icon" aria-label="Attiva audio" aria-pressed="true" data-muted="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z"/><path class="sound-waves" d="M16 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/><path class="sound-cross" d="m17 9 5 6m0-6-5 6"/></svg></button></div><p id="audio-status" role="status">Audio disattivato</p><small>Brano: Segnali lontani</small></section><audio id="background-music" src="assets/segnali-lontani.wav" loop preload="none"></audio>
 <main class="city-layout">
-<aside class="dispatch" id="instructions-panel" aria-labelledby="instructions-title"><div class="dispatch-heading"><div><p class="eyebrow">IL TUO INCARICO</p><h1 id="instructions-title">Valle Nord</h1></div><button id="toggle-instructions" aria-label="Riduci istruzioni" aria-expanded="true" aria-controls="dispatch-content">−</button></div><div id="dispatch-content"><p class="dispatch-intro" id="brief-instruction">Completa la scuola, poi ripristina le tre sedi.</p><div class="episode-title"><span>PERCORSO</span><span id="progress-count">0 / 3</span></div><div id="journey" class="journey"></div><div class="dispatch-radio"><div class="radio-title"><span class="avatar">ER</span><span>ELENA RIVA<small>COORDINATRICE</small></span></div><p id="radio-message"></p></div><div class="dispatch-footer"><span>PROGRESSI SALVATI</span><button id="reset-progress" aria-label="Ricomincia il percorso">Ricomincia</button></div></div></aside>
+<aside class="dispatch" id="instructions-panel" aria-labelledby="instructions-title"><div class="dispatch-heading"><div><p class="eyebrow">IL TUO INCARICO</p><h1 id="instructions-title">Valle Nord</h1></div><button id="toggle-instructions" aria-label="Riduci istruzioni" aria-expanded="true" aria-controls="dispatch-content">−</button></div><div id="dispatch-content"><p class="dispatch-intro" id="brief-instruction">Completa la scuola, poi ripristina le tre sedi.</p><div class="episode-title"><span id="progress-label">PERCORSO</span><span id="progress-count">0 / 3</span></div><div id="journey" class="journey"></div><div class="dispatch-radio"><div class="radio-title"><span class="avatar">ER</span><span>ELENA RIVA<small>COORDINATRICE</small></span><button id="phone-open" hidden type="button" class="icon-button" aria-haspopup="dialog" aria-label="Apri i messaggi di Elena" title="Messaggi di Elena"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="#b5d9c4"><path transform="translate(24 0) scale(-1 1)" d="M5.1 3.5c.8-.6 1.9-.5 2.5.3l2.6 3.4c.5.7.5 1.6-.1 2.2l-1.6 1.7a14 14 0 0 0 4.4 4.4l1.7-1.6c.6-.6 1.5-.6 2.2-.1l3.4 2.6c.8.6.9 1.7.3 2.5l-1 1.2c-.8.9-2 1.3-3.1 1C9.7 19.4 4.6 14.3 2.9 7.6c-.3-1.1.1-2.3 1-3.1z"/></svg></button></div></div><div class="dispatch-footer"><span>PROGRESSI SALVATI</span><button id="reset-missions" type="button">Ricomincia interventi</button><button id="reset-progress" aria-label="Ricomincia il percorso">Ricomincia</button></div></div></aside>
 <section class="world" aria-label="Mappa di Valle Nord"><h2 id="world-title" class="visually-hidden">Mappa di Valle Nord</h2>
-<div class="district-info"><button class="profile-chip" data-action="hq"><span class="profile-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="2"/><path d="M9 5V3h6v2M14 10h4m-4 4h4M6 17c0-3 5-3 5 0"/><circle cx="8.5" cy="11" r="2"/></svg></span><span id="profile-rank">Il tuo tesserino<small>Da ottenere · 0/4 prove</small></span></button><div class="weather" aria-label="Meteo della simulazione: schiarite dopo il temporale"><svg class="weather-icon" viewBox="0 0 32 32" aria-hidden="true"><use href="#weather-clearing"/></svg><span>Schiarite<small>07:40 · VALLE NORD</small></span></div></div>
+<div class="district-info"><button class="profile-chip" data-action="hq" hidden><span class="profile-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="2"/><path d="M9 5V3h6v2M14 10h4m-4 4h4M6 17c0-3 5-3 5 0"/><circle cx="8.5" cy="11" r="2"/></svg></span><span id="profile-rank">Il tuo tesserino<small>Tecnico di rete</small></span></button><div class="weather" aria-label="Meteo della simulazione: schiarite, giorno 01, ore 07:40"><svg class="weather-icon" viewBox="0 0 32 32" aria-hidden="true"><use href="#weather-clearing"/></svg><span>Schiarite<small>GIORNO 01 · 07:40 · VALLE NORD</small></span></div></div>
 <div class="map-stage" id="map-stage"><div id="city-canvas" role="region" tabindex="0" aria-label="Mappa 3D. Trascina per spostarti; Shift e trascinamento per ruotare. Frecce della tastiera per spostarti, più e meno per lo zoom."></div><div id="city-markers" class="city-markers" aria-label="Edifici di Valle Nord"></div><div id="map-fallback" class="map-fallback" hidden><h3>Esplora gli edifici</h3><p>La vista 3D non è disponibile. Puoi entrare negli edifici dai pulsanti.</p></div>
 <button id="compass-reset" class="compass" aria-label="Orienta la mappa verso nord" title="Orienta verso nord"><svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="31" class="compass-ring"/><path class="compass-ticks" d="M36 7v4m0 50v4M7 36h4m50 0h4"/><g id="compass-needle"><text x="36" y="20" text-anchor="middle">N</text><path class="needle-north" d="M36 25 44 48 36 43 28 48Z"/><path class="needle-south" d="m36 43 0-18 8 23Z"/></g></svg></button>
 <div class="navigation-tools"><div class="pan-controls" aria-label="Spostamento della mappa"><button id="pan-up" aria-label="Sposta la visuale in alto">↑</button><button id="pan-left" aria-label="Sposta la visuale a sinistra">←</button><button id="pan-home" aria-label="Centra Valle Nord">⌖</button><button id="pan-right" aria-label="Sposta la visuale a destra">→</button><button id="pan-down" aria-label="Sposta la visuale in basso">↓</button></div><div class="map-controls" aria-label="Controlli mappa"><button id="zoom-in" aria-label="Avvicina la mappa">+</button><button id="zoom-out" aria-label="Allontana la mappa">−</button><span></span><button id="rotate-left" aria-label="Ruota la città a sinistra" title="Ruota a sinistra"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1.5 7M4 4v6h6"/></svg></button><button id="rotate-right" aria-label="Ruota la città a destra" title="Ruota a destra"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10a8 8 0 1 0-1.5 7M20 4v6h-6"/></svg></button><button id="reset-camera" aria-label="Ripristina la vista iniziale">⌖</button></div></div>
@@ -28,8 +30,181 @@
 <div class="world-bottom"><div class="legend"><span><i class="legend-dot school"></i> Scuola</span><span><i class="legend-dot task"></i> Interventi</span><span><i class="legend-dot restored"></i> Online</span></div></div><div id="world-status" class="visually-hidden" role="status">La scuola è aperta.</div>
 </section>
 </main>
-<dialog id="help-dialog" class="help-dialog" aria-labelledby="help-title"><div class="dialog-top"><span class="eyebrow">PRIMI PASSI / RETE ZERO</span><button id="help-close" class="icon-button" aria-label="Chiudi come si gioca">×</button></div><div class="help-body"><h2 id="help-title">La città ha bisogno di te.</h2><p>Sei un tecnico in formazione. Elena ti accompagna dalla scuola ai primi interventi.</p><ol><li><strong>Impara al Galilei.</strong> Completa le quattro prove su IPv4, subnetting, host e gateway per ottenere il tesserino.</li><li><strong>Entra negli edifici.</strong> Leggi la segnalazione, controlla gli indizi e correggi la configurazione. Il calcolatore ti aiuta con gli indirizzi.</li><li><strong>Riconnetti Valle Nord.</strong> Ripristina ospedale, protezione civile e municipio. Puoi riprovare senza perdere punti; i progressi si salvano su questo browser.</li></ol><div class="help-controls"><strong>Esplora la mappa</strong><p>Trascina per spostarti · Shift + trascina per ruotare e inclinare · Rotella o + / − per lo zoom.</p><p>Puoi usare anche le frecce direzionali. Clicca la bussola per orientarti a nord e ⌖ per tornare alla vista iniziale.</p></div><button id="help-start" class="primary">Torna in città →</button></div></dialog>
-<dialog id="building-dialog" class="building-dialog" aria-labelledby="building-title"><div class="dialog-top"><button id="back-city" class="back-button">← Torna in città</button><span id="building-badge" class="eyebrow"></span><button id="locate-building" class="locate-button">⌖ Inquadra sulla mappa</button><button id="close-building" class="icon-button" aria-label="Chiudi edificio">×</button></div><div id="building-content"></div></dialog>
-<dialog id="calculator-dialog" class="calculator-dialog" aria-labelledby="calc-title"><div class="dialog-top"><span class="eyebrow">LA TUA CASSETTA DEGLI ATTREZZI</span><button id="close-calculator" class="icon-button" aria-label="Chiudi banco di calcolo">×</button></div><div class="calculator-body"><p class="eyebrow">STRUMENTO / IPv4</p><h2 id="calc-title">Banco di calcolo.</h2><p>Inserisci un indirizzo e il prefisso: osserva come cambia la rete. Il gateway si sceglie in base al router, non si ricava dalla maschera.</p><form id="calculator-form"><label>Indirizzo IPv4<input name="ip" id="calc-ip" value="192.168.30.77" inputmode="decimal" autocomplete="off"></label><label>Prefisso<select name="prefix" id="calc-prefix"></select></label><button class="primary" type="submit">Calcola la sottorete →</button></form><div id="calculator-results" aria-live="polite"></div></div></dialog>
+<dialog id="help-dialog" class="help-dialog" aria-labelledby="help-title">
+  <div class="dialog-top">
+    <span class="eyebrow">COME SI GIOCA / RETE ZERO</span>
+    <button id="help-close" type="button" class="icon-button" aria-label="Chiudi come si gioca">×</button>
+  </div>
+  <header class="building-hero help-hero">
+    <div>
+      <h2 id="help-title">La città ha bisogno di te.</h2>
+      <p>Elena ti accompagna dalla scuola di reti ai primi interventi a Valle Nord.</p>
+    </div>
+  </header>
+  <div class="help-body">
+    <section class="help-route" aria-labelledby="help-route-title">
+      <h3 id="help-route-title" class="eyebrow">Il tuo percorso</h3>
+      <ol>
+        <li><strong>Formati al Galilei</strong><p>Completa i sette moduli su IPv4, sottoreti e configurazione di host e router. Poi configura il tuo tesserino.</p></li>
+        <li><strong>Segui gli incarichi di Elena</strong><p>Leggi i messaggi sul telefono. Dopo il blackout, ripristina ospedale, Protezione civile e Municipio.</p></li>
+        <li><strong>Configura e verifica</strong><p>Usa il terminale e segui la lista dei passaggi. I progressi si salvano nel browser e puoi riprovare senza perdere punti.</p></li>
+      </ol>
+    </section>
+    <section class="help-controls" aria-labelledby="help-controls-title">
+      <h3 id="help-controls-title" class="eyebrow">Esplora la mappa</h3>
+      <dl>
+        <div><dt>Spostati</dt><dd>Trascina o usa le frecce direzionali.</dd></div>
+        <div><dt>Ruota e inclina</dt><dd>Tieni premuto <kbd>Shift</kbd> e trascina.</dd></div>
+        <div><dt>Ingrandisci</dt><dd>Usa la rotella oppure <kbd>+</kbd> e <kbd>−</kbd>.</dd></div>
+        <div><dt>Riorientati</dt><dd>Usa la bussola per puntare a nord e <span aria-label="Centra mappa">⌖</span> per tornare alla vista iniziale.</dd></div>
+      </dl>
+    </section>
+  </div>
+  <footer class="help-actions">
+    <button id="help-start" type="button" class="primary">Torna in città <span class="city-back-arrow" aria-hidden="true">▸</span></button>
+  </footer>
+</dialog>
+<dialog id="phone-dialog" aria-labelledby="phone-title">
+  <div class="phone-screen">
+    <header class="phone-header">
+      <span class="phone-avatar" aria-hidden="true">ER</span>
+      <div><h2 id="phone-title" tabindex="-1" autofocus>Elena Riva</h2><small>Coordinatrice</small></div>
+      <form method="dialog"><button class="icon-button" aria-label="Chiudi telefono">×</button></form>
+    </header>
+    <ol id="phone-messages" aria-label="Messaggi di Elena"></ol>
+  </div>
+</dialog>
+<dialog id="building-dialog" class="building-dialog" aria-labelledby="building-title"><div class="dialog-top"><button id="back-city" class="back-button"><span class="city-back-arrow" aria-hidden="true">◂</span> Torna in città</button><span id="building-badge" class="eyebrow"></span><button id="close-building" class="icon-button" aria-label="Chiudi edificio">×</button></div><div id="building-content"></div></dialog>
+<dialog id="calculator-dialog" class="calculator-dialog" aria-labelledby="calc-title">
+  <div class="dialog-top">
+    <span class="eyebrow">STRUMENTI / RETE ZERO</span>
+    <button id="close-calculator" class="icon-button" type="button" aria-label="Chiudi banco di calcolo">×</button>
+  </div>
+  <header class="calc-header">
+    <div>
+      <h2 id="calc-title">Banco di calcolo</h2>
+      <p id="calc-description">Calcola la sottorete a partire da un indirizzo IPv4 e dal suo prefisso.</p>
+    </div>
+    <button id="toggle-cli-reference" class="secondary" type="button" aria-expanded="false" aria-controls="calc-cli-reference">Comandi CLI <span aria-hidden="true">▸</span></button>
+  </header>
+  <div class="calc-views">
+    <div id="calc-panel" class="calculator-body">
+      <form id="calculator-form" novalidate>
+        <label>Indirizzo IPv4<input name="ip" id="calc-ip" value="192.168.30.77" inputmode="decimal" autocomplete="off" spellcheck="false"></label>
+        <label for="calc-prefix">Prefisso
+          <span class="calc-prefix-field">
+            <span aria-hidden="true">/</span>
+            <input name="prefix" id="calc-prefix" type="number" min="0" max="32" step="1" value="26" inputmode="numeric" required>
+          </span>
+        </label>
+        <button class="primary" type="submit">Calcola la sottorete <span aria-hidden="true">▸</span></button>
+      </form>
+      <div id="calculator-results" aria-live="polite"></div>
+    </div>
+    <div id="calc-cli-reference" class="calculator-body cli-reference" inert>
+      <div class="cli-reference-tabs" role="tablist" aria-label="Tipo di dispositivo">
+        <button id="cli-pc-tab" type="button" role="tab" aria-selected="true" aria-controls="cli-pc-panel">PC</button>
+        <button id="cli-router-tab" type="button" role="tab" aria-selected="false" aria-controls="cli-router-panel" tabindex="-1">Router</button>
+      </div>
+      <div class="cli-reference-panels">
+        <div id="cli-pc-panel" class="cli-device-panel" role="tabpanel" aria-labelledby="cli-pc-tab" tabindex="0">
+          <div class="cli-mode-picker" role="group" aria-label="Filtra i comandi del PC">
+            <button type="button" aria-controls="cli-pc-commands" aria-pressed="true">Tutti i comandi</button>
+            <button type="button" aria-controls="cli-pc-configure" aria-pressed="false">Configura</button>
+            <button type="button" aria-controls="cli-pc-verify" aria-pressed="false">Verifica</button>
+          </div>
+          <div class="cli-device-content">
+            <div id="cli-pc-commands" class="cli-command-list" tabindex="0" role="region" aria-label="Tabella dei comandi PC">
+              <section id="cli-pc-configure" class="cli-mode">
+                <h3><span>Configurazione</span><code>C:\&gt;</code></h3>
+                <dl>
+                  <div>
+                    <dt><code>ipconfig &lt;IP&gt; &lt;maschera&gt;</code></dt>
+                    <dd>Imposta l’indirizzo IPv4 e la maschera. Gateway e DNS sono facoltativi e si scrivono in quest’ordine dopo la maschera.<br>
+                      Esempio <code>ipconfig 192.168.1.20 255.255.255.0 192.168.1.1</code>.
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+              <section id="cli-pc-verify" class="cli-mode">
+                <h3><span>Verifica</span><code>C:\&gt;</code></h3>
+                <dl>
+                  <div><dt><code>ipconfig</code></dt><dd>Mostra IP, maschera e gateway.</dd></div>
+                  <div><dt><code>ipconfig /all</code></dt><dd>Mostra la configurazione IP completa, incluso il server DNS.</dd></div>
+                  <div data-routing-command hidden><dt><code>ping &lt;IP&gt;</code></dt><dd>Verifica se l’host risponde. Disponibile nel laboratorio del Galilei e nell’intervento al Municipio.</dd></div>
+                  <div data-routing-command hidden><dt><code>tracert &lt;IP&gt;</code></dt><dd>Mostra i salti fino all’host di destinazione.</dd></div>
+                </dl>
+              </section>
+            </div>
+          </div>
+        </div>
+        <div id="cli-router-panel" class="cli-device-panel" role="tabpanel" aria-labelledby="cli-router-tab" tabindex="0" inert>
+          <div class="cli-mode-picker" role="group" aria-label="Filtra per modalità del router">
+            <button type="button" aria-controls="cli-router-modes" aria-pressed="true">Tutti i comandi</button>
+            <button type="button" aria-controls="cli-router-user" aria-pressed="false">Utente</button>
+            <button type="button" aria-controls="cli-router-privileged" aria-pressed="false">Privilegiata</button>
+            <button type="button" aria-controls="cli-router-global cli-router-exit" aria-pressed="false">Globale</button>
+            <button type="button" aria-controls="cli-router-interface cli-router-exit" aria-pressed="false">Interfaccia</button>
+            <button type="button" data-routing-command hidden aria-controls="cli-router-rip cli-router-exit" aria-pressed="false">RIP</button>
+          </div>
+          <div id="cli-router-modes" class="cli-command-list" tabindex="0" role="region" aria-label="Tabella dei comandi Router">
+            <section id="cli-router-user" class="cli-mode">
+              <h3><span>Modalità utente</span><code>Router&gt;</code></h3>
+              <dl>
+                <div><dt><code>enable</code></dt><dd>Passa alla modalità privilegiata.</dd></div>
+              </dl>
+            </section>
+            <section id="cli-router-privileged" class="cli-mode">
+              <h3><span>Modalità privilegiata</span><code>Router#</code></h3>
+              <dl>
+                <div><dt><code>configure terminal</code></dt><dd>Entra nella modalità di configurazione globale.</dd></div>
+                <div><dt><code>show ip interface brief</code></dt><dd>Mostra un riepilogo delle interfacce con indirizzo IP, stato e protocollo.</dd></div>
+                <div data-routing-command hidden><dt><code>traceroute &lt;IP&gt;</code></dt><dd>Mostra i salti dal router all’host di destinazione.</dd></div>
+                <div data-routing-command hidden><dt><code>show ip route</code></dt><dd>Mostra le reti connesse (<code>C</code>), le rotte statiche (<code>S</code>) e quelle apprese via RIP (<code>R</code>).</dd></div>
+                <div><dt><code>disable</code></dt><dd>Torna alla modalità utente.</dd></div>
+              </dl>
+            </section>
+            <section id="cli-router-global" class="cli-mode">
+              <h3><span>Configurazione globale</span><code>Router(config)#</code></h3>
+              <dl>
+                <div data-routing-command hidden><dt><code>ip route &lt;rete&gt; &lt;maschera&gt; &lt;prossimo-hop&gt;</code></dt><dd>Aggiunge una rotta statica. Usa <code>no ip route</code> con gli stessi argomenti per rimuoverla.</dd></div>
+                <div data-routing-command hidden><dt><code>router rip</code></dt><dd>Entra nella configurazione del protocollo RIP.</dd></div>
+                <div><dt><code>hostname &lt;nome&gt;</code></dt><dd>Cambia il nome del router nel prompt.</dd></div>
+                <div>
+                  <dt><code>interface &lt;porta&gt;</code></dt>
+                  <dd>Seleziona l’interfaccia indicata ed entra nella sua modalità di configurazione.<br>
+                    Esempi <code>interface Gi0/0</code> e <code>interface Fa0/0</code>.
+                  </dd>
+                </div>
+              </dl>
+            </section>
+            <section id="cli-router-interface" class="cli-mode">
+              <h3><span>Configurazione interfaccia</span><code>Router(config-if)#</code></h3>
+              <dl>
+                <div><dt><code>ip address &lt;IP&gt; &lt;maschera&gt;</code></dt><dd>Assegna un indirizzo IPv4 e una maschera all’interfaccia selezionata.</dd></div>
+                <div><dt><code>no shutdown</code> / <code>shutdown</code></dt><dd><code>no shutdown</code> abilita l’interfaccia. <code>shutdown</code> la disabilita.</dd></div>
+              </dl>
+            </section>
+            <section id="cli-router-rip" class="cli-mode" data-routing-command hidden>
+              <h3><span>Configurazione RIP</span><code>Router(config-router)#</code></h3>
+              <dl>
+                <div><dt><code>version 2</code></dt><dd>Imposta RIPv2, che trasporta la maschera negli aggiornamenti.</dd></div>
+                <div><dt><code>no auto-summary</code></dt><dd>Disattiva il riepilogo automatico e conserva i prefissi delle sottoreti annunciate.</dd></div>
+                <div><dt><code>network &lt;rete&gt;</code></dt><dd>Attiva RIP sulle interfacce appartenenti alla rete principale indicata. Esempio <code>network 10.0.0.0</code> per un’interfaccia <code>10.30.1.10/30</code>.</dd></div>
+              </dl>
+            </section>
+            <section id="cli-router-exit" class="cli-mode">
+              <h3>Uscita dalla configurazione</h3>
+              <dl>
+                <div><dt><code>exit</code></dt><dd>Risale di un livello. Dall’interfaccia<span data-routing-command hidden> o da RIP</span> torna a <code>Router(config)#</code>. Dalla configurazione globale torna a <code>Router#</code>.</dd></div>
+                <div><dt><code>end</code></dt><dd>Torna direttamente a <code>Router#</code> dalla configurazione globale, da quella dell’interfaccia<span data-routing-command hidden> o da RIP</span>.</dd></div>
+              </dl>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</dialog>
 <noscript><p class="noscript">Per esplorare la città e svolgere gli interventi è necessario attivare JavaScript.</p></noscript>
 </body></html>

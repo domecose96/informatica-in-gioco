@@ -4,10 +4,10 @@ Gioco locale di Sistemi e reti: una città 3D da esplorare, una scuola e tre int
 
 ## Percorso
 
-1. Entra nell’Istituto Galilei. Studia e supera le quattro prove su IPv4, maschere/subnetting, rete/broadcast/host e default gateway.
+1. Entra nell’Istituto Galilei. Studia e supera sette moduli su IPv4, maschere, subnetting, rete/broadcast/host, default gateway, CLI host e CLI router.
 2. Ottieni il tesserino da tecnico. Le risposte corrette assegnano 25 XP per prova, una sola volta.
-3. Raggiungi ospedale, protezione civile e municipio in sequenza. Ripristina i collegamenti risolvendo i guasti e il piano di indirizzamento. Ogni intervento assegna 100 XP una sola volta.
-4. La centrale mostra tesserino, avanzamento e prossimo incarico. Il banco IPv4 è accessibile dalla città e durante le attività.
+3. Raggiungi ospedale, protezione civile e municipio in sequenza. Configura i dispositivi dal terminale e controlla i risultati prima di confermare il ripristino. Ogni intervento assegna 100 XP una sola volta.
+4. La centrale mostra tesserino, avanzamento e prossimo incarico. Strumenti apre il banco IPv4 e il manuale dei comandi CLI dalla città e durante gli interventi.
 
 I progressi restano nel browser. I progressi del precedente prototipo vengono conservati, se presenti. Ricomincia azzera solo questo gioco. Elena cambia messaggio con le prove completate e con ciascun intervento. Il primo distretto si conclude con tre sedi riconnesse; non sono ancora presenti altri distretti giocabili.
 
@@ -38,6 +38,8 @@ Home torna al laboratorio dei giochi. Come si gioca apre la guida, mentre la not
 
 `node tests/validate-spatial.cjs`
 
+`node tests/validate-discovery.cjs`
+
 ## Riferimenti
 
 Three.js 0.160.1, licenza MIT in `vendor/THREE-LICENSE.txt`. Modelli, facciate e terreno sono generati localmente dal codice della città, senza mappe geografiche o servizi di tiles esterni.
@@ -48,6 +50,6 @@ Three.js 0.160.1, licenza MIT in `vendor/THREE-LICENSE.txt`. Modelli, facciate e
 
 ## Scuola e scoperta degli edifici
 
-Il banco scolastico non scorre: ogni lezione presenta tre concetti sfogliabili, un esempio e una prova. Su schermi stretti le viste Impara e Mettiti alla prova si alternano. Tutti i contenuti restano consultabili e le risposte si conservano cambiando lezione.
+Il banco scolastico non scorre: ogni lezione presenta concetti sfogliabili, un esempio e una prova. Su schermi stretti le viste Impara e Mettiti alla prova si alternano. Tutti i contenuti restano consultabili e le risposte si conservano cambiando lezione. Nelle domande a scelta, usa Tab per passare alla domanda successiva e le frecce per scegliere una risposta.
 
 All’inizio sulla mappa e nel percorso compare soltanto il Galilei. Il tesserino rivela centrale e ospedale; completando gli interventi si scoprono protezione civile e municipio. Gli altri edifici rimangono visibili come parte della città ma non anticipano attività. I segnalini circolari mostrano il nome al passaggio del puntatore o al focus della tastiera.
