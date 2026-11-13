@@ -11,7 +11,7 @@ def build():
     if OUTPUT.exists():
         shutil.rmtree(OUTPUT)
     OUTPUT.mkdir()
-    for name in ("index.html", "giochi.css"):
+    for name in ("index.html", "giochi.css", "domecose.svg"):
         shutil.copy2(ROOT / name, OUTPUT / name)
     for name in GAMES:
         source, target = ROOT / name, OUTPUT / name

@@ -4,8 +4,8 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101c22">
 <meta name="description" content="Una città 3D da riconnettere. Studia reti e subnetting alla scuola Galilei e diventa tecnico sul campo.">
 <title>Rete Zero · La città isolata</title>
-<link rel="icon" href="assets/favicon.svg?v=36" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=45"><link rel="stylesheet" href="school-v2.css?v=100">
-<script src="vendor/three.min.js" defer></script><script src="network.js?v=16" defer></script><script src="data.js?v=51" defer></script><script src="spatial.js?v=11" defer></script><script src="city.js?v=22" defer></script><script src="routing.js?v=7" defer></script><script src="game.js?v=180" defer></script><script src="ui.js?v=12" defer></script>
+<link rel="icon" href="assets/favicon.svg?v=36" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=65"><link rel="stylesheet" href="school-v2.css?v=111">
+<script src="vendor/three.min.js" defer></script><script src="network.js?v=16" defer></script><script src="data.js?v=51" defer></script><script src="spatial.js?v=11" defer></script><script src="city.js?v=22" defer></script><script src="routing.js?v=8" defer></script><script src="game.js?v=233" defer></script><script src="ui.js?v=13" defer></script>
 </head>
 <body>
 <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
@@ -18,9 +18,9 @@
 <symbol id="icon-tools" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18m-12-1v3m6-3v3"/></symbol>
 <symbol id="icon-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></symbol><symbol id="icon-music" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13M9 8l11-2"/><ellipse cx="6" cy="18" rx="3" ry="3"/><ellipse cx="17" cy="16" rx="3" ry="3"/></symbol><symbol id="icon-speaker" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4Z"/><path class="sound-waves" d="M16 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/><path class="sound-cross" d="m17 9 5 6m0-6-5 6"/></symbol></defs></svg>
 <header class="topbar"><a class="brand" href="index.html" aria-label="Rete Zero, città"><span class="brand-icon" aria-hidden="true"><img src="assets/favicon.svg?v=36" alt="" width="28" height="28"></span><span>RETE ZERO<small>SISTEMI E RETI</small></span></a><nav aria-label="Menu principale"><button id="help-open" class="toolbar-text">Come si gioca</button><button type="button" data-action="calculator" class="toolbar-icon" aria-label="Strumenti" title="Strumenti" aria-haspopup="dialog" aria-controls="calculator-dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-tools"/></svg></button><button id="audio-open" class="toolbar-icon" aria-label="Controlli audio" title="Controlli audio" aria-expanded="false" aria-controls="audio-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-music"/></svg></button><a href="index.html" data-games-home class="toolbar-icon" aria-label="Home dei giochi" title="Home dei giochi"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-home"/></svg></a></nav></header>
-<section id="audio-panel" class="audio-panel" aria-labelledby="audio-title" hidden><div class="audio-heading"><h2 id="audio-title">Controlli audio</h2><button id="audio-close" aria-label="Chiudi controlli audio">×</button></div><label for="music-volume">Musica <output id="music-output" for="music-volume">20%</output></label><input id="music-volume" type="range" min="0" max="100" value="20"><label for="effects-volume">Effetti sonori <output id="effects-output" for="effects-volume">40%</output></label><input id="effects-volume" type="range" min="0" max="100" value="40"><div class="audio-master"><span>Audio generale</span><button id="audio-mute" class="toolbar-icon" aria-label="Attiva audio" aria-pressed="true" data-muted="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z"/><path class="sound-waves" d="M16 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/><path class="sound-cross" d="m17 9 5 6m0-6-5 6"/></svg></button></div><p id="audio-status" role="status">Audio disattivato</p><small>Brano: Segnali lontani</small></section><audio id="background-music" src="assets/segnali-lontani.wav" loop preload="none"></audio>
+<section id="audio-panel" class="audio-panel" aria-labelledby="audio-title" hidden><div class="audio-heading"><h2 id="audio-title">Controlli audio</h2><button id="audio-close" aria-label="Chiudi controlli audio">×</button></div><label for="music-volume">Musica <output id="music-output" for="music-volume">20%</output></label><input id="music-volume" type="range" min="0" max="100" value="20"><label for="effects-volume">Effetti sonori <output id="effects-output" for="effects-volume">40%</output></label><input id="effects-volume" type="range" min="0" max="100" value="40"><div class="audio-master"><span>Audio generale</span><button id="audio-mute" class="toolbar-icon" aria-label="Attiva audio" aria-pressed="true" data-muted="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z"/><path class="sound-waves" d="M16 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/><path class="sound-cross" d="m17 9 5 6m0-6-5 6"/></svg></button></div><p id="audio-status" role="status">Audio disattivato</p><small id="audio-track">Tra le case</small></section><audio id="background-music" src="assets/tra-le-case.wav" loop preload="none"></audio><audio id="mission-music" src="assets/segnale-debole.wav" loop preload="none"></audio>
 <main class="city-layout">
-<aside class="dispatch" id="instructions-panel" aria-labelledby="instructions-title"><div class="dispatch-heading"><div><p class="eyebrow">IL TUO INCARICO</p><h1 id="instructions-title">Valle Nord</h1></div><button id="toggle-instructions" aria-label="Riduci istruzioni" aria-expanded="true" aria-controls="dispatch-content">−</button></div><div id="dispatch-content"><p class="dispatch-intro" id="brief-instruction">Completa la scuola, poi ripristina le tre sedi.</p><div class="episode-title"><span id="progress-label">PERCORSO</span><span id="progress-count">0 / 3</span></div><div id="journey" class="journey"></div><div class="dispatch-radio"><div class="radio-title"><span class="avatar">ER</span><span>ELENA RIVA<small>COORDINATRICE</small></span><button id="phone-open" hidden type="button" class="icon-button" aria-haspopup="dialog" aria-label="Apri i messaggi di Elena" title="Messaggi di Elena"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="#b5d9c4"><path transform="translate(24 0) scale(-1 1)" d="M5.1 3.5c.8-.6 1.9-.5 2.5.3l2.6 3.4c.5.7.5 1.6-.1 2.2l-1.6 1.7a14 14 0 0 0 4.4 4.4l1.7-1.6c.6-.6 1.5-.6 2.2-.1l3.4 2.6c.8.6.9 1.7.3 2.5l-1 1.2c-.8.9-2 1.3-3.1 1C9.7 19.4 4.6 14.3 2.9 7.6c-.3-1.1.1-2.3 1-3.1z"/></svg></button></div></div><div class="dispatch-footer"><span>PROGRESSI SALVATI</span><button id="reset-missions" type="button">Ricomincia interventi</button><button id="reset-progress" aria-label="Ricomincia il percorso">Ricomincia</button></div></div></aside>
+<aside class="dispatch" id="instructions-panel" aria-labelledby="instructions-title"><div class="dispatch-heading"><div><p class="eyebrow">IL TUO INCARICO</p><h1 id="instructions-title">Valle Nord</h1></div><button id="toggle-instructions" aria-label="Riduci istruzioni" aria-expanded="true" aria-controls="dispatch-content">−</button></div><div id="dispatch-content"><p class="dispatch-intro" id="brief-instruction">Completa la scuola, poi ripristina le tre sedi.</p><div class="episode-title"><span id="progress-label">PERCORSO</span><span id="progress-count">0 / 3</span></div><div id="journey" class="journey"></div><div class="dispatch-radio"><div class="radio-title"><span class="avatar">ER</span><span>ELENA RIVA<small>COORDINATRICE</small></span><button id="phone-open" hidden type="button" class="icon-button" aria-haspopup="dialog" aria-label="Apri i messaggi di Elena" title="Messaggi di Elena"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="#b5d9c4"><path transform="translate(24 0) scale(-1 1)" d="M5.1 3.5c.8-.6 1.9-.5 2.5.3l2.6 3.4c.5.7.5 1.6-.1 2.2l-1.6 1.7a14 14 0 0 0 4.4 4.4l1.7-1.6c.6-.6 1.5-.6 2.2-.1l3.4 2.6c.8.6.9 1.7.3 2.5l-1 1.2c-.8.9-2 1.3-3.1 1C9.7 19.4 4.6 14.3 2.9 7.6c-.3-1.1.1-2.3 1-3.1z"/></svg></button></div></div></div><div class="dispatch-footer"><span>PROGRESSI SALVATI</span><button id="reset-progress" type="button" aria-controls="restart-dialog" aria-haspopup="dialog">Ricomincia</button></div></aside>
 <section class="world" aria-label="Mappa di Valle Nord"><h2 id="world-title" class="visually-hidden">Mappa di Valle Nord</h2>
 <div class="district-info"><button class="profile-chip" data-action="hq" hidden><span class="profile-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="2"/><path d="M9 5V3h6v2M14 10h4m-4 4h4M6 17c0-3 5-3 5 0"/><circle cx="8.5" cy="11" r="2"/></svg></span><span id="profile-rank">Il tuo tesserino<small>Tecnico di rete</small></span></button><div class="weather" aria-label="Meteo della simulazione: schiarite, giorno 01, ore 07:40"><svg class="weather-icon" viewBox="0 0 32 32" aria-hidden="true"><use href="#weather-clearing"/></svg><span>Schiarite<small>GIORNO 01 · 07:40 · VALLE NORD</small></span></div></div>
 <div class="map-stage" id="map-stage"><div id="city-canvas" role="region" tabindex="0" aria-label="Mappa 3D. Trascina per spostarti; Shift e trascinamento per ruotare. Frecce della tastiera per spostarti, più e meno per lo zoom."></div><div id="city-markers" class="city-markers" aria-label="Edifici di Valle Nord"></div><div id="map-fallback" class="map-fallback" hidden><h3>Esplora gli edifici</h3><p>La vista 3D non è disponibile. Puoi entrare negli edifici dai pulsanti.</p></div>
@@ -73,6 +73,15 @@
     </header>
     <ol id="phone-messages" aria-label="Messaggi di Elena"></ol>
   </div>
+</dialog>
+<dialog id="medal-dialog" class="medal-dialog" aria-labelledby="medal-title" aria-describedby="medal-message">
+  <p class="medal-announcement">Congratulazioni! Hai ottenuto una medaglia</p>
+  <div class="medal-display" aria-hidden="true">
+    <img id="medal-image" width="144" height="144" alt="">
+  </div>
+  <h2 id="medal-title"></h2>
+  <p id="medal-message"></p>
+  <form method="dialog"><button class="primary" autofocus>Continua <span aria-hidden="true">▸</span></button></form>
 </dialog>
 <dialog id="building-dialog" class="building-dialog" aria-labelledby="building-title"><div class="dialog-top"><button id="back-city" class="back-button"><span class="city-back-arrow" aria-hidden="true">◂</span> Torna in città</button><span id="building-badge" class="eyebrow"></span><button id="close-building" class="icon-button" aria-label="Chiudi edificio">×</button></div><div id="building-content"></div></dialog>
 <dialog id="calculator-dialog" class="calculator-dialog" aria-labelledby="calc-title">
@@ -205,6 +214,25 @@
       </div>
     </div>
   </div>
+</dialog>
+<dialog id="restart-dialog" aria-labelledby="restart-title">
+  <form id="restart-form" method="dialog">
+    <h2 id="restart-title">Ricomincia</h2>
+    <fieldset>
+      <legend>Da quale capitolo vuoi ripartire?</legend>
+      <label><input type="radio" name="chapter" value="1" required>
+        <span><strong>Capitolo 01 · Formazione di base</strong><small id="restart-chapter-one-note"></small></span>
+      </label>
+      <label><input type="radio" name="chapter" value="2" required>
+        <span><strong>Capitolo 02 · Oltre la rete locale</strong><small id="restart-chapter-two-note"></small></span>
+      </label>
+    </fieldset>
+    <p>Nome, età e avatar del tesserino restano salvati.</p>
+    <div class="practice-actions">
+      <button type="button" class="secondary" id="cancel-restart" autofocus>Annulla</button>
+      <button type="submit" class="primary" id="confirm-restart" disabled>Ricomincia</button>
+    </div>
+  </form>
 </dialog>
 <noscript><p class="noscript">Per esplorare la città e svolgere gli interventi è necessario attivare JavaScript.</p></noscript>
 </body></html>

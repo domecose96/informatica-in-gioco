@@ -63,7 +63,8 @@
     hosts:[...district.hosts,'192.168.30.10'],
     gateways:[...district.gateways,'192.168.30.62'],
     prefixes:[...district.prefixes,26],
-    branches:[{from:1,to:3,addresses:['10.30.1.9','10.30.1.10']}]
+    branches:[{from:1,to:3,addresses:['10.30.1.9','10.30.1.10']}],
+    additionalLans:[{router:3,host:'192.168.30.74',gateway:'192.168.30.126',prefix:26}]
   };
   function interfaces(topology,index){
     const result=[];
@@ -72,6 +73,9 @@
       const lan=calculate(topology.lans[index],prefix);
       const gateway=topology.gateways?.[index]??lan.first;
       result.push({ip:gateway,prefix,network:lan.network});
+    }
+    for(const lan of topology.additionalLans??[]){
+      if(lan.router===index)result.push({ip:lan.gateway,prefix:lan.prefix,network:calculate(lan.gateway,lan.prefix).network});
     }
     if(topology.links[index-1])result.push({ip:topology.links[index-1][1],prefix:30,neighbor:index-1,next:topology.links[index-1][0]});
     if(index<topology.links.length)result.push({ip:topology.links[index][0],prefix:30,neighbor:index+1,next:topology.links[index][1]});
@@ -105,17 +109,19 @@
     }
     return {ok:false,hops,stop:index,loop:true};
   }
-  function trace(topology,routers,start,destination,fromPc){
+  function trace(topology,routers,start,destination,fromPc,sourceHost=topology.hosts[start]){
     const forward=walk(topology,routers,start,destination);
-    const origin=interfaces(topology,start)[0].ip;
+    const ports=interfaces(topology,start);
+    const origin=(fromPc&&ports.find(port=>matches(sourceHost,port.ip,port.prefix))||ports[0]).ip;
+    const replyTo=fromPc?sourceHost:origin;
     const hops=fromPc?[{index:start,ip:origin}]:[];
     for(const hop of forward.hops){
-      const reply=walk(topology,routers,hop.index,fromPc?topology.hosts[start]:origin);
+      const reply=walk(topology,routers,hop.index,replyTo);
       hops.push({...hop,responds:reply.ok});
     }
-    const destinationIndex=topology.hosts.indexOf(destination);
+    const destinationIndex=topology.additionalLans?.find(lan=>lan.host===destination)?.router??topology.hosts.indexOf(destination);
     const reached=forward.ok&&destinationIndex>=0;
-    const reply=reached?walk(topology,routers,destinationIndex,fromPc?topology.hosts[start]:origin):null;
+    const reply=reached?walk(topology,routers,destinationIndex,replyTo):null;
     return {ok:Boolean(reply?.ok),forward,reply,hops};
   }
   const maskPrefixes=Array.from({length:33},(_,prefix)=>calculate('0.0.0.0',prefix).mask);

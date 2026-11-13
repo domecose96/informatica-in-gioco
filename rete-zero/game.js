@@ -21,24 +21,13 @@
       if(Number.isInteger(raw.badgeAge)&&raw.badgeAge>=1&&raw.badgeAge<=120)state.badgeAge=raw.badgeAge;
       if(Object.hasOwn(avatars,raw.avatar))state.avatar=raw.avatar;
       if(raw.routing&&typeof raw.routing==='object')state.routing=raw.routing;
+      state.highestChapter=raw.highestChapter===2||raw.chapterSelectionUnlocked===true||state.routing?.municipalComplete===true?2:1;
       if(raw.lessonDrafts&&typeof raw.lessonDrafts==='object'&&!Array.isArray(raw.lessonDrafts))state.lessonDrafts=raw.lessonDrafts;
       state.fieldStage=[0,1,2].includes(raw.fieldStage)?raw.fieldStage:2;
       if(state.completed===missions.length&&[1,2].includes(raw.nextDayStage))state.nextDayStage=raw.nextDayStage;
       state.stormStage=[0,1,2].includes(raw.stormStage)?raw.stormStage:raw.completed>0?2:0;
     }
   } catch (_) {}
-  const resumeAfterSchool=location.hash==='#rip-completato';
-  const resumeDayThree=resumeAfterSchool||location.hash==='#giorno-3';
-  if(resumeDayThree){
-    state.completed=missions.length;
-    state.studied=lessons.map(lesson=>lesson.id);
-    state.stormStage=state.fieldStage=state.nextDayStage=2;
-    state.badgeName||='Tecnico di Valle Nord';
-    state.badgeAge??=18;
-    state.avatar||='uomo';
-    if(resumeAfterSchool)Object.assign(state.routing??={},{labConfigured:true,diagnosisComplete:true,ripComplete:true,trained:true});
-    try{history.replaceState(null,'',location.href.split('#')[0]);}catch(_){}
-  }
   let activeBuilding=null,activeLesson=0,returnFocus=null;
   const graduated=()=>state.studied.length===lessons.length;
   const xp=()=>state.studied.length*25+state.completed*100+(state.routing?.complete?100:0)+(state.routing?.municipalComplete?100:0);
@@ -78,11 +67,12 @@
   const schoolUpdate=[schoolUpdateTitle,'Buongiorno. Torna al Galilei per l’aggiornamento sul routing. Oggi collegheremo due reti con rotte statiche, cercheremo un guasto e vedremo come i router imparano le rotte con RIP.', 'Giorno 03 · 08:00'];
   const schoolUpdateComplete=['Aggiornamento completato','Congratulazioni! Hai completato l’aggiornamento al Galilei. Hai collegato due reti, individuato un guasto e verificato il collegamento con RIPv2.', 'Giorno 03 · 13:45'];
   const routingRequest=['Richiesta di assistenza','L’ospedale deve inviare una richiesta alla Protezione civile passando dalla Centrale. Le reti locali funzionano. Controlla il percorso tra le sedi e ripristina la comunicazione in entrambe le direzioni.', 'Giorno 03 · 14:00'];
-  const routingComplete=['Collegamento tra le sedi ripristinato','La richiesta è arrivata alla Protezione civile e la risposta è tornata all’ospedale. Hai ottenuto la medaglia Tecnico specialista.', 'Giorno 03 · 15:15'];
+  const routingComplete=['Collegamento tra le sedi ripristinato','La richiesta è arrivata alla Protezione civile e la risposta è tornata all’ospedale.', 'Giorno 03 · 15:15'];
   const municipalTitle='Municipio in rete';
-  const municipalRequest=[municipalTitle,'Il Municipio deve scambiare dati con Ospedale e Protezione civile. La Centrale è pronta a scambiare aggiornamenti RIPv2. Configura RIP al Municipio e verifica che il suo PC raggiunga entrambe le sedi.', 'Giorno 03 · 15:20'];
-  const municipalReport=['Municipio collegato','Il Municipio comunica con Ospedale e Protezione civile attraverso la Centrale. Le rotte verso le due sedi sono state apprese tramite RIP.', 'Giorno 03 · 16:00'];
+  const municipalRequest=[municipalTitle,'Il Municipio ha due sottoreti, una per il Sindaco e una per il Vicesindaco. Configura RIPv2 perché la Centrale impari a raggiungerle e il Municipio impari le rotte verso le altre sedi. Poi verifica il collegamento dal PC del Sindaco verso l’Ospedale e dal PC del Vicesindaco verso la Protezione civile.', 'Giorno 03 · 15:20'];
+  const municipalReport=['Municipio collegato','Il Municipio comunica con Ospedale e Protezione civile attraverso la Centrale. Le rotte verso le due sedi sono state apprese tramite RIP. Hai ottenuto la medaglia Tecnico specialista.', 'Giorno 03 · 16:00'];
   let fieldTimer,nextDayTimer,phoneHasFinalReport=false;
+  let operationalMedalPending=false;
   const awaitingFinalReport=()=>districtRestored()&&state.nextDayStage===0&&!phoneHasFinalReport;
   function scheduleFieldDispatch(){
     if((!awaitingFieldDispatch()&&!awaitingFinalReport())||fieldTimer||document.querySelector('dialog[open]:not(#phone-dialog)'))return;
@@ -118,6 +108,10 @@
     state.nextDayStage=1;
     save();
     renderShell();
+    if(operationalMedalPending){
+      operationalMedalPending=false;
+      celebrateMedal('operativo');
+    }
     scheduleNextDay();
   });
   function phoneMessages(){
@@ -204,36 +198,32 @@
   }
   $('phone-open').addEventListener('click', ()=>openPhone());
   function renderShell(){
-    const weatherStages = [
-      {label:'Schiarite', time:'07:40', icon:'clearing', day:'Giorno 01'},
-      {label:'Schiarite', time:'09:00', icon:'clearing', day:'Giorno 02'},
-      {label:'Poco nuvoloso', time:'10:15', icon:'clearing', day:'Giorno 02'},
-      {label:'Sereno', time:'11:30', icon:'sun', day:'Giorno 02'},
-      {label:'Sereno', time:'13:00', icon:'sun', day:'Giorno 02'}
-    ];
+    const [day, messageTime]=phoneMessages().at(-1)[2].split(' · ');
     const schoolEvening=graduated()&&state.completed===0&&(state.stormStage??0)===0;
     const afterMunicipioNight=districtRestored()&&state.nextDayStage===1;
     const dayThree=nextDayStarted();
     const map=$('map-stage');
     map.classList.toggle('storm',schoolEvening);
     map.classList.toggle('night',schoolEvening||afterMunicipioNight);
-    let weather=weatherStages[graduated()?state.completed+1:0];
-    if(schoolEvening)weather={label:'Pioggia',time:'18:30',icon:'rain',day:'Giorno 01'};
-    if(afterMunicipioNight)weather={label:'Notte serena',time:'21:00',icon:'moon',day:'Giorno 02'};
-    if(dayThree)weather={label:'Sereno',time:state.routing?.ripComplete?'14:00':'08:00',icon:'sun',day:'Giorno 03'};
+    let weather={label:'Schiarite',icon:'clearing'};
+    if(dayThree||state.completed>=2)weather={label:'Sereno',icon:'sun'};
+    else if(state.completed===1)weather={label:'Poco nuvoloso',icon:'clearing'};
+    if(schoolEvening)weather={label:'Pioggia',icon:'rain'};
+    if(afterMunicipioNight)weather={label:'Notte serena',icon:'moon'};
+    const time=afterMunicipioNight?'21:00':messageTime;
     const weatherPanel = document.querySelector('.weather');
-    weatherPanel.setAttribute('aria-label', `Meteo della simulazione: ${weather.label.toLowerCase()}, ${weather.day.toLowerCase()}, ore ${weather.time}`);
+    weatherPanel.setAttribute('aria-label', `Meteo della simulazione: ${weather.label.toLowerCase()}, ${day.toLowerCase()}, ore ${time}`);
     weatherPanel.querySelector('use').setAttribute('href', `#weather-${weather.icon}`);
     weatherPanel.querySelector('span').replaceChildren(
       document.createTextNode(weather.label),
-      Object.assign(document.createElement('small'), {textContent:`${weather.day.toUpperCase()} · ${weather.time} · VALLE NORD`})
+      Object.assign(document.createElement('small'), {textContent:`${day.toUpperCase()} · ${time} · VALLE NORD`})
     );
-    const rank=state.routing?.complete?'Tecnico specialista':graduated()?(state.completed===3?'Tecnico di distretto':'Tecnico di rete'):'In formazione';
+    const rank=state.routing?.municipalComplete?'Tecnico specialista':graduated()?(state.completed===3?'Tecnico di distretto':'Tecnico di rete'):'In formazione';
     $('phone-open').hidden=false;
     document.querySelector('.profile-chip').hidden=!graduated();
     $('profile-rank').replaceChildren(document.createTextNode('Il tuo tesserino'),Object.assign(document.createElement('small'),{textContent:graduated()?`${rank} · ${xp()} XP`:`Da ottenere · ${state.studied.length}/${lessons.length} prove`}));
     document.querySelector('.profile-chip').setAttribute('aria-label',graduated()?'Apri il tuo tesserino da tecnico':`Il tuo tesserino: completa le ${lessons.length} prove della scuola`);
-    $('progress-label').textContent=dayThree?`INCARICHI · ${weather.day.toUpperCase()}`:'PERCORSO';
+    $('progress-label').textContent=dayThree?`INCARICHI · ${day.toUpperCase()}`:'PERCORSO';
     $('progress-count').textContent=dayThree?'':state.completed+' / '+missions.length;
     $('journey').replaceChildren();
     const stages=[{id:'school',title:'Scuola di reti',info:graduated()?'Completata ✓':`${state.studied.length}/${lessons.length} prove`,done:graduated(),active:!graduated()},...missions.map((mission,index)=>({id:buildings.find(b=>b.mission===index).id,title:mission.site,info:index<state.completed?'Online ✓':!graduated()?'Richiede tesserino':index===state.completed?mission.title:'In attesa',done:index<state.completed,active:graduated()&&index===state.completed}))];
@@ -401,7 +391,14 @@
       document.querySelectorAll('.course-button')[activeLesson].firstChild.textContent='✓';
       if(graduated()){
         showSchoolCompletion();
-        if(!wasGraduated)scheduleSchoolMessage($('practice-next'),graduationMessage);
+        if(!wasGraduated){
+          $('practice-next').replaceChildren(
+            makeButton('Esci dalla scuola',closeBuilding,'primary next-activity action-triangle')
+          );
+          $('building-dialog').addEventListener('close',()=>{
+            celebrateMedal('base',()=>openPhone(graduationMessage));
+          },{once:true});
+        }
       }else{
         $('practice-next').replaceChildren(makeButton('Continua',()=>{
           activeLesson=lessons.findIndex(l=>!state.studied.includes(l.id));
@@ -790,27 +787,83 @@
   function setupMissionHint(){
     const hintButton=$('mission-hint');
     const hintText=$('mission-hint-text');
-    hintButton.addEventListener('click',()=>{
-      const expanded=hintText.hidden;
+    const sheetButton=$('mission-sheet');
+    const sheet=$('mission-sheet-content');
+    const setSheetOpen=open=>{
+      sheet.hidden=!open;
+      sheetButton.setAttribute('aria-expanded',String(open));
+    };
+    const setHintOpen=expanded=>{
       hintText.hidden=!expanded;
       hintButton.setAttribute('aria-expanded',String(expanded));
       const label=expanded?'Nascondi indizio':'Mostra indizio';
       hintButton.setAttribute('aria-label',label);
       hintButton.title=label;
+    };
+    sheetButton.addEventListener('click',()=>{
+      setHintOpen(false);
+      setSheetOpen(sheet.hidden);
+    });
+    hintButton.addEventListener('click',()=>{
+      setSheetOpen(false);
+      setHintOpen(hintText.hidden);
     });
   }
   function missionHeader({eyebrow,title,story,reference,done}){
     return `<div class="building-hero mission-hero"><div><p class="eyebrow">${eyebrow}</p><h2 id="building-title">${title}</h2><p>${story}</p></div><div class="mission-hero-tools"><div class="incident-badge ${done?'repaired':''}"><span>${done?'✓':'!'}</span><strong>${done?'COLLEGAMENTO RIPRISTINATO':'SEGNALAZIONE APERTA'}</strong><small>${reference}</small></div><button id="mission-phone" class="icon-button" type="button" aria-label="Apri i messaggi di Elena" title="Messaggi di Elena" aria-haspopup="dialog"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="#b5d9c4"><path transform="translate(24 0) scale(-1 1)" d="M5.1 3.5c.8-.6 1.9-.5 2.5.3l2.6 3.4c.5.7.5 1.6-.1 2.2l-1.6 1.7a14 14 0 0 0 4.4 4.4l1.7-1.6c.6-.6 1.5-.6 2.2-.1l3.4 2.6c.8.6.9 1.7.3 2.5l-1 1.2c-.8.9-2 1.3-3.1 1C9.7 19.4 4.6 14.3 2.9 7.6c-.3-1.1.1-2.3 1-3.1z"/></svg></button></div></div>`;
   }
+  function missionLayout({header,extraClass='',hint='',sheet,ticket,terminalTitle,fields,terminal,picker='',notice='',footer,actions,afterFeedback=''}){
+    return `${missionHeader(header)}
+      <div class="intervention-layout ${extraClass}">
+        <aside class="ticket-panel">
+          <div class="config-heading">
+            <button id="mission-sheet" class="icon-button" type="button" aria-expanded="false" aria-controls="mission-sheet-content">
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z M14 3v5h4 M9 12h6 M9 16h6"/></svg>
+              Scheda tecnica
+            </button>
+            <button id="mission-hint" class="icon-button" type="button" aria-label="Mostra indizio" title="Mostra indizio" aria-expanded="false" aria-controls="mission-hint-text">?</button>
+            <div id="mission-sheet-content" role="region" aria-labelledby="mission-sheet" hidden>${sheet}</div>
+            <div id="mission-hint-text" class="hint" hidden>${hint}</div>
+          </div>
+          ${ticket}
+        </aside>
+        <section class="configuration" aria-label="Configurazione di rete">
+          <div class="config-heading">
+            <div><span class="eyebrow">CONFIGURAZIONE DI RETE</span><h3 id="mission-terminal-title">${terminalTitle}</h3></div>
+            <span class="onsite">SIMULAZIONE</span>
+          </div>
+          ${notice}
+          <div class="mission-workspace with-prompt">
+            <div class="mission-field-column">${fields}</div>
+            ${picker}
+            ${terminal}
+          </div>
+          ${footer}
+          ${afterFeedback}
+          <div class="practice-actions mission-actions">${actions}</div>
+        </section>
+      </div>`;
+  }
   function renderMission(site){
     const index=site.mission,mission=missions[index],allowed=canEnterMission(index,state.completed,state.studied),done=index<state.completed;
-    $('building-content').innerHTML=`${missionHeader({
-      eyebrow:'EPISODIO '+String(index+1).padStart(2,'0')+' / '+site.name,
-      title:mission.title+'.',
-      story:mission.story,
-      reference:'PRATICA VN–0'+(index+1)+' · '+mission.topic,
-      done
-    })}<div class="intervention-layout"><aside class="ticket-panel"><div class="config-heading"><div><span class="eyebrow">ISTRUZIONI</span><h3>Scheda tecnica</h3></div><button id="mission-hint" class="icon-button" type="button" aria-label="Mostra indizio" title="Mostra indizio" aria-expanded="false" aria-controls="mission-hint-text">?</button><p id="mission-hint-text" class="hint" hidden></p></div><div id="mission-evidence" class="evidence"></div><div class="topology" role="group" aria-label="Collegamento dei dispositivi di rete"><span><img src="assets/icons/${index===1?'radio':'pc'}.png" alt="" width="72" height="72">${index===1?'RADIO MOBILE':'PC'}</span><i class="topology-${index===1?'radio-wave':'cable'}" role="img" aria-label="${index===1?'Collegamento radio':'Collegamento Ethernet'}"></i><span><img src="assets/icons/switch.png" alt="" width="72" height="72">SWITCH</span><i class="topology-cable" role="img" aria-label="Collegamento Ethernet"></i><span><img src="assets/icons/router.png" alt="" width="72" height="72">ROUTER</span></div>${mission.steps ? `<ul class="mission-steps" id="mission-steps" role="list" aria-label="Passaggi dell’intervento">${mission.steps.map(step => `<li><span class="mission-step-status" role="img"></span><span>${step}</span></li>`).join('')}</ul>` : `<div class="ticket-note">${index===2?'Progetta prima le sottoreti, poi verifica gli intervalli.':'Controlla gli indirizzi prima di sostituire apparati funzionanti.'}</div>`}</aside><section class="configuration"><div class="config-heading"><div><span class="eyebrow">${'CONFIGURAZIONE DI RETE'}</span><h3>${index===1?'Radio mobile / Squadra Nord':index===2?'Router / Municipio':'Terminale / Pronto soccorso'}</h3></div><span class="onsite">SIMULAZIONE</span></div><div id="mission-lock"></div><div class="mission-workspace with-prompt"><form id="mission-form"><div id="mission-fields" class="fields"></div></form><details class="mission-cli"><summary>${index===2?'Usa il prompt del router':'Usa il prompt del PC'}</summary><div class="mission-terminal-output" aria-live="polite"></div><form class="mission-terminal-form"><label><span>C:\\&gt;</span><input name="command" autocomplete="off" spellcheck="false" placeholder="Digita un comando"></label><button type="submit">Esegui</button></form></details></div><div id="mission-feedback" role="status" class="feedback">${done?'Intervento già completato. Puoi rivedere e provare una configurazione.':'Le modifiche riguardano soltanto la simulazione.'}</div><div id="mission-next"></div><div class="practice-actions mission-actions"><button class="secondary" id="mission-calculator" type="button">Banco di calcolo</button><button class="primary" id="verify-mission" type="submit" form="mission-form">Applica e verifica <span aria-hidden="true">▸</span></button></div></section></div>`;
+    $('building-content').innerHTML=missionLayout({
+      header:{
+        eyebrow:'EPISODIO '+String(index+1).padStart(2,'0')+' / '+site.name,
+        title:mission.title+'.',
+        story:mission.story,
+        reference:'PRATICA VN–0'+(index+1)+' · '+mission.topic,
+        done
+      },
+      sheet:'<div id="mission-evidence" class="evidence"></div>',
+      ticket:`<div class="topology" role="group" aria-label="Collegamento dei dispositivi di rete"><span><img src="assets/icons/${index===1?'radio':'pc'}.png" alt="" width="72" height="72">${index===1?'RADIO MOBILE':'PC'}</span><i class="topology-${index===1?'radio-wave':'cable'}" role="img" aria-label="${index===1?'Collegamento radio':'Collegamento Ethernet'}"></i><span><img src="assets/icons/switch.png" alt="" width="72" height="72">SWITCH</span><i class="topology-cable" role="img" aria-label="Collegamento Ethernet"></i><span><img src="assets/icons/router.png" alt="" width="72" height="72">ROUTER</span></div>${mission.steps ? `<ul class="mission-steps" id="mission-steps" role="list" aria-label="Passaggi dell’intervento">${mission.steps.map(step => `<li><span class="mission-step-status" role="img"></span><span>${step}</span></li>`).join('')}</ul>` : `<div class="ticket-note">${index===2?'Progetta prima le sottoreti, poi verifica gli intervalli.':'Controlla gli indirizzi prima di sostituire apparati funzionanti.'}</div>`}`,
+      terminalTitle:index===1?'Radio mobile / Squadra Nord':index===2?'Router / Municipio':'Terminale / Pronto soccorso',
+      notice:'<div id="mission-lock"></div>',
+      fields:'<form id="mission-form"><div id="mission-fields" class="fields"></div></form>',
+      terminal:`<details class="mission-cli"><summary>${index===2?'Usa il prompt del router':'Usa il prompt del PC'}</summary><div class="mission-terminal-output" aria-live="polite"></div><form class="mission-terminal-form"><label><span>C:\\&gt;</span><input name="command" autocomplete="off" spellcheck="false" placeholder="Digita un comando"></label><button type="submit">Esegui</button></form></details>`,
+      footer:`<div id="mission-feedback" role="status" class="feedback">${done?'Intervento già completato. Puoi rivedere e provare una configurazione.':'Le modifiche riguardano soltanto la simulazione.'}</div>`,
+      afterFeedback:'<div id="mission-next"></div>',
+      actions:'<button class="secondary" id="mission-calculator" type="button">Banco di calcolo</button><button class="primary" id="verify-mission" type="submit" form="mission-form">Applica e verifica <span aria-hidden="true">▸</span></button>'
+    });
     if(mission.steps)updateMissionChecklist(index);
     $('mission-phone').addEventListener('click', ()=>openPhone());
     $('mission-evidence').replaceChildren(...mission.evidence.map(text=>Object.assign(document.createElement('span'),{textContent:text})));
@@ -865,6 +918,15 @@
       else state.drafts[index]={...config,hostStep:3};
       const fresh=state.completed===index;state.completed=Math.max(state.completed,index+1);if(fresh)state.fieldStage=0;save();renderShell();document.querySelector('.incident-badge').classList.add('repaired');document.querySelector('.incident-badge>span').textContent='✓';document.querySelector('.incident-badge strong').textContent='COLLEGAMENTO RIPRISTINATO';
       if(mission.steps)updateMissionChecklist(index);
+      if(fresh&&districtRestored()){
+        operationalMedalPending=true;
+        state.fieldStage=2;
+        save();
+        renderShell();
+        closeBuilding();
+        openPhone();
+        return;
+      }
       const mapButton=makeButton('Vai alla mappa',closeBuilding,'primary');
       const triangle=document.createElement('span');
       triangle.setAttribute('aria-hidden','true');
@@ -878,17 +940,34 @@
     const file=avatars[avatar].file;
     return `<img src="assets/${file}" alt="" width="256" height="256">`;
   }
+  const medals={
+    base:{label:'Tecnico di base',message:'Hai superato tutte le prove della formazione di base al Galilei.'},
+    operativo:{label:'Tecnico operativo',message:'Hai ripristinato le comunicazioni nelle tre sedi di Valle Nord.'},
+    specialista:{label:'Tecnico specialista',message:'Hai collegato il Municipio alla rete di Valle Nord. Ora le tre sedi possono coordinarsi.'},
+    distretto:{label:'Tecnico di distretto'}
+  };
+  function celebrateMedal(image,afterClose){
+    const medal=medals[image];
+    const dialog=$('medal-dialog');
+    dialog.dataset.medal=image;
+    $('medal-image').src=`assets/medaglia-${image}.png`;
+    $('medal-title').textContent=medal.label;
+    $('medal-message').textContent=medal.message;
+    if(afterClose)dialog.addEventListener('close',afterClose,{once:true});
+    dialog.showModal();
+  }
   function renderBadgeAwards(){
     const awards = [
-      {label:'Tecnico di base', image:'base', earned:graduated(), requirement:'Completa la scuola'},
-      {label:'Tecnico operativo', image:'operativo', earned:state.completed>=missions.length, requirement:`Completa tutti gli interventi · ${state.completed}/${missions.length}`},
-      {label:'Tecnico specialista', image:'specialista', earned:Boolean(state.routing?.complete), requirement:'Ripristina il collegamento tra le sedi'},
-      {label:'Tecnico di distretto', image:'distretto', earned:false, requirement:'Prossime attività'}
+      {image:'base', earned:graduated(), requirement:'Completa la scuola'},
+      {image:'operativo', earned:state.completed>=missions.length, requirement:`Completa tutti gli interventi · ${state.completed}/${missions.length}`},
+      {image:'specialista', earned:Boolean(state.routing?.municipalComplete), requirement:'Completa gli interventi del Capitolo 2'},
+      {image:'distretto', earned:false, requirement:'Prossime attività'}
     ];
-    return awards.map(({label,image,earned,requirement}) => {
+    return awards.map(({image,earned,requirement}) => {
+      const content=`<img class="badge-award-mark" src="assets/medaglia-${image}.png" alt="" width="56" height="56">
+        <span><strong>${medals[image].label}</strong><small>${earned?'Ottenuta':requirement}</small></span>`;
       return `<li class="badge-award${earned?' earned':''}">
-        <img class="badge-award-mark" src="assets/medaglia-${image}.png" alt="" width="56" height="56">
-        <span><strong>${label}</strong><small>${earned?'Ottenuta':requirement}</small></span>
+        ${earned?`<button class="badge-replay" type="button" data-medal="${image}" aria-label="Rivedi la medaglia ${medals[image].label}" aria-haspopup="dialog">${content}</button>`:content}
       </li>`;
     }).join('');
   }
@@ -898,6 +977,14 @@
     const showSettings=isNew||editing;
     const cardTag=showSettings?'form':'section';
     const nextMission=awaitingDispatch()?null:missions[state.completed];
+    const routingSchoolPassed=routingLessonResults(state.routing).filter(Boolean).length;
+    const routingMissions=[state.routing?.complete,state.routing?.municipalComplete];
+    const routingMissionsDone=routingMissions.filter(Boolean).length;
+    const chapterTwo=nextDayStarted();
+    const chapterTwoComplete=chapterTwo&&Boolean(state.routing?.municipalComplete);
+    const chapterLabel=chapterTwo?'Cap. 02':'Cap. 01';
+    const chapterSchool=chapterTwo?`${routingSchoolPassed}/${routingLessons.length}`:`${state.studied.length}/${lessons.length}`;
+    const chapterMissions=chapterTwo?`${routingMissionsDone}/${routingMissions.length}`:`${state.completed}/${missions.length}`;
     $('building-content').innerHTML=`<header class="badge-heading">
       <p class="eyebrow">CENTRALE OPERATIVA / VALLE NORD</p>
       <div class="badge-title-row"><h2 id="building-title">Il tuo tesserino</h2>${showSettings?'':'<button type="button" id="badge-settings" class="secondary">Impostazioni</button>'}</div>
@@ -923,8 +1010,14 @@
           <p>${graduated()?'Abilitazione agli interventi del distretto.':'Formazione presso l’Istituto Galilei.'}</p></div>
         </div>
         <div class="card-stats">
-          <span><strong>${state.studied.length}/${lessons.length}</strong>PROVE SCUOLA</span>
-          <span><strong>${state.completed}/${missions.length}</strong>INTERVENTI</span>
+          <span>
+            <strong>${state.studied.length+routingSchoolPassed}/${lessons.length+routingLessons.length}</strong>PROVE SCUOLA TOTALI
+            <small>${chapterLabel} · ${chapterSchool}</small>
+          </span>
+          <span>
+            <strong>${state.completed+routingMissionsDone}/${missions.length+routingMissions.length}</strong>INTERVENTI TOTALI
+            <small>${chapterLabel} · ${chapterMissions}</small>
+          </span>
           <span><strong>${xp()}</strong>XP</span>
         </div>
         ${showSettings?`<div class="badge-setup-actions">
@@ -937,9 +1030,9 @@
         <ul class="badge-awards">${renderBadgeAwards()}</ul>
       </section>`}
       ${showSettings?'':`<section class="badge-next">
-        <div><span class="eyebrow">IL PROSSIMO PASSO</span>
-        <h3>${!graduated()?'Scuola di reti':awaitingDispatch()?'Mappa di Valle Nord':nextMission?nextMission.site:'Primo distretto completato'}</h3>
-        <p>${!graduated()?'Completa la formazione per ottenere l’abilitazione.':awaitingDispatch()?'Torna in città e attendi le indicazioni di Elena.':nextMission?nextMission.title:'Le tre sedi di Valle Nord sono di nuovo collegate.'}</p></div>
+        <div><span class="eyebrow">${chapterTwoComplete?'CAPITOLO 02 COMPLETATO':'IL PROSSIMO PASSO'}</span>
+        <h3>${chapterTwoComplete?'Valle Nord è di nuovo online':!graduated()?'Scuola di reti':awaitingDispatch()?'Mappa di Valle Nord':nextMission?nextMission.site:'Primo distretto completato'}</h3>
+        <p>${chapterTwoComplete?'Il Municipio è ora collegato all’ospedale e alla Protezione civile.':!graduated()?'Completa la formazione per ottenere l’abilitazione.':awaitingDispatch()?'Torna in città e attendi le indicazioni di Elena.':nextMission?nextMission.title:'Le tre sedi di Valle Nord sono di nuovo collegate.'}</p></div>
         <div id="hq-action"></div>
       </section>`}
     </div>`;
@@ -1001,6 +1094,9 @@
     $('badge-settings').addEventListener('click',()=>{
       renderHeadquarters(true);
       $('badge-setup').elements.badgeName.focus();
+    });
+    document.querySelectorAll('.badge-replay').forEach(button=>{
+      button.addEventListener('click',()=>celebrateMedal(button.dataset.medal));
     });
     $('hq-action').append(makeButton(graduated()?'Vai alla mappa':'Entra nella scuola',()=>graduated()?closeBuilding():openBuilding('school'),'primary action-triangle'));
   }
@@ -1084,11 +1180,14 @@
       tip:'Apri la scheda tecnica del router selezionato per trovare le reti da dichiarare con network.'
     }
   ];
+  function routingLessonResults(chapter={}){
+    return [chapter.labConfigured||chapter.trained,chapter.diagnosisComplete||chapter.trained,chapter.ripComplete];
+  }
   function setupRoutingLesson(lessonIndex,chapter){
     const nav=document.querySelector('.course-nav');
     addSchoolChapterNavigation(nav,2);
+    const complete=routingLessonResults(chapter);
     routingLessons.forEach(({title},index)=>{
-      const complete=[chapter.labConfigured||chapter.trained,chapter.diagnosisComplete||chapter.trained,chapter.ripComplete];
       const button=makeButton('',()=>{
         if(index===lessonIndex)return;
         renderRouting(true,0,index);
@@ -1154,7 +1253,7 @@
       chapter.diagnosisRouters=diagnosticRouters;
     }
     const routers=chapter[routerKey]??=makeRouters(topology);
-    const done=()=>Boolean(isLab?(rip?chapter.ripComplete:chapter.trained||(diagnosis?chapter.diagnosisComplete:chapter.labConfigured)):municipal?chapter.municipalComplete:chapter.complete);
+    const done=()=>Boolean(isLab?routingLessonResults(chapter)[lessonIndex]:municipal?chapter.municipalComplete:chapter.complete);
     const renamed=()=>routers[0].name.toLowerCase()!==topology.names[0].toLowerCase();
     const hasWrongRoute=()=>diagnosis&&routers[1].routes.some(route=>route.network===wrongNetwork&&route.prefix===25);
     const diagnosisProgress=chapter.diagnosisProgress??{};
@@ -1164,8 +1263,29 @@
       return config?.version===2&&config.noSummary&&ripNetworks(index).every(network=>config.networks.includes(network));
     };
     const last=routers.length-1;
-    const municipalTargets=municipal?[topology.hosts[0],topology.hosts[2]]:[];
+    const staticField=!isLab&&!municipal;
+    const centralField=staticField&&initialRouter===1;
+    const fieldChecks=staticField?(chapter.districtChecks??={}):null;
+    const localTargets=initialRouter===1?[0,last]:[initialRouter===0?last:0];
+    const localRouteReady=target=>{
+      const next=interfaces(topology,initialRouter).find(port=>port.neighbor===(initialRouter===1?target:1))?.next;
+      return routers[initialRouter].routes.some(route=>route.network===topology.lans[target]
+        &&route.prefix===topology.prefixes[target]&&route.next===next);
+    };
+    const fieldReady=()=>[0,last].every(from=>fieldChecks[from]
+      &&trace(topology,routers,from,topology.hosts[from===0?last:0],true).ok);
+    const municipalPCs=municipal?[
+      {label:'PC Sindaco',index:last,pc:true,host:topology.hosts[last],lanSlot:0,target:0},
+      {label:'PC Vicesindaco',index:last,pc:true,host:topology.additionalLans[0].host,lanSlot:1,target:2}
+    ]:[];
     const verifiedMunicipalTargets=new Set();
+    const fieldSteps=municipal?[
+      ['Configura RIPv2 sul router del Municipio.',()=>ripConfigured(last)],
+      ...municipalPCs.map(({label,target})=>[`Da ${label}, esegui ping verso ${topology.labels[target]}.`,()=>verifiedMunicipalTargets.has(target)])
+    ]:staticField?[
+      ...localTargets.map(target=>[`Sul router di questa sede, configura la rotta verso la rete ${topology.labels[target]}.`,()=>localRouteReady(target)]),
+      ...(initialRouter===1?[]:[[`Dal PC di questa sede, esegui tracert verso ${topology.labels[localTargets[0]]}.`,()=>fieldChecks[initialRouter]]])
+    ]:[];
     if(municipal){
       routers.slice(0,last).forEach((router,index)=>{
         router.rip??={version:2,noSummary:true,networks:ripNetworks(index)};
@@ -1174,17 +1294,18 @@
     let ripInspected=false;
     const ready=()=>!isLab||(rip?routers.every((_,index)=>ripConfigured(index))&&ripInspected
       :diagnosis?diagnosisProgress.inspected&&!hasWrongRoute():renamed());
-    const stations=isLab?[]:['hospital','hq','rescue'];
     const pcs=topology.hosts.flatMap((host,index)=>host?[index]:[]);
     const choices=[
-      ...pcs.map(index=>({label:isLab?(index?'PC B':'PC A'):'PC '+topology.labels[index],index,pc:true})),
+      ...(municipal?municipalPCs:pcs.map(index=>({label:isLab?(index?'PC B':'PC A'):'PC '+topology.labels[index],index,pc:true}))),
       ...topology.labels.map((name,index)=>({label:isLab?name:'Router '+name,index,pc:false}))
-    ];
+    ].filter(choice=>isLab||choice.index===initialRouter);
     let selected=choices.find(choice=>choice.index===initialRouter&&choice.pc)??choices.find(choice=>choice.index===initialRouter);
     const modes=routers.map(()=> 'user');
+    const activePorts=routers.map(()=>null);
+    const pcDns=index=>!isLab&&index===2?'192.168.20.126':'0.0.0.0';
     const histories=new Map();
     const title=isLab?routingLessons[lessonIndex].title:municipal?municipalTitle:'Richiesta di assistenza';
-    const routingPath=`<div class="routing-path${municipal?' municipal-routing-path':''}">
+    const routingPath=`<div class="routing-path${municipal?' municipal-lan-path':''}">
             <h3>Percorso del pacchetto</h3>
             <ol id="routing-nodes"></ol>
             ${isLab?'<p id="routing-status" role="status">Avvia una traccia per vedere quali router attraversa il pacchetto.</p>':''}
@@ -1196,12 +1317,14 @@
               ${isLab?'':'<button type="submit">Esegui</button>'}
             </form>
           ${isLab?'</div>':'</details>'}`;
-    const routingActions=`<div class="${isLab?'practice-actions routing-actions':'practice-actions mission-actions'}">
+    const routingButtons=`
             <button id="routing-tools" type="button" class="secondary">Strumenti</button>
             <button id="routing-finish" type="button" class="primary" disabled>${isLab?(rip?'Concludi l’aggiornamento':diagnosis?'Vai alla lezione RIP':'Vai alla diagnosi'):'Conferma il ripristino'} <span aria-hidden="true">▸</span></button>
-          </div>`;
-    const routingHint=`
-            ${municipal?`<p>La Centrale, l’Ospedale e la Protezione civile hanno già RIPv2. Sul Router Municipio attiva <code>router rip</code>, imposta la versione e dichiara le reti direttamente collegate indicate nella scheda.</p><p>Controlla le righe <code>R</code> con <code>show ip route</code> e usa <code>ping</code> dal PC Municipio verso entrambi i PC remoti.</p>`:`<p>Dal PC prova <code>tracert &lt;IP&gt;</code>. Sui router, <code>show ip route</code> mostra la tabella delle rotte.</p>
+          `;
+    const routingHint=staticField
+      ? `<p>Configura solo il router di questa sede. Usa gli indirizzi della scheda tecnica e controlla la tabella con <code>show ip route</code>.</p><p>Per intervenire in un’altra sede, torna in città e aprila dalla mappa.</p>`
+      : `
+            ${municipal?`<p>Gli altri router hanno già RIPv2. Attivalo sul router del Municipio e dichiara le reti indicate nella scheda. La Centrale apprende entrambe le sottoreti locali e il Municipio apprende le rotte verso le sedi remote.</p><p>Controlla le righe <code>R</code> con <code>show ip route</code>, poi verifica i due collegamenti dai PC indicati.</p>`:`<p>Dal PC prova <code>tracert &lt;IP&gt;</code>. Sui router, <code>show ip route</code> mostra la tabella delle rotte.</p>
             <p>Usa <code>enable</code> e <code>configure terminal</code>, poi <code>ip route &lt;rete&gt; &lt;maschera&gt; &lt;IP del prossimo router&gt;</code>. Configura anche il ritorno.</p>
             <p>Puoi rinominare un router con <code>hostname &lt;nome&gt;</code> in configurazione globale.</p>`}
           `;
@@ -1209,7 +1332,7 @@
       $('building-content').innerHTML=schoolLayout({
         chapter:2,
         title,
-        score:`${chapter.ripComplete?3:chapter.diagnosisComplete||chapter.trained?2:chapter.labConfigured?1:0} / 3`,
+        score:`${routingLessonResults(chapter).filter(Boolean).length} / ${routingLessons.length}`,
         scoreLabel:'AGGIORNAMENTO',
         status:done()?'SUPERATA ✓':`PROVA ${lessonIndex+1} / 3`,
         question:'',
@@ -1226,7 +1349,7 @@
         </div>
         <footer class="practice-footer">
           <div id="routing-progress" class="feedback" role="status"></div>
-          ${routingActions}
+          <div class="practice-actions routing-actions">${routingButtons}</div>
         </footer>`
       });
       setupRoutingLesson(lessonIndex,chapter);
@@ -1244,43 +1367,45 @@
         trigger.focus({preventScroll:true});
       });
     }else{
-      $('building-content').innerHTML=`${missionHeader({
-        eyebrow:'GIORNO 03 / 14:00 · VALLE NORD',
-        title,
-        story:municipal?'Configura RIPv2 sul router del Municipio. Dal PC Municipio verifica con un ping che rispondano sia Ospedale sia Protezione civile.':'Ripristina la comunicazione tra ospedale e Protezione civile attraverso la Centrale.',
-        reference:municipal?'CAPITOLO 02 · RIPv2':'CAPITOLO 02 · ROUTING STATICO',
-        done:done()
-      })}
-      <div class="intervention-layout routing-intervention">
-        <aside class="ticket-panel">
-          <div class="config-heading">
-            <div><span class="eyebrow">ISTRUZIONI</span><h3>Scheda tecnica</h3></div>
-            <button id="mission-hint" class="icon-button" type="button" aria-label="Mostra indizio" title="Mostra indizio" aria-expanded="false" aria-controls="mission-hint-text">?</button>
-            <div id="mission-hint-text" class="hint" hidden>${routingHint}</div>
-          </div>
-          <dl id="routing-addresses" class="evidence"></dl>
-          ${routingPath}
-        </aside>
-        <section class="configuration" aria-label="Configurazione di rete">
-          <div class="config-heading"><div><span class="eyebrow">CONFIGURAZIONE DI RETE</span><h3 id="routing-terminal-title">Terminale</h3></div><span class="onsite">SIMULAZIONE</span></div>
-          <div class="mission-workspace with-prompt">
-            <div class="fields routing-device-fields">
-              <label for="routing-device">Dispositivo<select id="routing-device"></select></label>
-              <div id="routing-device-addresses" class="fields"></div>
-            </div>
-            ${routingConsole}
-          </div>
-          <div id="routing-status" role="status" class="feedback">Avvia una traccia per vedere quali router attraversa il pacchetto.</div>
-          ${routingActions}
-        </section>
-      </div>`;
+      $('building-content').innerHTML=missionLayout({
+        header:{
+          eyebrow:`${(municipal?municipalRequest:routingRequest)[2].toUpperCase()} · VALLE NORD`,
+          title,
+          story:municipal?'Configura RIPv2 per collegare le due sottoreti del Municipio alle sedi remote. Verifica con un ping dal PC del Sindaco verso l’Ospedale e dal PC del Vicesindaco verso la Protezione civile.'
+            :initialRouter===1?'Configura le due rotte statiche della Centrale, una per ogni sede.'
+            :`Configura la rotta di questa sede verso ${topology.labels[localTargets[0]]} e verifica il percorso dal PC locale.`,
+          reference:municipal?'CAPITOLO 02 · RIPv2':'CAPITOLO 02 · ROUTING STATICO',
+          done:done()
+        },
+        extraClass:'routing-intervention',
+        hint:routingHint,
+        sheet:'<dl id="routing-addresses" class="evidence"></dl>',
+        ticket:`${routingPath}
+          <ul class="mission-steps" id="routing-checklist" role="list" aria-label="Passaggi di questa sede">${fieldSteps.map(([label])=>`<li><span class="mission-step-status" role="img"></span><span>${label}</span></li>`).join('')}</ul>`,
+        terminalTitle:'Terminale',
+        fields:'<div id="routing-device-addresses" class="fields"></div>',
+        picker:'<div id="routing-local-devices" class="routing-local-devices" role="group" aria-label="Dispositivi della sede"></div>',
+        terminal:routingConsole,
+        footer:'<div id="routing-status" role="status" class="feedback">Avvia una traccia per vedere quali router attraversa il pacchetto.</div>',
+        actions:routingButtons
+      });
       setupMissionHint();
       $('mission-phone').addEventListener('click',()=>openPhone());
     }
-    const device=$('routing-device'),input=$('routing-form').querySelector('input');
+    const input=$('routing-form').querySelector('input');
     const output=$('routing-output'),path=$('routing-nodes'),status=$('routing-status'),finish=$('routing-finish');
     const question=isLab?$('practice-question'):null;
     const progress=$('routing-progress');
+    function updateFieldChecklist(){
+      if(isLab)return;
+      Array.from($('routing-checklist').children).forEach((item,index)=>{
+        const complete=done()||Boolean(fieldSteps[index][1]());
+        item.classList.toggle('is-complete',complete);
+        item.firstElementChild.textContent=complete?'✓':'';
+        item.firstElementChild.setAttribute('aria-label',complete?'Completato':'Da completare');
+      });
+      finish.disabled=!done()&&!(municipal?verifiedMunicipalTargets.size===municipalPCs.length:fieldReady());
+    }
     question?.setAttribute('aria-live','polite');
     function updateRoutingInstruction(){
       if(!question)return;
@@ -1310,7 +1435,7 @@
       question.textContent=steps[current][1];
       progress.textContent=`Passaggio ${current+1} di ${steps.length}`;
     }
-    const prompt=()=>selected.pc?'C:\\>':routers[selected.index].name+{user:'>',privileged:'#',global:'(config)#',rip:'(config-router)#'}[modes[selected.index]];
+    const prompt=()=>selected.pc?'C:\\>':routers[selected.index].name+{user:'>',privileged:'#',global:'(config)#',rip:'(config-router)#',port:'(config-if)#'}[modes[selected.index]];
     const logs=new Map();
     const entries=()=>logs.get(selected)??[];
     function renderOutput(){
@@ -1327,6 +1452,42 @@
       renderOutput();
     }
     const labNodes=new Map();
+    const localNodes=new Map();
+    const localSelectors=new Map();
+    const localLabel=choice=>choice.pc?(municipal?choice.label:'PC'):routers[choice.index].name;
+    const pcPort=choice=>interfaces(topology,choice.index)[choice.lanSlot??0];
+    const pcHost=choice=>choice.host??topology.hosts[choice.index];
+    const municipalUplinkSlot=municipal?interfaces(topology,last).findIndex(port=>port.neighbor===1):-1;
+    function routerDiagram(button,icon,choice,portId){
+      const diagram=document.createElement('span');
+      diagram.className='routing-router-diagram';
+      const ports=document.createElement('span');
+      ports.className='routing-router-ports';
+      ports.id=portId;
+      const {index}=choice;
+      const routerPorts=interfaces(topology,index).map((port,slot)=>({port,slot}));
+      if(isLab){
+        const position=port=>port.neighbor??(index===0?-1:routers.length);
+        routerPorts.sort((a,b)=>position(a.port)-position(b.port));
+      }
+      for(const {port,slot} of routerPorts){
+        const badge=document.createElement('span');
+        badge.textContent=`Gi0/${slot}`;
+        const municipalPC=municipalPCs.find(pc=>pc.lanSlot===slot);
+        badge.title=port.next?`Verso ${topology.labels[port.neighbor]}`
+          :municipalPC?`Verso ${municipalPC.label}`
+            :isLab?(index===0?'Verso PC A':'Verso PC B'):'Verso il PC locale';
+        ports.append(badge);
+      }
+      diagram.append(icon,ports);
+      button.setAttribute('aria-describedby',portId);
+      return diagram;
+    }
+    function openLocalTerminal(choice){
+      selectDevice(choice);
+      input.closest('details').open=true;
+      input.focus({preventScroll:true});
+    }
     const deviceLabel=choice=>{
       if(choice.pc||!isLab)return choice.label;
       const name=routers[choice.index].name;
@@ -1341,12 +1502,12 @@
           input.focus({preventScroll:true});
         },'routing-device-node');
         const icon=document.createElement('img');
-        icon.src=choice.pc?'assets/icons/pc.png':'assets/icons/switch.png';
+        icon.src=choice.pc?'assets/icons/pc.png':'assets/icons/router.png';
         icon.alt='';
         icon.width=44;
         icon.height=44;
         const label=document.createElement('span');
-        button.append(icon,label);
+        button.append(choice.pc?icon:routerDiagram(button,icon,choice,`routing-lab-ports-${choice.index}`),label);
         node.append(button);
         path.append(node);
         labNodes.set(choice,{node,button,label});
@@ -1365,36 +1526,66 @@
         }
         return;
       }
-      path.replaceChildren(...topology.labels.map((label,index)=>{
-        const node=document.createElement('li');
-        const item=makeButton(label,()=>{
-          if(municipal){selectDevice(choices.find(choice=>!choice.pc&&choice.index===index));input.focus();}
-          else openBuilding(stations[index]);
-        },'routing-node');
-        const icon=document.createElement('img');
-        icon.src='assets/icons/router.png';
-        icon.alt='';
-        icon.width=36;
-        icon.height=36;
-        item.prepend(icon);
-        if(municipal)item.setAttribute('aria-pressed',String(!selected.pc&&selected.index===index));
-        if(result&&(index===selected.index||visited.includes(index)))node.classList.add('visited');
-        if(index===interrupted)node.classList.add('interrupted');
-        node.append(item);
-        return node;
-      }));
+      if(!localNodes.size){
+        const nodes=centralField
+          ?[0,...choices,last]
+          :[...choices,interfaces(topology,initialRouter).find(port=>port.next).neighbor];
+        for(const entry of nodes){
+          const remote=typeof entry==='number'?entry:null;
+          const choice=remote===null?entry:null;
+          const node=document.createElement('li');
+          const item=choice?makeButton('',()=>openLocalTerminal(choice),'routing-node')
+            :document.createElement('span');
+          item.classList.add('routing-node','routing-local-node');
+          const icon=new Image(72,72);
+          icon.src='assets/icons/'+(choice?(choice.pc?'pc.png':'router.png'):'cloud.svg');
+          icon.alt='';
+          const label=document.createElement('span');
+          label.textContent=choice?localLabel(choice):topology.labels[remote];
+          item.append(choice&&!choice.pc?routerDiagram(item,icon,choice,'routing-local-ports'):icon,label);
+          if(municipal&&choice?.pc){
+            const subnet=document.createElement('small');
+            const port=pcPort(choice);
+            subnet.textContent=`${port.network}/${port.prefix}`;
+            item.append(subnet);
+          }
+          node.append(item);
+          path.append(node);
+          localNodes.set(entry,{node,item,label});
+        }
+      }
+      for(const [entry,{node}] of localNodes){
+        const remote=typeof entry==='number';
+        const choice=remote?null:entry;
+        const reached=remote?visited.includes(entry):!choice.pc||choice===selected;
+        node.classList.toggle('visited',Boolean(result&&reached));
+        node.classList.toggle('interrupted',remote?interrupted===entry:Boolean(choice&&!choice.pc&&interrupted===initialRouter));
+      }
     }
     function renderDevice(){
       const {index,pc}=selected;
-      if(municipal)path.querySelectorAll('button').forEach((button,i)=>button.setAttribute('aria-pressed',String(!pc&&i===index)));
       for(const [choice,{button,label}] of labNodes){
         label.textContent=deviceLabel(choice);
+        button.setAttribute('aria-label',label.textContent);
         button.setAttribute('aria-pressed',String(choice===selected));
       }
       $('routing-prompt').textContent=prompt();
       renderOutput();
-      const data=pc?[[`IP del PC`,topology.hosts[index]],['Gateway predefinito',interfaces(topology,index)[0].ip]]
-        :interfaces(topology,index).flatMap(port=>{
+      const ports=interfaces(topology,index);
+      let data;
+      if(!isLab){
+        const port=pc?pcPort(selected):ports[activePorts[index]];
+        const mask=port?ReteZero.calculate(port.ip,port.prefix).mask:'—';
+        data=[
+          [pc?'IP del PC':'Indirizzo IP',pc?pcHost(selected):port?.ip??'—',!pc&&port?`Porta Gi0/${activePorts[index]}`:null],
+          ['Subnet mask',mask],
+          ['Gateway predefinito',pc?port.ip:'—'],
+          ['Server DNS',pc?pcDns(index):'0.0.0.0']
+        ];
+      }else if(pc){
+        data=[['IP del PC',topology.hosts[index]],['Gateway predefinito',ports[0].ip]];
+      }else{
+        data=ports.flatMap(port=>{
           if(!port.next)return [['IP LAN del router · gateway del PC',port.ip+'/'+port.prefix]];
           const neighbor=topology.labels[port.neighbor];
           return [
@@ -1402,27 +1593,83 @@
             [`IP di ${neighbor} · prossimo salto`,port.next]
           ];
         });
+      }
       const deviceDataLength=data.length;
+      if(municipal){
+        data.push(['Reti da dichiarare in RIP',ripNetworks(index).map(network=>`network ${network}`).join(' · ')]);
+        for(const choice of municipalPCs){
+          const port=pcPort(choice);
+          data.push([`Gi0/${choice.lanSlot} · ${choice.label}`,`${pcHost(choice)} · Sottorete ${port.network}/${port.prefix} · Gateway ${port.ip}`]);
+        }
+      }
+      if(!isLab){
+        for(const port of ports){
+          if(!port.next)continue;
+          const neighbor=topology.labels[port.neighbor];
+          data.push([`IP di ${neighbor} · prossimo salto`,port.next]);
+          if(municipal){
+            const {network}=ReteZero.calculate(port.ip,port.prefix);
+            data.push(
+              [`Gi0/${municipalUplinkSlot} · IP del Municipio verso ${neighbor}`,`${port.ip}/${port.prefix}`],
+              [`Sottorete Municipio–${neighbor}`,`${network}/${port.prefix}`]
+            );
+          }
+        }
+      }
       for(const edge of pcs){
+        if(municipal&&edge===index)continue;
+        if(municipal&&edge!==index){
+          data.push([`PC ${topology.labels[edge]} · destinazione ping`,topology.hosts[edge]]);
+          continue;
+        }
         const {network,mask}=ReteZero.calculate(topology.lans[edge],topology.prefixes?.[edge]??24);
         data.push([`Rete ${topology.labels[edge]}`,network+' / '+mask]);
-        if(edge!==index)data.push([municipal?`PC ${topology.labels[edge]}`:'Host remoto',topology.hosts[edge]]);
+        if(edge!==index)data.push([isLab?'Host remoto':`PC ${topology.labels[edge]}`,topology.hosts[edge]]);
       }
-      if(rip&&!pc)data.push(['Reti da dichiarare in RIP',ripNetworks(index).join(' · ')]);
+      if(isLab&&rip&&!pc)data.push(['Reti da dichiarare in RIP',ripNetworks(index).join(' · ')]);
       if(isLab)$('routing-sheet-device').textContent=deviceLabel(selected);
       else {
-        $('routing-terminal-title').textContent='Terminale / '+selected.label;
-        $('routing-console-summary').textContent=pc?'Usa il prompt del PC':'Usa il prompt del router';
+        $('mission-terminal-title').textContent='Terminale / '+localLabel(selected);
+        $('routing-console-summary').textContent=pc?'Usa il prompt del '+localLabel(selected)
+          :'Usa il prompt di '+localLabel(selected);
         const deviceAddresses=$('routing-device-addresses');
-        deviceAddresses.replaceChildren(...data.splice(0,deviceDataLength).map(([label,value])=>{
+        deviceAddresses.replaceChildren(...data.splice(0,deviceDataLength).map(([label,value,portName])=>{
           const field=document.createElement('label');
           const address=document.createElement('input');
-          field.textContent=label;
+          field.className='routing-readonly-field';
+          address.tabIndex=-1;
+          if(portName){
+            const heading=document.createElement('span');
+            heading.className='municipal-port-heading';
+            const badges=document.createElement('span');
+            badges.className='municipal-port-badges';
+            const port=document.createElement('span');
+            port.textContent=portName;
+            const stateBadge=document.createElement('span');
+            stateBadge.textContent='ON';
+            badges.append(port,stateBadge);
+            heading.append(label,badges);
+            field.append(heading);
+          }else field.textContent=label;
           address.value=value;
           address.readOnly=true;
+          if(label==='Server DNS')address.name='dns';
           field.append(address);
           return field;
         }));
+      }
+      if(!isLab){
+        for(const choice of choices){
+          const name=localLabel(choice);
+          const active=String(choice===selected);
+          const {item,label}=localNodes.get(choice);
+          label.textContent=name;
+          item.setAttribute('aria-label',name);
+          item.setAttribute('aria-pressed',active);
+          const selector=localSelectors.get(choice);
+          selector.textContent=name;
+          if(selector.tagName==='BUTTON')selector.setAttribute('aria-pressed',active);
+        }
       }
       const addresses=$('routing-addresses');
       addresses.replaceChildren();
@@ -1432,36 +1679,40 @@
         addresses.append(term,description);
       }
     }
-    if(device){
-      choices.forEach((choice,index)=>device.add(new Option(choice.label,String(index))));
-      device.value=String(choices.indexOf(selected));
-      device.addEventListener('change',()=>selectDevice(choices[Number(device.value)]));
+    if(!isLab){
+      const picker=$('routing-local-devices');
+      for(const choice of choices){
+        const selector=choices.length===1?document.createElement('span')
+          :makeButton('',()=>openLocalTerminal(choice),'routing-device-link');
+        localSelectors.set(choice,selector);
+        picker.append(selector);
+      }
     }
     const activeHistory=[];
     const remember=setupCommandHistory(input,activeHistory);
     function selectDevice(choice){
       if(input.readOnly||choice===selected)return;
       selected=choice;
-      if(device)device.value=String(choices.indexOf(choice));
       activeHistory.splice(0,activeHistory.length,...(histories.get(selected)??[]));
       input.value='';
       renderDevice();
     }
     async function runTrace(destination, ping=false){
       const {index,pc}=selected;
-      if(!topology.hosts.includes(destination)){
+      if(!topology.hosts.includes(destination)&&!municipalPCs.some(choice=>choice.host===destination)){
         print('% Indica l’indirizzo di uno dei PC riportati nella scheda tecnica.');
         return;
       }
-      const result=trace(topology,routers,index,destination,pc);
+      const result=trace(topology,routers,index,destination,pc,pcHost(selected));
       if(ping){
         const sent=4;
         const received=result.ok?sent:0;
         const lost=sent-received;
-        const ttl=result.ok?128-result.reply.hops.length-Number(topology.hosts[index]!==destination):null;
+        const ttl=result.ok?128-result.reply.hops.length-Number(pcHost(selected)!==destination):null;
         const times=[12,39,48,40];
-        if(device)device.disabled=true;
         const buttons=[...labNodes.values()].map(({button})=>button);
+        for(const {item} of localNodes.values())if(item.tagName==='BUTTON')buttons.push(item);
+        for(const selector of localSelectors.values())if(selector.tagName==='BUTTON')buttons.push(selector);
         input.readOnly=true;
         buttons.forEach(button=>button.disabled=true);
         status.textContent='Ping in corso…';
@@ -1486,7 +1737,6 @@
           print(lines.join('\n'));
         }finally{
           input.readOnly=false;
-          if(device)device.disabled=false;
           buttons.forEach(button=>button.disabled=false);
         }
       }else if(pc){
@@ -1510,15 +1760,24 @@
       renderPath(result,destination);
       const stop=result.forward.stop;
       const returnStop=result.reply?.stop;
-      status.textContent=result.ok?'Richiesta arrivata e risposta ricevuta.':stop!==undefined
+        status.textContent=result.ok?'Richiesta arrivata e risposta ricevuta.':stop!==undefined
         ?`${result.forward.loop?'Ciclo di instradamento':'Andata interrotta'} · ${topology.labels[stop]}.`
         :returnStop!==undefined?`Andata riuscita. Ritorno interrotto · ${topology.labels[returnStop]}.`:'La destinazione non ha risposto.';
       if(municipal){
-        if(!pc||index!==last||!ping||!municipalTargets.includes(destination))return;
-        if(result.ok&&ripConfigured(last))verifiedMunicipalTargets.add(destination);
-        else verifiedMunicipalTargets.delete(destination);
-        finish.disabled=!done()&&verifiedMunicipalTargets.size!==municipalTargets.length;
-        if(!done()&&result.ok)status.textContent=`Sedi verificate dal Municipio: ${verifiedMunicipalTargets.size} di ${municipalTargets.length}.`;
+        if(!pc||!ping||topology.hosts[selected.target]!==destination)return;
+        if(result.ok&&ripConfigured(last))verifiedMunicipalTargets.add(selected.target);
+        else verifiedMunicipalTargets.delete(selected.target);
+        updateFieldChecklist();
+        if(!done()&&result.ok)status.textContent=`Collegamenti verificati: ${verifiedMunicipalTargets.size} di ${municipalPCs.length}.`;
+        return;
+      }
+      if(staticField){
+        if(pc&&destination===topology.hosts[localTargets[0]]){
+          fieldChecks[index]=result.ok;
+          save();
+          updateFieldChecklist();
+          if(result.ok&&!done()&&!fieldReady())status.textContent+=' Verifica il percorso anche dal PC dell’altra sede.';
+        }
         return;
       }
       if(!pc||index!==0||destination!==topology.hosts[last])return;
@@ -1548,21 +1807,41 @@
       const {index,pc}=selected;
       const [command,...parts]=raw.toLowerCase().split(/\s+/);
       const args=parts.join(' ');
+      const portMatch=!isLab&&!pc&&/^(?:interface|int) (?:gi|gigabitethernet) ?0\/(\d+)$/.exec([command,...parts].join(' '));
       const mode=modes[index];
       const exec=mode==='user'||mode==='privileged';
       let changed=false;
       if(pc){
         if((command==='tracert'||((isLab||municipal)&&command==='ping'))&&parts.length===1)await runTrace(args,command==='ping');
         else if(command==='ipconfig'&&(!args||args==='/all')){
-          const port=interfaces(topology,index)[0];
-          print(`IPv4 Address   ${topology.hosts[index]}\nSubnet Mask    ${ReteZero.calculate(port.ip,port.prefix).mask}\nDefault Gateway ${port.ip}`);
-          if(args==='/all')print('DNS Servers    '+(isLab||index===0?'0.0.0.0':'192.168.20.126'));
-        }else print(isLab||municipal?'% Usa ipconfig, ping <IP> o tracert <IP>.':'% Usa ipconfig oppure tracert seguito dall’IP di destinazione.');
+          const port=pcPort(selected);
+          print(`IPv4 Address   ${pcHost(selected)}\nSubnet Mask    ${ReteZero.calculate(port.ip,port.prefix).mask}\nDefault Gateway ${port.ip}`);
+          if(args==='/all')print('DNS Servers    '+pcDns(index));
+        }else print(isLab||municipal?'% Usa ipconfig, ping <IP> o tracert <IP>.'
+          :`% Per verificare il percorso, usa tracert ${topology.hosts[localTargets[0]]}.\nPer vedere la configurazione del PC, usa ipconfig oppure ipconfig /all.`);
       }else if(command==='traceroute'&&exec&&parts.length===1)runTrace(args);
       else if(command==='enable'&&!args&&mode==='user')modes[index]='privileged';
       else if(command==='disable'&&!args&&mode==='privileged')modes[index]='user';
       else if(mode==='privileged'&&/^(?:conf|confi|config|configu|configur|configure)$/.test(command)&&args.length>0&&'terminal'.startsWith(args))modes[index]='global';
       else if((command==='exit'||command==='end')&&!args&&mode==='global')modes[index]='privileged';
+      else if(portMatch&&(mode==='global'||mode==='port')){
+        const slot=Number(portMatch[1]);
+        if(interfaces(topology,index)[slot]){
+          activePorts[index]=slot;
+          modes[index]='port';
+          renderDevice();
+        }else print('% Interfaccia inesistente su questo router.');
+      }
+      else if(mode==='port'&&!args&&(command==='exit'||command==='end')){
+        modes[index]=command==='exit'?'global':'privileged';
+        activePorts[index]=null;
+        renderDevice();
+      }
+      else if(!isLab&&command==='show'&&args==='ip interface brief'&&mode==='privileged'){
+        const rows=interfaces(topology,index).map(({ip},slot)=>
+          `GigabitEthernet0/${slot}`.padEnd(22)+ip.padEnd(17)+'up'.padEnd(23)+'up');
+        print(['Interface             IP-Address       Status                 Protocol',...rows].join('\n'));
+      }
       else if(rip&&mode==='global'&&command==='router'&&args==='rip'){
         routers[index].rip??={networks:[]};
         modes[index]='rip';
@@ -1575,6 +1854,8 @@
         else if(command==='no'&&args==='auto-summary'){config.noSummary=true;changed=true;}
         else if(command==='network'&&parts.length===1&&ripNetworks(index).includes(args)){
           if(!config.networks.includes(args)){config.networks.push(args);changed=true;}
+        }else if(municipal&&command==='network'){
+          print('% Consulta la voce «Comandi RIP sul router del Municipio» nella scheda tecnica.');
         }else print('% Usa version 2, no auto-summary o network con una rete della scheda tecnica.');
         if(changed){ripInspected=false;verifiedMunicipalTargets.clear();}
       }
@@ -1589,7 +1870,7 @@
       }
       else if(command==='hostname'&&mode==='global'&&/^[a-z][a-z0-9-]{0,31}$/i.test(args)){
         routers[index].name=raw.split(/\s+/)[1];
-        if(isLab)renderDevice();
+        renderDevice();
         if(isLab&&!diagnosis&&index===0&&!done())finish.disabled=true;
         save();
       }else if(!rip&&mode==='global'&&((command==='ip'&&parts[0]==='route')||(command==='no'&&parts[0]==='ip'&&parts[1]==='route'))){
@@ -1600,10 +1881,14 @@
         else changed=true;
       }else print('% Comando non valido in questa modalità.');
       if(changed){
+        if(staticField){delete fieldChecks[0];delete fieldChecks[last];}
         save();
         finish.disabled=!done();
+        updateFieldChecklist();
         renderPath();
-        status.textContent=isLab&&!diagnosis?'Tabella modificata. Ripeti il ping dal PC A.':'Tabella modificata. Esegui una nuova traccia dal PC di partenza.';
+        status.textContent=municipal
+          ?'Configurazione RIP aggiornata. Verifica con un ping dal PC del Sindaco e uno dal PC del Vicesindaco.'
+          :isLab&&!diagnosis?'Tabella modificata. Ripeti il ping dal PC A.':'Tabella modificata. Esegui una nuova traccia dal PC di partenza.';
       }
       if(!input.isConnected||!$('building-dialog').open)return;
       updateRoutingInstruction();
@@ -1633,13 +1918,15 @@
         return;
       }
       if(municipal){
-        if(!ripConfigured(last)||!municipalTargets.every(destination=>verifiedMunicipalTargets.has(destination)
-          &&trace(topology,routers,last,destination,true).ok))return;
+        if(!ripConfigured(last)||!municipalPCs.every(({host,target})=>verifiedMunicipalTargets.has(target)
+          &&trace(topology,routers,last,topology.hosts[target],true,host).ok))return;
         chapter.municipalComplete=true;
+      }else if(staticField){
+        if(!fieldReady())return;
+        chapter.complete=true;
       }else{
         if(!ready()||!trace(topology,routers,0,topology.hosts[last],true).ok)return;
         if(rip){chapter.ripComplete=true;chapter.trained=true;}
-        else chapter.complete=true;
       }
       save();
       renderShell();
@@ -1653,6 +1940,7 @@
         return;
       }
       closeBuilding();
+      if(municipal)$('phone-dialog').addEventListener('close',()=>celebrateMedal('specialista'),{once:true});
       openPhone();
     });
     if(done()){
@@ -1662,6 +1950,7 @@
     renderPath();
     renderDevice();
     updateRoutingInstruction();
+    updateFieldChecklist();
   }
   function showCalculatorReference(show){
     $('calc-panel').inert=show;
@@ -1695,8 +1984,6 @@
   cliTabs.forEach((tab,index)=>{
     tab.addEventListener('click',()=>selectCliTab(tab));
     tab.addEventListener('keydown',event=>{
-      const dispatchTimes=['09:00','10:15','11:30'];
-      const restoreTimes=['10:15','11:30','13:00'];
       const destinations={
         ArrowLeft:cliTabs.length-1-index,
         ArrowRight:cliTabs.length-1-index,
@@ -1772,35 +2059,58 @@
       </section>
       <p class="gateway-note">Per il gateway predefinito, usa l’indirizzo dell’interfaccia del router collegata alla sottorete.</p>`;
   }
-  $('reset-missions').addEventListener('click',()=>{
-    const dayThree=nextDayStarted();
-    if(!confirm(dayThree?'Ricominciare gli interventi del Capitolo 02? Le prove della scuola e il tesserino resteranno salvati.':'Ricominciare gli interventi dall’ospedale? Le prove della scuola e il tesserino resteranno salvati.'))return;
-    if(dayThree){
-      if(state.routing){
-        for(const key of ['districtRouters','municipalRouters','complete','municipalComplete'])delete state.routing[key];
-      }
-      deliveredMessages.clear();
-      save();
-      renderShell();
-      return;
+  const restartDialog=$('restart-dialog'),restartForm=$('restart-form');
+  const confirmRestart=$('confirm-restart');
+  const highestChapter=()=>districtRestored()?2:(state.highestChapter??1);
+  const canRestartChapter=chapter=>Number(chapter)<=highestChapter();
+  $('reset-progress').addEventListener('click',()=>{
+    restartForm.reset();
+    confirmRestart.disabled=true;
+    for(const option of restartForm.elements.chapter){
+      option.disabled=!canRestartChapter(option.value);
+      option.closest('label').hidden=option.disabled;
     }
-    window.clearTimeout(fieldTimer);
-    fieldTimer=undefined;
-    state.completed=0;
-    state.fieldStage=2;
-    state.stormStage=0;
-    state.nextDayStage=0;
-    delete state.routing;
-    window.clearTimeout(nextDayTimer);
-    nextDayTimer=undefined;
-    state.drafts={};
-    state.missionLogs=[];
-    deliveredMessages.clear();
-    save();
-    renderShell();
-    scheduleDispatch();
+    $('restart-chapter-one-note').textContent=highestChapter()===1
+      ?'Azzera le prove e gli interventi del Capitolo 01.'
+      :'Azzera prove e interventi di entrambi i capitoli.';
+    $('restart-chapter-two-note').textContent=districtRestored()
+      ?'Azzera solo i progressi del Capitolo 02.'
+      :'Il Capitolo 01 risulterà completato.';
+    restartDialog.showModal();
   });
-  $('reset-progress').addEventListener('click',()=>{if(!confirm('Ricominciare Rete Zero? Le prove e gli interventi di questo gioco verranno azzerati.'))return;window.clearTimeout(fieldTimer);fieldTimer=undefined;window.clearTimeout(nextDayTimer);nextDayTimer=undefined;state={curriculum:curriculumVersion,completed:0,studied:[],drafts:{},lessonDrafts:{},nextDayStage:0};deliveredMessages.clear();save();renderShell();scheduleWelcomeMessage();});
+  restartForm.addEventListener('change',()=>{confirmRestart.disabled=!restartForm.elements.chapter.value;});
+  $('cancel-restart').addEventListener('click',()=>restartDialog.close());
+  restartForm.addEventListener('submit',event=>{
+    event.preventDefault();
+    const chapter=new FormData(restartForm).get('chapter');
+    if((chapter!=='1'&&chapter!=='2')||!canRestartChapter(chapter))return;
+    state.highestChapter=highestChapter();
+    for(const timer of [dispatchTimer,fieldTimer,nextDayTimer])window.clearTimeout(timer);
+    dispatchTimer=fieldTimer=nextDayTimer=undefined;
+    phoneHasFinalReport=false;
+    deliveredMessages.clear();
+    if(chapter==='2'){
+      if(!districtRestored()){
+        state.completed=missions.length;
+        state.studied=lessons.map(lesson=>lesson.id);
+        state.stormStage=state.fieldStage=2;
+        state.welcomeRead=true;
+        state.badgeName||='Tecnico di Valle Nord';
+        state.badgeAge??=18;
+        state.avatar||='uomo';
+      }
+      delete state.routing;
+      state.nextDayStage=1;
+    }else{
+      const {avatar,badgeName,badgeAge,highestChapter}=state;
+      state={curriculum:curriculumVersion,completed:0,studied:[],drafts:{},lessonDrafts:{},nextDayStage:0,avatar,badgeName,badgeAge,highestChapter};
+    }
+    save();
+    restartDialog.close();
+    renderShell();
+    if(chapter==='2')scheduleNextDay();
+    else scheduleWelcomeMessage();
+  });
   $('toggle-instructions').addEventListener('click',()=>{
     const panel=$('instructions-panel'),button=$('toggle-instructions'),collapsed=panel.classList.toggle('collapsed');
     button.textContent=collapsed?'+':'−';button.setAttribute('aria-expanded',String(!collapsed));button.setAttribute('aria-label',collapsed?'Espandi istruzioni':'Riduci istruzioni');
@@ -1809,15 +2119,7 @@
   scheduleDispatch();
   scheduleFieldDispatch();
   scheduleNextDay();
-  if(resumeDayThree&&!resumeAfterSchool)openPhone();
   scheduleWelcomeMessage();
-  if(location.hash==='#fine-aggiornamento'){
-    history.replaceState(null,'',location.href.split('#')[0]);
-    if(nextDayStarted()&&state.routing?.ripComplete){
-      openBuilding('school');
-      scheduleSchoolMessage($('routing-finish'),schoolUpdateComplete);
-    }
-  }
   if(location.protocol==='file:'){document.querySelector('[data-games-home]').href=new URL('../index.html',location.href).href;}else{
     const hub=new URL('../index.html',location.href);fetch(hub,{cache:'no-store'}).then(response=>response.ok?response.text():'').then(html=>{if(html.includes('<meta name="games-hub" content="informatica-in-gioco">'))document.querySelector('[data-games-home]').href=hub.href;}).catch(()=>{});
   }
