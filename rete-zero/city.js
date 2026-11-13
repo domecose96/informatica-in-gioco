@@ -193,7 +193,7 @@ root.RZCity = function(host, markers, onEnter){
     function travel(id){selected=id;const dest=buildings.find(b=>b.id===id);if(!dest)return;vanRoute=roadRoute([van.position.x,van.position.z],[dest.position[0],dest.position[1]+3]).map(([x,z])=>new T.Vector3(x,.13,z));}
     function focusSite(id){const dest=buildings.find(b=>b.id===id);if(!dest)return;desiredTarget.set(dest.position[0],0,dest.position[1]);desiredZoom=1.9;selected=id;}
     document.getElementById('zoom-in').addEventListener('click',()=>desiredZoom=Math.min(cameraLimits.maxZoom,desiredZoom*1.2));document.getElementById('zoom-out').addEventListener('click',()=>desiredZoom=Math.max(cameraLimits.minZoom,desiredZoom/1.2));
-    document.getElementById('rotate-left').addEventListener('click',()=>desiredAngle-=Math.PI/8);document.getElementById('rotate-right').addEventListener('click',()=>desiredAngle+=Math.PI/8);
+    document.getElementById('rotate-left').addEventListener('click',()=>desiredAngle+=Math.PI/8);document.getElementById('rotate-right').addEventListener('click',()=>desiredAngle-=Math.PI/8);
     document.getElementById('reset-camera').addEventListener('click',()=>{desiredAngle=.43;desiredElevation=.85;desiredZoom=1.4;desiredTarget.set(0,0,0);});
     const moves={'pan-up':[0,85],'pan-down':[0,-85],'pan-left':[85,0],'pan-right':[-85,0]};
     Object.entries(moves).forEach(([id,delta])=>document.getElementById(id).addEventListener('click',()=>pan(...delta)));
@@ -221,14 +221,42 @@ root.RZCity = function(host, markers, onEnter){
     }
     resize();requestAnimationFrame(frame);
     canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();disposed=true;observer.disconnect();fallback();});
-    engine={travel,locate:focusSite,update(completed){buildings.forEach(site=>{const done=Number.isInteger(site.mission)&&site.mission<completed;if(!Number.isInteger(site.mission))return;beacons.get(site.id).visible=discovered.has(site.id);cables.get(site.id).visible=discovered.has(site.id);const color=done?'#72bb9a':'#e2ac76';rings.get(site.id).material.color.set(color);beacons.get(site.id).material=mat(color,{emissive:color,emissiveIntensity:.4});cables.get(site.id).material.color.set(color);cables.get(site.id).material.dashSize=done?100:.3;for(const pane of windows.get(site.id)||[])pane.material=mat(done?'#bfdfc6':'#66898e',{emissive:done?'#83946a':'#25424a',emissiveIntensity:done?.5:.1});});}};
+    engine={travel,locate:focusSite,update(completed,dayThreeMarkers,chapterComplete,municipalComplete){buildings.forEach(site=>{
+      const mission=Number.isInteger(site.mission);
+      const done=mission&&site.mission<completed;
+      const siteComplete=site.id==='townhall'?municipalComplete:chapterComplete;
+      const currentColor=dayThreeMarkers?(site.id==='school'?'#b3dbe9':siteComplete?'#72bb9a':'#e2ac76'):null;
+      rings.get(site.id).material.color.set(currentColor??(mission?(done?'#72bb9a':'#e2ac76'):site.color));
+      if(!mission)return;beacons.get(site.id).visible=discovered.has(site.id);cables.get(site.id).visible=discovered.has(site.id);const color=currentColor??(done?'#72bb9a':'#e2ac76');beacons.get(site.id).material=mat(color,{emissive:color,emissiveIntensity:.4});cables.get(site.id).material.color.set(color);cables.get(site.id).material.dashSize=(dayThreeMarkers?site.id!=='school'&&siteComplete:done)?100:.3;for(const pane of windows.get(site.id)||[])pane.material=mat(done?'#bfdfc6':'#66898e',{emissive:done?'#83946a':'#25424a',emissiveIntensity:done?.5:.1});});}};
   }catch(error){console.warn('Rete Zero: vista alternativa attiva.',error.message);fallback();}
-  return {focus(id){engine?.travel(id);},locate(id){engine?.locate(id);},update(state){
-    const graduated=state.studied.length===RZData.lessons.length;discovered.clear();for(const site of buildings)if(RZData.isBuildingDiscovered(site.id,state.completed,state.studied))discovered.add(site.id);
+  return {focus(id){engine?.travel(id);},locate(id){engine?.locate(id);},update(state,awaitingDispatch=false,dayThreeMarkers=null){
+    const graduated=state.studied.length===RZData.lessons.length;
+    const routingLessonsCompleted=state.routing?.ripComplete?3:state.routing?.diagnosisComplete||state.routing?.trained?2:state.routing?.labConfigured?1:0;
+    const chapterComplete=Boolean(state.routing?.complete);
+    const municipalComplete=Boolean(state.routing?.municipalComplete);
+    const completedActivities=dayThreeMarkers
+      ?routingLessonsCompleted+Number(chapterComplete)+Number(municipalComplete)
+      :state.studied.length+state.completed;
+    const totalActivities=dayThreeMarkers?5:RZData.lessons.length+RZData.missions.length;
+    const overall=Math.round(completedActivities/totalActivities*100);
+    discovered.clear();
+    for(const site of buildings){
+      const visible=dayThreeMarkers
+        ?dayThreeMarkers.has(site.id)
+        :(!awaitingDispatch||!Number.isInteger(site.mission))&&RZData.isBuildingDiscovered(site.id,state.completed,state.studied);
+      if(visible)discovered.add(site.id);
+    }
     for(const site of buildings){const button=buttons.get(site.id);button.hidden=!discovered.has(site.id);const done=Number.isInteger(site.mission)&&site.mission<state.completed;
-      let status=site.id==='school'?`${state.studied.length}/4 prove`:site.id==='hq'?'Profilo tecnico':done?'Online ✓':!graduated?'Richiede tesserino':site.mission>state.completed?'In attesa':'Intervento';
-      button.querySelector('small').textContent=status;button.setAttribute('aria-label',site.name+' — '+status);button.classList.toggle('repaired',done);button.classList.toggle('locked',Number.isInteger(site.mission)&&!RZData.canEnterMission(site.mission,state.completed,state.studied));
-    }engine?.update(state.completed);
+      let progress=site.id==='school'?Math.round(state.studied.length/RZData.lessons.length*100):site.id==='hq'?overall:done?100:0;
+      let status=site.id==='school'?`${state.studied.length}/${RZData.lessons.length} prove · ${progress}%`:site.id==='hq'?`Avanzamento capitolo · ${progress}%`:done?'Online ✓ · 100%':!graduated?'Richiede tesserino':site.mission>state.completed?'In attesa':'Intervento · 0%';
+      const siteComplete=site.id==='townhall'?municipalComplete:chapterComplete;
+      if(site.id!=='hq'&&dayThreeMarkers?.has(site.id)){
+        progress=site.id==='school'?Math.round(routingLessonsCompleted/3*100):siteComplete?100:0;
+        status=siteComplete&&site.id!=='school'?'Collegamento ripristinato ✓':dayThreeMarkers.get(site.id);
+      }
+      button.classList.toggle('chapter-intervention',Boolean(dayThreeMarkers?.has(site.id)&&site.id!=='school'&&!siteComplete));
+      button.style.setProperty('--progress',progress+'%');button.dataset.progress=String(progress);button.querySelector('small').textContent=status;button.setAttribute('aria-label',site.name+' — '+status);button.classList.toggle('progress-complete',progress===100&&(!dayThreeMarkers||site.id!=='school'));button.classList.toggle('repaired',dayThreeMarkers?site.id!=='school'&&siteComplete:done);button.classList.toggle('locked',Number.isInteger(site.mission)&&!RZData.canEnterMission(site.mission,state.completed,state.studied));
+    }engine?.update(state.completed,dayThreeMarkers,chapterComplete,municipalComplete);
   }};
 };
 })(typeof globalThis!=='undefined'?globalThis:this);
