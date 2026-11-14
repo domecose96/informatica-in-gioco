@@ -2,6 +2,7 @@
 (() => {
   const {missions,lessons,buildings,practice,isLessonUnlocked,canEnterMission,isBuildingDiscovered}=RZData;
   const $=id=>document.getElementById(id), storageKey='rete-zero-city-v2',curriculumVersion=3;
+  const vlanReleased=false;
   const avatars={
     uomo:{file:'avatar-tecnico.png',role:'Tecnico'},
     donna:{file:'avatar-tecnica.png',role:'Tecnica'},
@@ -16,50 +17,187 @@
       if(Array.isArray(raw.studied))state.studied=[...new Set(raw.studied.filter(id=>lessons.some(l=>l.id===id)))];
       if(raw.drafts&&typeof raw.drafts==='object'&&!Array.isArray(raw.drafts))state.drafts=raw.drafts;
       if(raw.welcomeRead===true)state.welcomeRead=true;
+      if(raw.graduationPending===true)state.graduationPending=true;
       if(Array.isArray(raw.missionLogs))state.missionLogs=raw.missionLogs;
       if(typeof raw.badgeName==='string')state.badgeName=raw.badgeName.trim().slice(0,40);
       if(Number.isInteger(raw.badgeAge)&&raw.badgeAge>=1&&raw.badgeAge<=120)state.badgeAge=raw.badgeAge;
       if(Object.hasOwn(avatars,raw.avatar))state.avatar=raw.avatar;
+      if(raw.vlanMorningPending===true)state.vlanMorningPending=true;
+      if(raw.vlan&&Array.isArray(raw.vlan.passed))state.vlan=raw.vlan;
       if(raw.routing&&typeof raw.routing==='object')state.routing=raw.routing;
       state.highestChapter=raw.highestChapter===2||raw.chapterSelectionUnlocked===true||state.routing?.municipalComplete===true?2:1;
       if(raw.lessonDrafts&&typeof raw.lessonDrafts==='object'&&!Array.isArray(raw.lessonDrafts))state.lessonDrafts=raw.lessonDrafts;
       state.fieldStage=[0,1,2].includes(raw.fieldStage)?raw.fieldStage:2;
       if(state.completed===missions.length&&[1,2].includes(raw.nextDayStage))state.nextDayStage=raw.nextDayStage;
       state.stormStage=[0,1,2].includes(raw.stormStage)?raw.stormStage:raw.completed>0?2:0;
+      if(raw.fieldCurriculum!==2){
+        if(Array.isArray(state.routing?.municipalRouters))for(const router of state.routing.municipalRouters){
+          if(!Array.isArray(router?.routes))continue;
+          router.routes=router.routes.filter(route=>!(route.prefix===26&&['192.168.30.0','192.168.30.64'].includes(route.network)));
+        }
+        if(state.completed>=3){
+          const draft=state.drafts[2]??={};
+          draft.ports=Object.fromEntries(ReteZero.municipalPorts.map(({name,network,prefix})=>{
+            const {last,mask}=ReteZero.calculate(network,prefix);
+            return [name,{ip:last,mask,enabled:true}];
+          }));
+          draft.routerStep=3;
+        }
+        if(state.completed===3&&(raw.nextDayStage>0||state.routing?.labConfigured)){
+          state.completed=missions.length;
+          if(!state.studied.includes('vlsm'))state.studied.push('vlsm');
+          state.nextDayStage=raw.nextDayStage===1?1:2;
+        }
+        if(state.missionLogs)delete state.missionLogs[2];
+      }
     }
   } catch (_) {}
+  if(location.protocol==='file:'&&location.hash==='#ripristina-partita-completa'){
+    state.completed=missions.length;
+    state.studied=lessons.map(lesson=>lesson.id);
+    state.stormStage=state.fieldStage=state.nextDayStage=2;
+    state.welcomeRead=true;
+    state.highestChapter=2;
+    if(!state.vlan)state.vlanMorningPending=true;
+    state.badgeName||='Tecnico di Valle Nord';
+    state.badgeAge??=18;
+    state.avatar||='uomo';
+    Object.assign(state.routing??={},{labConfigured:true,diagnosisComplete:true,ripComplete:true,trained:true,complete:true,municipalComplete:true});
+    history.replaceState(null,'',location.href.split('#')[0]);
+  }
+  const previewSchoolEnding=location.protocol==='file:'
+    &&new URL(location.href).searchParams.has('anteprima-fine-scuola');
+  const previewVlsmEnding=location.protocol==='file:'
+    &&new URL(location.href).searchParams.has('anteprima-fine-vlsm');
+  if(previewSchoolEnding){
+    state={
+      ...state,
+      studied:lessons.map(lesson=>lesson.id), completed:0,
+      drafts:{}, lessonDrafts:{}, missionLogs:[],
+      avatar:null, badgeName:'', badgeAge:null,
+      welcomeRead:true, graduationPending:true,
+      stormStage:0, fieldStage:0, nextDayStage:0,
+      routing:undefined, vlan:undefined, vlanMorningPending:false
+    };
+  }
+  const previewRoutingEnding=location.protocol==='file:'
+    &&new URL(location.href).searchParams.has('anteprima-fine-assistenza');
+  if(previewRoutingEnding){
+    const {district,makeRouters,interfaces}=RZRouting;
+    const districtRouters=makeRouters(district);
+    districtRouters.forEach((router,from)=>{
+      for(const target of [0,2]){
+        if(from===target)continue;
+        const neighbor=from===1?target:1;
+        const {next}=interfaces(district,from).find(port=>port.neighbor===neighbor);
+        router.routes.push({network:district.lans[target],prefix:district.prefixes[target],next});
+      }
+    });
+    state={
+      ...state,
+      studied:lessons.map(lesson=>lesson.id), completed:missions.length,
+      stormStage:2, fieldStage:2, nextDayStage:2, welcomeRead:true, graduationPending:false,
+      badgeName:state.badgeName||'Tecnico di Valle Nord', badgeAge:state.badgeAge??18,
+      avatar:state.avatar||'uomo', vlanMorningPending:false,
+      routing:{labConfigured:true,diagnosisComplete:true,ripComplete:true,trained:true,
+        districtRouters,districtChecks:{0:true,2:true}}
+    };
+  }
+  const resumeAfterSchool=location.hash==='#rip-completato';
+  const resumeDayThree=resumeAfterSchool||location.hash==='#giorno-3';
+  const localReplayUrl=new URL(location.href);
+  const replayMunicipio=location.protocol==='file:'&&localReplayUrl.searchParams.has('rifai-municipio');
+  if(replayMunicipio){
+    localReplayUrl.searchParams.delete('rifai-municipio');
+    try{history.replaceState(null,'',localReplayUrl);}catch(_){}
+    if(state.nextDayStage===2&&state.routing?.ripComplete&&state.routing.complete){
+      delete state.routing.municipalRouters;
+      delete state.routing.municipalComplete;
+      delete state.routing.municipalMedalPending;
+      delete state.vlanMorningPending;
+    }
+  }
+  if(resumeDayThree){
+    state.completed=missions.length;
+    state.studied=lessons.map(lesson=>lesson.id);
+    state.stormStage=state.fieldStage=state.nextDayStage=2;
+    state.badgeName||='Tecnico di Valle Nord';
+    state.badgeAge??=18;
+    state.avatar||='uomo';
+    if(resumeAfterSchool)Object.assign(state.routing??={},{labConfigured:true,diagnosisComplete:true,ripComplete:true,trained:true});
+    try{history.replaceState(null,'',location.href.split('#')[0]);}catch(_){}
+  }
+  if(previewVlsmEnding){
+    const ports={},pcs={},pings={};
+    for(const {name,network,prefix} of ReteZero.rescuePorts){
+      const {first,last,mask}=ReteZero.calculate(network,prefix);
+      ports[name]={ip:last,mask,enabled:true};
+      pcs[name]={ip:first,mask,gateway:last,dns:'0.0.0.0'};
+      pings[name]=true;
+    }
+    state={
+      ...state,
+      studied:lessons.map(lesson=>lesson.id), completed:3,
+      drafts:{3:{ports,pcs,pings,routerStep:2}}, missionLogs:[],
+      avatar:state.avatar||'uomo', badgeName:state.badgeName||'Tecnico di Valle Nord', badgeAge:state.badgeAge??18,
+      welcomeRead:true, graduationPending:false,
+      stormStage:2, fieldStage:2, nextDayStage:0,
+      routing:undefined, vlan:undefined, vlanMorningPending:false
+    };
+  }
   let activeBuilding=null,activeLesson=0,returnFocus=null;
   const graduated=()=>state.studied.length===lessons.length;
-  const xp=()=>state.studied.length*25+state.completed*100+(state.routing?.complete?100:0)+(state.routing?.municipalComplete?100:0);
-  function save(){try{localStorage.setItem(storageKey,JSON.stringify(state));}catch(_){}}
+  const xp=()=>state.studied.length*25+state.completed*100+(state.routing?.complete?100:0)+(state.routing?.municipalComplete?100:0)+vlanPassed()*25+(vlanComplete()?100:0);
+  function save(){if(previewSchoolEnding||previewVlsmEnding||previewRoutingEnding)return;try{localStorage.setItem(storageKey,JSON.stringify({...state,fieldCurriculum:2}));}catch(_){}}
   save();
   function makeButton(text,action,className='primary'){const b=document.createElement('button');b.type='button';b.className=className;b.textContent=text;b.addEventListener('click',action);return b;}
   const city=new RZCity($('city-canvas'),$('city-markers'),openBuilding);
   const fieldMessages=[
     'Il pronto soccorso è di nuovo in contatto con la centrale. La Protezione civile può riprendere il coordinamento, appena sistemiamo la radio della Squadra Nord.',
-    'La Squadra Nord comunica di nuovo e ha confermato che manca un ultimo intervento. Il Municipio deve riattivare la rete dei suoi quattro reparti.',
-    'I quattro reparti del Municipio sono di nuovo online. Abbiamo ripristinato le comunicazioni dopo il blackout. Ti sei guadagnato la medaglia Tecnico operativo. Per oggi abbiamo finito.'
+    'La Squadra Nord comunica di nuovo. Ora il Municipio deve riattivare le reti del Sindaco e del Vicesindaco.',
+    'Le due reti del Municipio sono di nuovo online. Ci resta da ampliare la rete della Protezione civile.',
+    'Sala operativa e Squadra mobile raggiungono i loro gateway. Abbiamo anche spazio per una futura squadra. Hai ottenuto la medaglia Tecnico operativo. Per oggi abbiamo finito.'
   ];
   const badgeReminder = 'Congratulazioni! Hai superato tutte le prove della scuola. Apri il tesserino e configura nome, età e avatar prima di poter intervenire sul campo.';
   const welcomeMessage=['Benvenuto a Valle Nord','Sono Elena Riva, la coordinatrice. Per iniziare, vai all’Istituto Galilei. Seleziona il segnaposto 01 sulla mappa oppure scegli «Scuola di reti» nel pannello Il tuo incarico. Lì ti aspettano le prime prove.','Giorno 01 · 07:40'];
   const graduationMessage=['Formazione completata',badgeReminder,'Giorno 01 · 18:30'];
   const stormAlert = ['Temporale a Valle Nord', 'Buongiorno. Il temporale di ieri sera ha causato un blackout. Dobbiamo ripristinare le comunicazioni tra ospedale, Protezione civile e Municipio.', 'Giorno 02 · 09:00'];
   const awaitingDispatch=()=>graduated()&&hasBadgeProfile()&&state.completed===0&&(state.stormStage??0)<2;
-  let dispatchTimer;
+  let dispatchTimer, phoneHasGraduation=false;
   function scheduleDispatch(){
-    if (!awaitingDispatch() || dispatchTimer || document.querySelector('dialog[open]:not(#phone-dialog)')) return;
+    if(dispatchTimer||phoneHasGraduation||document.querySelector('dialog[open]'))return;
+    const graduation=graduated()&&state.graduationPending;
+    if(!graduation&&!awaitingDispatch())return;
     dispatchTimer=window.setTimeout(()=>{
       dispatchTimer=undefined;
-      if (!awaitingDispatch() || document.querySelector('dialog[open]:not(#phone-dialog)')) return;
-      state.stormStage=(state.stormStage??0)+1;
+      if(document.querySelector('dialog[open]'))return;
+      if(graduated()&&state.graduationPending){
+        openPhone(graduationMessage,{withHistory:true});
+        return;
+      }
+      if(!awaitingDispatch())return;
+      const morningAfterStorm=(state.stormStage??0)===0;
+      state.stormStage=2;
       save();
       renderShell();
-      if (state.stormStage===1 || $('phone-dialog').open) openPhone();
+      if(morningAfterStorm)openPhone(stormAlert,{withHistory:true});
       else notifyMessages(phoneMessages());
-      scheduleDispatch();
-    },(state.stormStage??0)===0?3000:2000);
+    },graduation?1200:(state.stormStage??0)===0?3000:0);
   }
   document.addEventListener('close',scheduleDispatch,true);
+  $('phone-dialog').addEventListener('close',()=>{
+    if(!phoneHasGraduation)return;
+    phoneHasGraduation=false;
+    delete state.graduationPending;
+    save();
+    renderShell();
+    const badgeButton=$('school-open-badge');
+    if(activeBuilding?.id==='school'&&badgeButton){
+      badgeButton.disabled=false;
+      badgeButton.focus({preventScroll:true});
+    }
+    scheduleDispatch();
+  });
   const awaitingFieldDispatch=()=>state.completed>0&&(state.fieldStage??2)<2;
   const districtRestored=()=>graduated()&&state.completed===missions.length;
   const nextDayStarted=()=>districtRestored()&&state.nextDayStage===2;
@@ -71,6 +209,23 @@
   const municipalTitle='Municipio in rete';
   const municipalRequest=[municipalTitle,'Il Municipio ha due sottoreti, una per il Sindaco e una per il Vicesindaco. Configura RIPv2 perché la Centrale impari a raggiungerle e il Municipio impari le rotte verso le altre sedi. Poi verifica il collegamento dal PC del Sindaco verso l’Ospedale e dal PC del Vicesindaco verso la Protezione civile.', 'Giorno 03 · 15:20'];
   const municipalReport=['Municipio collegato','Il Municipio comunica con Ospedale e Protezione civile attraverso la Centrale. Le rotte verso le due sedi sono state apprese tramite RIP. Hai ottenuto la medaglia Tecnico specialista.', 'Giorno 03 · 16:00'];
+  const municipalDispatchPending=()=>state.routing?.municipalDispatchPending===true;
+  function showRoutingCompletion(chapter){
+    openPhone(routingComplete,{withHistory:true});
+    const deliverRequest=()=>{
+      if(state.routing!==chapter||!municipalDispatchPending())return;
+      const dialog=document.querySelector('dialog[open]:not(#phone-dialog)');
+      if(dialog){
+        dialog.addEventListener('close',deliverRequest,{once:true});
+        return;
+      }
+      delete chapter.municipalDispatchPending;
+      save();
+      renderShell();
+      openPhone(municipalRequest,{withHistory:true});
+    };
+    window.setTimeout(deliverRequest,1000);
+  }
   let fieldTimer,nextDayTimer,phoneHasFinalReport=false;
   let operationalMedalPending=false;
   const awaitingFinalReport=()=>districtRestored()&&state.nextDayStage===0&&!phoneHasFinalReport;
@@ -114,15 +269,54 @@
     }
     scheduleNextDay();
   });
+  const chapterThreeComingSoon=['Capitolo 3 in arrivo','Valle Nord è di nuovo collegata. La formazione sulle VLAN al Galilei sarà disponibile nel prossimo capitolo.','Giorno 04 · 08:00'];
+  const vlanSchoolMessage=['Formazione VLAN','Torna al Galilei. Ti serviranno VLAN, trunk e regole di accesso per separare i quattro reparti del Palazzo dei servizi.','Giorno 04 · 08:00'];
+  const vlanMissionMessage=['Palazzo dei servizi','I quattro piani condividono gli switch. Separa i reparti, collega le due postazioni tecniche e applica i permessi indicati nella scheda. Collauda anche le richieste che devono essere bloccate.','Giorno 04 · 10:30'];
+  const vlanDoneMessage=['Collaudo completato','I reparti comunicano secondo i permessi previsti. Le due postazioni tecniche si raggiungono anche da piani diversi.','Giorno 04 · 12:00'];
+  const vlanPassed=()=>vlanReleased?(state.vlan?.passed.length??0):0;
+  const vlanTrained=()=>vlanReleased&&vlanPassed()===RZVlanUI.lessons.length;
+  const vlanAvailable=()=>vlanReleased&&nextDayStarted()&&state.routing?.municipalComplete&&!state.vlanMorningPending;
+  const vlanComplete=()=>vlanReleased&&Boolean(state.vlan?.complete);
+  const vlanMorningMessage=vlanReleased?vlanSchoolMessage:chapterThreeComingSoon;
+  const municipalMedalPending=()=>Boolean(state.routing?.municipalComplete&&state.routing.municipalMedalPending&&state.vlanMorningPending);
+  const awaitingVlanMorning=()=>state.routing?.municipalComplete&&state.vlanMorningPending&&!municipalMedalPending();
+  let vlanMorningTimer;
+  function scheduleVlanMorning(){
+    if(!awaitingVlanMorning()||vlanMorningTimer||document.querySelector('dialog[open]'))return;
+    const chapter=state.routing;
+    vlanMorningTimer=window.setTimeout(()=>{
+      vlanMorningTimer=undefined;
+      if(state.routing!==chapter||!awaitingVlanMorning()||document.querySelector('dialog[open]'))return;
+      delete state.vlanMorningPending;
+      save();
+      renderShell();
+      openPhone(vlanMorningMessage,{withHistory:true});
+    },1000);
+  }
+  function showMunicipalCompletion(){
+    const chapter=state.routing;
+    $('phone-dialog').addEventListener('close',()=>{
+      if(state.routing!==chapter||!municipalMedalPending())return;
+      celebrateMedal('specialista',()=>{
+        if(state.routing!==chapter)return;
+        delete chapter.municipalMedalPending;
+        save();
+        renderShell();
+        scheduleVlanMorning();
+      });
+    },{once:true});
+    openPhone(municipalReport,{withHistory:true});
+  }
+  document.addEventListener('close',scheduleVlanMorning,true);
   function phoneMessages(){
     const messages=[welcomeMessage];
     if(!graduated())return messages;
     messages.push(graduationMessage);
     if (hasBadgeProfile() && state.stormStage >= 1) messages.push(stormAlert);
     if (hasBadgeProfile() && !awaitingDispatch()) {
-      const dispatchTimes=['09:01','10:15','11:30'];
-      const restoreTimes=['10:15','11:30','13:00'];
-      const destinations=['all’ospedale San Luca','alla sede della protezione civile','al municipio'];
+      const dispatchTimes=['09:01','10:16','11:31','13:01'];
+      const restoreTimes=['10:15','11:30','13:00','15:00'];
+      const destinations=['all’ospedale San Luca','alla sede della protezione civile','al Municipio','di nuovo alla Protezione civile'];
       for(let index=0;index<=state.completed;index++){
         const stage=index===state.completed?(state.fieldStage??2):2;
         if(index>0&&stage>=1)messages.push([missions[index-1].site+' · Collegamento ripristinato',fieldMessages[index-1],`Giorno 02 · ${restoreTimes[index-1]}`]);
@@ -132,8 +326,16 @@
     if(nextDayStarted()){
       messages.push(schoolUpdate);
       if(state.routing?.ripComplete)messages.push(schoolUpdateComplete,routingRequest);
-      if(state.routing?.ripComplete&&state.routing.complete)messages.push(routingComplete,municipalRequest);
-      if(state.routing?.municipalComplete)messages.push(municipalReport);
+      if(state.routing?.ripComplete&&state.routing.complete){
+        messages.push(routingComplete);
+        if(!municipalDispatchPending())messages.push(municipalRequest);
+      }
+      if(state.routing?.municipalComplete){
+        messages.push(municipalReport);
+        if(!state.vlanMorningPending)messages.push(vlanMorningMessage);
+        if(vlanTrained())messages.push(vlanMissionMessage);
+        if(vlanComplete())messages.push(vlanDoneMessage);
+      }
     }
     return messages;
   }
@@ -145,8 +347,8 @@
       document.dispatchEvent(new Event('retezero:message'));
     }
   }
-  function openPhone(singleMessage){
-    const messages=singleMessage?[singleMessage]:phoneMessages();
+  function openPhone(focusedMessage,{withHistory=false}={}){
+    const messages=!focusedMessage||withHistory?phoneMessages():[focusedMessage];
     if(!state.welcomeRead&&messages.includes(welcomeMessage)){
       state.welcomeRead=true;
       save();
@@ -168,21 +370,34 @@
       item.append(heading,bubble);
       return item;
     }));
-    phoneHasFinalReport=!singleMessage&&districtRestored()&&state.nextDayStage===0&&state.fieldStage===2;
+    phoneHasGraduation=Boolean(state.graduationPending&&messages.includes(graduationMessage));
+    phoneHasFinalReport=!focusedMessage&&districtRestored()&&state.nextDayStage===0&&state.fieldStage===2;
     if (!$('phone-dialog').open) $('phone-dialog').showModal();
-    const briefing = singleMessage ? list.firstElementChild : list.children[2 * activeBuilding?.mission + 2];
+    const briefingIndex=focusedMessage?messages.indexOf(focusedMessage):2 * activeBuilding?.mission + 2;
+    const briefing=list.children[briefingIndex];
     if (briefing) {
-      list.scrollTop = briefing.getBoundingClientRect().top - list.getBoundingClientRect().top;
+      list.scrollTop += briefing.getBoundingClientRect().top - list.getBoundingClientRect().top;
     } else {
       list.scrollTop = list.scrollHeight;
     }
   }
-  function scheduleSchoolMessage(completion,message){
-    window.setTimeout(()=>{
-      if(completion.isConnected&&activeBuilding?.id==='school'&&$('building-dialog').open&&!$('phone-dialog').open){
-        openPhone(message);
+  function scheduleSchoolMessage(chapter,delay=1000){
+    const showMessage=()=>{
+      if(state.routing!==chapter||!chapter.ripComplete||chapter.complete)return;
+      const phone=$('phone-dialog');
+      if(phone.open){
+        phone.addEventListener('close',showMessage,{once:true});
+        return;
       }
-    },2000);
+      const dialog=document.querySelector('dialog[open]');
+      if(dialog&&!(dialog===$('building-dialog')&&activeBuilding?.id==='school')){
+        dialog.addEventListener('close',showMessage,{once:true});
+        return;
+      }
+      openPhone(schoolUpdateComplete);
+    };
+    if(delay)window.setTimeout(showMessage,delay);
+    else showMessage();
   }
   function scheduleWelcomeMessage(){
     const startedState=state;
@@ -197,20 +412,26 @@
     },2000);
   }
   $('phone-open').addEventListener('click', ()=>openPhone());
+  const missionBuildings=['hospital','rescue','townhall','rescue'];
   function renderShell(){
     const [day, messageTime]=phoneMessages().at(-1)[2].split(' · ');
-    const schoolEvening=graduated()&&state.completed===0&&(state.stormStage??0)===0;
-    const afterMunicipioNight=districtRestored()&&state.nextDayStage===1;
+    const schoolEvening=awaitingDispatch()&&!state.graduationPending&&(state.stormStage??0)===0;
+    const afterMunicipioNight=districtRestored()&&(state.nextDayStage===1||awaitingVlanMorning());
     const dayThree=nextDayStarted();
+    const vlanOpen=vlanAvailable();
     const map=$('map-stage');
     map.classList.toggle('storm',schoolEvening);
-    map.classList.toggle('night',schoolEvening||afterMunicipioNight);
+    const night=schoolEvening||afterMunicipioNight;
+    map.classList.toggle('night',night);
+    const cloudy = day === 'Giorno 03' && !night;
+    city.setLighting(night ? 'night' : cloudy ? 'cloudy' : 'day');
     let weather={label:'Schiarite',icon:'clearing'};
-    if(dayThree||state.completed>=2)weather={label:'Sereno',icon:'sun'};
+    if(cloudy)weather={label:'Nuvoloso',icon:'cloud'};
+    else if(dayThree||state.completed>=2)weather={label:'Sereno',icon:'sun'};
     else if(state.completed===1)weather={label:'Poco nuvoloso',icon:'clearing'};
     if(schoolEvening)weather={label:'Pioggia',icon:'rain'};
     if(afterMunicipioNight)weather={label:'Notte serena',icon:'moon'};
-    const time=afterMunicipioNight?'21:00':messageTime;
+    const time=afterMunicipioNight||schoolEvening?'21:00':messageTime;
     const weatherPanel = document.querySelector('.weather');
     weatherPanel.setAttribute('aria-label', `Meteo della simulazione: ${weather.label.toLowerCase()}, ${day.toLowerCase()}, ore ${time}`);
     weatherPanel.querySelector('use').setAttribute('href', `#weather-${weather.icon}`);
@@ -218,26 +439,46 @@
       document.createTextNode(weather.label),
       Object.assign(document.createElement('small'), {textContent:`${day.toUpperCase()} · ${time} · VALLE NORD`})
     );
-    const rank=state.routing?.municipalComplete?'Tecnico specialista':graduated()?(state.completed===3?'Tecnico di distretto':'Tecnico di rete'):'In formazione';
+    const rank=state.routing?.municipalComplete?'Tecnico specialista':graduated()?(districtRestored()?'Tecnico di distretto':'Tecnico di rete'):'In formazione';
     $('phone-open').hidden=false;
     document.querySelector('.profile-chip').hidden=!graduated();
-    $('profile-rank').replaceChildren(document.createTextNode('Il tuo tesserino'),Object.assign(document.createElement('small'),{textContent:graduated()?`${rank} · ${xp()} XP`:`Da ottenere · ${state.studied.length}/${lessons.length} prove`}));
+    $('profile-rank').replaceChildren(document.createTextNode('Il tuo tesserino'),Object.assign(document.createElement('small'),{textContent:graduated()?(hasBadgeProfile()?`${rank} · ${xp()} XP`:'Da configurare'):`Da ottenere · ${state.studied.length}/${lessons.length} prove`}));
     document.querySelector('.profile-chip').setAttribute('aria-label',graduated()?'Apri il tuo tesserino da tecnico':`Il tuo tesserino: completa le ${lessons.length} prove della scuola`);
     $('progress-label').textContent=dayThree?`INCARICHI · ${day.toUpperCase()}`:'PERCORSO';
     $('progress-count').textContent=dayThree?'':state.completed+' / '+missions.length;
     $('journey').replaceChildren();
-    const stages=[{id:'school',title:'Scuola di reti',info:graduated()?'Completata ✓':`${state.studied.length}/${lessons.length} prove`,done:graduated(),active:!graduated()},...missions.map((mission,index)=>({id:buildings.find(b=>b.mission===index).id,title:mission.site,info:index<state.completed?'Online ✓':!graduated()?'Richiede tesserino':index===state.completed?mission.title:'In attesa',done:index<state.completed,active:graduated()&&index===state.completed}))];
-    if(dayThree){
+    const stages=[{id:'school',title:'Scuola di reti',info:graduated()?'Completata ✓':`${state.studied.length}/${lessons.length} prove`,done:graduated(),active:!graduated()},...missions.map((mission,index)=>({id:missionBuildings[index],missionIndex:index,title:index===3?mission.title:mission.site,info:index<state.completed?'Online ✓':!graduated()?'Richiede tesserino':index===state.completed?(index===3?'Protezione civile · VLSM':mission.title):'In attesa',done:index<state.completed,active:graduated()&&index===state.completed}))];
+    if(dayThree&&!vlanOpen){
       const trained=Boolean(state.routing?.ripComplete);
       stages.splice(0,stages.length,{id:'school',title:schoolUpdateTitle,info:'Routing statico e RIP',active:!trained,done:trained});
       if(trained)stages.push({id:'hospital',title:'Richiesta di assistenza',info:'Ospedale · Centrale · Protezione civile',active:!state.routing.complete,done:state.routing.complete});
-      if(trained&&state.routing.complete)stages.push({id:'townhall',title:municipalTitle,info:'Routing dinamico · RIPv2',active:!state.routing.municipalComplete,done:state.routing.municipalComplete});
+      if(trained&&state.routing.complete&&!municipalDispatchPending())stages.push({id:'townhall',title:municipalTitle,info:'Routing dinamico · RIPv2',active:!state.routing.municipalComplete,done:state.routing.municipalComplete});
     }
-    stages.filter(stage=>(!awaitingDispatch() || stage.id==='school') && !(stage.active && awaitingFieldDispatch()) && isBuildingDiscovered(stage.id,state.completed,state.studied)).forEach((stage,i)=>{const b=makeButton('',()=>openBuilding(stage.id),'journey-step'+(stage.active?' current':'')+(stage.done?' done':''));const num=document.createElement('span');num.className='step-number';num.textContent=stage.done?'✓':String(dayThree?i+1:i).padStart(2,'0');const text=document.createElement('span'),title=document.createElement('strong'),sub=document.createElement('small');title.textContent=stage.title;sub.textContent=stage.info;text.append(title,sub);b.append(num,text);$('journey').append(b);});
-    $('world-status').textContent=!graduated()?'La scuola è aperta. Inizia da lì.':(awaitingDispatch()||awaitingFieldDispatch())?'In attesa di indicazioni dalla centrale.':state.completed<3?`${missions[state.completed].site}: intervento disponibile.`:'Distretto riconnesso. Tre interventi completati.';
-    $('brief-instruction').textContent=!graduated()?'Completa la scuola, poi ripristina le tre sedi.':(awaitingDispatch()||awaitingFieldDispatch())?'Attendi il messaggio di Elena.':state.completed<3?'Scegli la sede segnalata per il prossimo intervento.':'Le tre sedi sono di nuovo online.';
+    let currentAssignment;
+    if(vlanOpen){
+      currentAssignment=vlanTrained()
+        ?{id:'services',title:vlanMissionMessage[0],info:'Quattro piani · Quattro VLAN',active:!state.vlan?.complete,done:state.vlan?.complete}
+        :{id:'school',title:vlanSchoolMessage[0],info:'Switch e permessi',active:true,done:false};
+      stages.splice(0,stages.length,currentAssignment);
+      $('instructions-title').textContent=currentAssignment.title;
+    }else{
+      $('instructions-title').textContent='Valle Nord';
+    }
+    stages.filter(stage=>(!awaitingDispatch() || stage.id==='school') && !(stage.active && awaitingFieldDispatch()) && (stage.missionIndex!==3||state.completed>=3) && (stage.id==='services'||isBuildingDiscovered(stage.id,state.completed,state.studied))).forEach((stage,i)=>{const b=makeButton('',()=>openBuilding(stage.id,false,stage.missionIndex),'journey-step'+(stage.active?' current':'')+(stage.done?' done':''));const num=document.createElement('span');num.className='step-number';num.textContent=stage.done?'✓':String(dayThree?i+1:i).padStart(2,'0');const text=document.createElement('span'),title=document.createElement('strong'),sub=document.createElement('small');title.textContent=stage.title;sub.textContent=stage.info;text.append(title,sub);b.append(num,text);$('journey').append(b);});
+    $('world-status').textContent=!graduated()?'La scuola è aperta. Inizia da lì.':(awaitingDispatch()||awaitingFieldDispatch())?'In attesa di indicazioni dalla centrale.':state.completed<missions.length?`${missions[state.completed].site}: intervento disponibile.`:'Distretto riconnesso. Tutti gli interventi completati.';
+    $('brief-instruction').textContent=!graduated()?'Completa la scuola, poi ripristina le tre sedi.':(awaitingDispatch()||awaitingFieldDispatch())?'Attendi il messaggio di Elena.':state.completed<missions.length?'Scegli la sede segnalata per il prossimo intervento.':'Le tre sedi sono di nuovo online.';
+    if(graduated()&&!hasBadgeProfile()){
+      const instruction='Configura il tesserino con nome, età e avatar per iniziare gli interventi.';
+      $('world-status').textContent=instruction;
+      $('brief-instruction').textContent=instruction;
+    }
     if(dayThree){
-      const instruction=!state.routing?.ripComplete?'Torna alla scuola di reti per l’aggiornamento.':state.routing.municipalComplete?'Il Municipio comunica con Ospedale e Protezione civile.':state.routing?.complete?'Vai al Municipio e collegalo alle altre sedi con RIP.':'Verifica il percorso tra ospedale e Protezione civile.';
+      const instruction=!state.routing?.ripComplete?'Torna alla scuola di reti per l’aggiornamento.':state.routing.municipalComplete?'Il Municipio comunica con Ospedale e Protezione civile.':municipalDispatchPending()?'Attendi il prossimo messaggio di Elena.':state.routing?.complete?'Vai al Municipio e collegalo alle altre sedi con RIP.':'Verifica il percorso tra ospedale e Protezione civile.';
+      $('world-status').textContent=instruction;
+      $('brief-instruction').textContent=instruction;
+    }
+    if(state.routing?.municipalComplete){
+      const instruction=municipalMedalPending()?'Il Municipio comunica con Ospedale e Protezione civile.':state.vlanMorningPending?'Attendi il messaggio di Elena al mattino.':!vlanReleased?'Capitolo 3 in arrivo.':vlanComplete()?'Palazzo dei servizi collaudato.':vlanTrained()?'Raggiungi il Palazzo dei servizi.':'Elena ti aspetta al Galilei per la formazione VLAN.';
       $('world-status').textContent=instruction;
       $('brief-instruction').textContent=instruction;
     }
@@ -254,31 +495,51 @@
         ])
         :new Map([['school',schoolUpdateTitle]])
       :null;
-    if(dayThreeMarkers&&state.routing?.ripComplete&&state.routing.complete)dayThreeMarkers.set('townhall',municipalTitle);
-    city.update(state,awaitingDispatch(),dayThreeMarkers);
+    if(dayThreeMarkers&&state.routing?.ripComplete&&state.routing.complete&&!municipalDispatchPending())dayThreeMarkers.set('townhall',municipalTitle);
+    const visibleMarkers=currentAssignment
+      ?new Map([[currentAssignment.id,currentAssignment.title]])
+      :dayThreeMarkers;
+    city.update(state,awaitingDispatch(),visibleMarkers,vlanOpen);
   }
-  function openBuilding(id,showBadge=false){
-    const site=buildings.find(b=>b.id===id);if(!site)return;if(id!=='hq'&&!isBuildingDiscovered(id,state.completed,state.studied))return;
+  function openBuilding(id,showBadge=false,missionIndex){
+    const site=buildings.find(b=>b.id===id);if(!site)return;if(id==='services'?!(vlanAvailable()&&vlanTrained()):id!=='hq'&&!isBuildingDiscovered(id,state.completed,state.studied))return;
+    const index=missionIndex??(id==='rescue'&&state.completed>=3?3:site.mission);
+    if(index===3&&state.completed<3)return;
     if (Number.isInteger(site.mission) && !hasBadgeProfile()) {
       openBuilding('hq');
       return;
     }
-    if (Number.isInteger(site.mission) && (awaitingDispatch() || (site.mission===state.completed && awaitingFieldDispatch()))) return;
+    if (Number.isInteger(site.mission) && (awaitingDispatch() || (index===state.completed && awaitingFieldDispatch()))) return;
     if(nextDayStarted()&&Number.isInteger(site.mission)
-      &&(!state.routing?.ripComplete||(id==='townhall'&&!state.routing.complete)))return;
+      &&(!state.routing?.ripComplete||(id==='townhall'&&(!state.routing.complete||municipalDispatchPending()))))return;
     activeBuilding=site;returnFocus=document.activeElement;city.focus(id);
     $('building-dialog').classList.toggle('school-screen',id==='school');$('building-dialog').classList.toggle('mission-screen',Number.isInteger(site.mission));$('building-badge').textContent=site.badge+' / '+site.name;
     const routingSite=['hospital','hq','rescue'].indexOf(id);
     const routingLab=nextDayStarted()&&id==='school';
     const routingField=nextDayStarted()&&state.routing?.ripComplete&&routingSite>=0&&!showBadge;
     const municipalField=nextDayStarted()&&state.routing?.ripComplete&&state.routing.complete&&id==='townhall';
-    if(routingLab||routingField||municipalField){
+    if(id==='services'||(id==='school'&&vlanAvailable())){
+      $('building-dialog').classList.toggle('mission-screen',id==='services');
+      renderVlan(id==='services');
+    }else if(routingLab||routingField||municipalField){
       $('building-dialog').classList.toggle('mission-screen',routingField||municipalField);
       $('building-badge').textContent='CAPITOLO 02 / '+site.name;
       renderRouting(routingLab,municipalField?3:routingField?routingSite:0,undefined,municipalField);
     }else if(id==='school'){activeLesson=Math.max(0,lessons.findIndex(l=>!state.studied.includes(l.id)));renderSchool();}
-    else if(id==='hq')renderHeadquarters();else renderMission(site);
+    else if(id==='hq')renderHeadquarters();else renderMission(site,index);
     if(!$('building-dialog').open)$('building-dialog').showModal();
+  }
+  function celebrateSchoolCompletion(){
+    celebrateMedal('base',()=>{
+      const graduationState=state;
+      window.setTimeout(()=>{
+        if(state!==graduationState||!state.graduationPending)return;
+        const modal=document.querySelector('dialog[open]:not(#building-dialog)');
+        if(!modal&&activeBuilding?.id==='school'&&$('building-dialog').open){
+          openPhone(graduationMessage,{withHistory:true});
+        }else scheduleDispatch();
+      },1000);
+    });
   }
   function closeBuilding(){$('building-dialog').close();activeBuilding=null;if(returnFocus?.isConnected)returnFocus.focus();}
   $('back-city').addEventListener('click',closeBuilding);$('close-building').addEventListener('click',closeBuilding);
@@ -328,6 +589,7 @@
       question:lesson.question,
       practiceContent:`<form id="practice-form"><div class="fields" id="practice-fields"></div><div class="practice-actions"><button class="primary" type="submit">Verifica →</button><button class="secondary" type="button" id="practice-calculator">Calcolatore</button></div></form><div id="practice-feedback" class="feedback" role="status">Nessuna penalità: puoi riprovare.</div><div id="practice-next"></div>`
     });
+    if(lesson.id==='vlsm')$('practice-fields').classList.add('vlsm-practice-fields');
     const practiceForm=$('practice-form'),practiceFooter=document.createElement('div'),practiceSubmit=practiceForm.querySelector('[type="submit"]');practiceSubmit.textContent='Verifica';practiceSubmit.classList.add('action-triangle');practiceFooter.className='practice-footer';practiceForm.append(practiceFooter);practiceFooter.append($('practice-feedback'),practiceForm.querySelector('.practice-actions'),$('practice-next'));
     const nav=document.querySelector('.course-nav');lessons.forEach((item,i)=>{const unlocked=isLessonUnlocked(i,state.studied),done=state.studied.includes(item.id);const b=makeButton('',()=>{if(!unlocked)return;rememberLesson();activeLesson=i;renderSchool();},'course-button'+(activeLesson===i?' active':'')+(!unlocked?' locked':''));const num=document.createElement('span');num.textContent=done?'✓':String(i+1).padStart(2,'0');const text=document.createElement('span');text.textContent=item.short;b.append(num,text);if(i===activeLesson)b.setAttribute('aria-current','step');if(!unlocked){b.disabled=true;b.setAttribute('aria-label',`${item.short}: completa prima il modulo ${i}`);b.title=`Completa prima il modulo ${i}`;}nav.append(b);});
     if(nextDayStarted())addSchoolChapterNavigation(nav,1);
@@ -354,6 +616,39 @@
       conceptVisual.innerHTML=`<div class="subnet-visual-heading"><span>SIMULA LA SUDDIVISIONE</span><div role="group" aria-label="Numero di sottoreti">${[2,4,8].map(count=>`<button type="button" data-split="${count}" aria-pressed="${count===selectedSplitCount}" class="${count===selectedSplitCount?'selected':''}">${count} reti</button>`).join('')}</div></div><div class="subnet-visual-summary"><span>Da <strong>192.168.10.0/24</strong></span><span>Risultato <strong>/${prefix} · ${mask}</strong></span><span>Per ogni rete <strong>${blockSize} indirizzi · ${blockSize-2} host</strong></span></div><div class="subnet-table-wrap"><table class="subnet-table"><thead><tr><th>Sottorete</th><th>Rete</th><th>Host utilizzabili</th><th>Broadcast</th></tr></thead><tbody>${Array.from({length:selectedSplitCount},(_,index)=>{const network=base+index*blockSize,broadcast=network+blockSize-1;return `<tr${index===1?' class="focus-row"':''}><th>${index+1}</th><td>${ReteZero.address(network)}</td><td>${ReteZero.address(network+1)} – ${ReteZero.address(broadcast-1)}</td><td>${ReteZero.address(broadcast)}</td></tr>`;}).join('')}</tbody></table></div><p class="subnet-visual-note">La seconda sottorete è evidenziata: individua rete, intervallo host e broadcast nella prova.</p>`;
       conceptVisual.querySelectorAll('[data-split]').forEach(button=>button.addEventListener('click',()=>{selectedSplitCount=Number(button.dataset.split);renderSubnetVisual();}));
     }
+    function renderVlsmVisual(){
+      const blocks=[
+        ['Prima sottorete',20,'192.168.40.0',27],
+        ['Seconda sottorete',10,'192.168.40.32',28],
+        ['Riserva','—','192.168.40.48',28]
+      ];
+      conceptVisual.classList.add('subnet-visual');
+      if(concept===1){
+        const rows=blocks.slice(0,2).map(([,required,network,prefix])=>{
+          const {total}=ReteZero.calculate(network,prefix);
+          return `<tr><th scope="row">${required}</th><td>${required+2}</td><td>${total} indirizzi</td><td>/${prefix}</td></tr>`;
+        });
+        conceptVisual.innerHTML=`
+          <div class="subnet-visual-heading"><span>DIMENSIONAMENTO VLSM</span></div>
+          <div class="subnet-table-wrap"><table class="subnet-table" aria-label="Dimensionamento delle sottoreti VLSM">
+            <thead><tr><th scope="col">IP richiesti, gateway incluso</th><th scope="col">Con rete e broadcast</th><th scope="col">Blocco minimo</th><th scope="col">Prefisso</th></tr></thead>
+            <tbody>${rows.join('')}</tbody>
+          </table></div>`;
+        return;
+      }
+      const rows=blocks.map(([label,required,network,prefix])=>{
+        const {first,last,broadcast,hosts}=ReteZero.calculate(network,prefix);
+        return `<tr${label==='Riserva'?' class="focus-row"':''}><th scope="row">${label}</th><td>${network}/${prefix}</td><td>${required} / ${hosts}</td><td>${first} – ${last}</td><td>${broadcast}</td></tr>`;
+      });
+      conceptVisual.innerHTML=`
+        <div class="subnet-visual-heading"><span>ASSEGNAZIONE VLSM</span></div>
+        <div class="subnet-visual-summary"><span>Rete iniziale <strong>192.168.40.0/26</strong></span><span>Ordine <strong>Dal blocco più grande al più piccolo</strong></span></div>
+        <div class="subnet-table-wrap"><table class="subnet-table" aria-label="Piano di indirizzamento VLSM">
+          <thead><tr><th scope="col">Blocco</th><th scope="col">Rete e prefisso</th><th scope="col">IP richiesti / disponibili</th><th scope="col">Host utilizzabili</th><th scope="col">Broadcast</th></tr></thead>
+          <tbody>${rows.join('')}</tbody>
+        </table></div>
+        <p class="subnet-visual-note">La /28 parte da .32, subito dopo il broadcast .31. Restano 16 indirizzi contigui nel blocco di riserva.</p>`;
+    }
     function renderMaskVisual(){
       const masks=maskOptions.map(([prefix,mask])=>{const bits=Number(prefix.slice(1)),hostBits=32-bits,last=mask.split('.').at(-1);return {prefix,mask,bits,hostBits,binary:Number(last).toString(2).padStart(8,'0'),total:2**hostBits,usable:bits===31?'P2P':bits===32?'1 singolo':String(2**hostBits-2)};});
       const selected=masks.find(item=>item.mask===selectedMask)||masks[0],range=ReteZero.subnet(sampleAddress,selected.bits);
@@ -370,43 +665,53 @@
       }
       conceptVisual.querySelectorAll('.mask-selector button').forEach(button=>button.addEventListener('click',()=>{selectedMask=button.dataset.mask;renderMaskVisual();updateMaskExample();}));
     }
-    function renderConcept(){const [title,body]=lesson.paragraphs[concept];$('concept-title').textContent=title;renderConceptBody(body);$('concept-count').textContent=`${concept+1} / ${lesson.paragraphs.length}`;$('concept-dots').textContent=lesson.paragraphs.map((_,i)=>i===concept?'●':'○').join(' ');$('concept-prev').disabled=concept===0;$('concept-next').disabled=concept===lesson.paragraphs.length-1;conceptVisual.hidden=!((lesson.binaryExample&&concept===1)||(lesson.maskVisual&&concept>0)||(lesson.subnetVisual&&concept===1));if(lesson.maskVisual)renderMaskVisual();if(lesson.subnetVisual&&concept===1)renderSubnetVisual();}
+    function renderConcept(){const [title,body]=lesson.paragraphs[concept];$('concept-title').textContent=title;renderConceptBody(body);$('concept-count').textContent=`${concept+1} / ${lesson.paragraphs.length}`;$('concept-dots').textContent=lesson.paragraphs.map((_,i)=>i===concept?'●':'○').join(' ');$('concept-prev').disabled=concept===0;$('concept-next').disabled=concept===lesson.paragraphs.length-1;conceptVisual.hidden=!((lesson.binaryExample&&concept===1)||(lesson.maskVisual&&concept>0)||(lesson.subnetVisual&&concept===1)||(lesson.id==='vlsm'&&concept>0));if(lesson.maskVisual)renderMaskVisual();if(lesson.subnetVisual&&concept===1)renderSubnetVisual();if(lesson.id==='vlsm'&&concept>0)renderVlsmVisual();}
     $('concept-prev').addEventListener('click',()=>{concept=Math.max(0,concept-1);renderConcept();});$('concept-next').addEventListener('click',()=>{concept=Math.min(lesson.paragraphs.length-1,concept+1);renderConcept();});renderConcept();
     bindSchoolViews();
     const example=lesson.example;const workedExample=document.querySelector('.worked-example');workedExample.innerHTML=`<div><span class="eyebrow">ESEMPIO / ${example.title}</span><strong>${example.value}</strong></div><div class="example-result">${example.rows.map(([label,value])=>`<span>${label}<strong>${value}</strong></span>`).join('')}</div>`;if(lesson.maskVisual){workedExample.dataset.dynamicMask='true';updateMaskExample();}
-    function showSchoolCompletion(){
-      badge.querySelector('strong').textContent=hasBadgeProfile()?'Tesserino ottenuto':'Formazione completata';
-      badge.querySelector('small').textContent=hasBadgeProfile()?'Pronto per il primo intervento.':'Configura il tesserino per operare.';
-      $('practice-next').replaceChildren(
-        makeButton('Apri il tesserino',()=>openBuilding('hq'),'primary next-activity action-triangle')
-      );
+    function updateSchoolAction(){
+      if(graduated()){
+        badge.querySelector('strong').textContent=hasBadgeProfile()?'Tesserino ottenuto':'Formazione completata';
+        badge.querySelector('small').textContent=hasBadgeProfile()?'Pronto per il primo intervento.':'Configura il tesserino per operare.';
+      }
+      if(!state.studied.includes(lesson.id))return;
+      if(activeLesson<lessons.length-1){
+        $('practice-next').replaceChildren(makeButton('Continua',()=>{
+          rememberLesson();
+          activeLesson++;
+          renderSchool();
+          nav.querySelector('[aria-current="step"]').focus();
+        },'primary next-activity action-triangle'));
+        return;
+      }
+      if(!graduated())return;
+      const badgeButton=makeButton('Apri il tesserino',()=>openBuilding('hq',true),'primary next-activity action-triangle');
+      badgeButton.id='school-open-badge';
+      badgeButton.disabled=Boolean(state.graduationPending);
+      $('practice-next').replaceChildren(badgeButton);
     }
     function completeLesson(){
       const wasGraduated=graduated();
       if(!state.studied.includes(lesson.id))state.studied.push(lesson.id);
+      const justGraduated=!wasGraduated&&graduated();
+      if(justGraduated)state.graduationPending=true;
       save();
       renderShell();
       document.querySelector('.practice-status').textContent='SUPERATA ✓';
       document.querySelector('.school-seal strong').textContent=`${state.studied.length} / ${lessons.length}`;
-      document.querySelectorAll('.course-button')[activeLesson].firstChild.textContent='✓';
-      if(graduated()){
-        showSchoolCompletion();
-        if(!wasGraduated){
-          $('practice-next').replaceChildren(
-            makeButton('Esci dalla scuola',closeBuilding,'primary next-activity action-triangle')
-          );
-          $('building-dialog').addEventListener('close',()=>{
-            celebrateMedal('base',()=>openPhone(graduationMessage));
-          },{once:true});
-        }
-      }else{
-        $('practice-next').replaceChildren(makeButton('Continua',()=>{
-          activeLesson=lessons.findIndex(l=>!state.studied.includes(l.id));
-          renderSchool();
-        },'primary next-activity action-triangle'));
+      const current=nav.querySelector('[aria-current="step"]');
+      current.firstChild.textContent='✓';
+      const next=current.nextElementSibling;
+      if(next?.classList.contains('course-button')){
+        next.disabled=false;
+        next.classList.remove('locked');
+        next.removeAttribute('aria-label');
+        next.removeAttribute('title');
       }
+      updateSchoolAction();
+      if(justGraduated)celebrateSchoolCompletion();
     }
-    if(graduated())showSchoolCompletion();
+    updateSchoolAction();
     if(lesson.terminal){renderTrainingTerminal(lesson,completeLesson);}else{
       appendFields($('practice-fields'),lesson.fields,state.lessonDrafts[lesson.id]);
       const calculator=$('practice-calculator');calculator.hidden=!lesson.calculatorExample;calculator.addEventListener('click',()=>openCalculator(lesson.calculatorExample));
@@ -429,11 +734,15 @@
       input.value=position===history.length?draft:history[position];
       input.setSelectionRange(input.value.length,input.value.length);
     });
-    return command=>{
+    const remember=command=>{
       history.push(command);
+      remember.reset();
+    };
+    remember.reset=()=>{
       position=history.length;
       draft='';
     };
+    return remember;
   }
   function renderTrainingTerminal(lesson,onComplete){
     const form=$('practice-form'),fields=$('practice-fields'),calculator=$('practice-calculator'),feedback=$('practice-feedback');calculator.hidden=true;fields.className='training-terminal';fields.replaceChildren();
@@ -558,18 +867,58 @@
       const label=document.createElement('label'),input=document.createElement('input');label.textContent=field.label;input.type=field.type||'text';input.placeholder=field.placeholder||'';input.autocomplete='off';input.spellcheck=false;if(input.type==='number'){input.min='0';input.step='1';}else input.inputMode='decimal';input.name=field.key;input.value=saved;label.append(input);container.append(label);
     });
   }
-  function setupMunicipalRouter(index, config, allowed){
-    const {municipalPorts,ipv4,address}=ReteZero;
+  async function runPcPing(destination,ttl,input,print){
+    const sent=4;
+    const success=ttl!==null;
+    const received=success?sent:0;
+    const lost=sent-received;
+    const times=[12,39,48,40];
+    input.readOnly=true;
+    try{
+      print(`Pinging ${destination} with 32 bytes of data:\n`);
+      for(let attempt=0;attempt<sent;attempt++){
+        await new Promise(resolve=>setTimeout(resolve,success?(attempt===0?250:650):1000));
+        if(!input.isConnected||!$('building-dialog').open)return false;
+        print(success
+          ?`Reply from ${destination}: bytes=32 time=${times[attempt]}ms TTL=${ttl}`
+          :'Request timed out.');
+      }
+      const lines=[
+        `\nPing statistics for ${destination}:`,
+        `    Packets: Sent = ${sent}, Received = ${received}, Lost = ${lost} (${lost/sent*100}% loss),`
+      ];
+      if(success){
+        const average=Math.floor(times.reduce((sum,time)=>sum+time,0)/received);
+        lines.push('Approximate round trip times in milli-seconds:',
+          `    Minimum = ${Math.min(...times)}ms, Maximum = ${Math.max(...times)}ms, Average = ${average}ms`);
+      }
+      print(lines.join('\n'));
+      return success;
+    }finally{
+      input.readOnly=false;
+    }
+  }
+  function setupFieldRouter(index, config, allowed){
+    const {ipv4,address}=ReteZero;
+    const routerPorts=index===2?ReteZero.municipalPorts:ReteZero.rescuePorts;
     const ports=config.ports;
+    if(index===3&&state.completed===3&&config.pings){
+      for(const {name} of routerPorts){
+        if(!config.pcs?.[name])delete config.pings[name];
+      }
+    }
     const panel=$('mission-fields');
+    const terminalTitle=$('mission-terminal-title');
+    const routerTitle=terminalTitle.textContent;
     const promptLabel=document.querySelector('.mission-terminal-form label span');
-    let mode='user', selected;
-    const prompt=()=> (config.hostname||'Router')+{user:'>',privileged:'#',global:'(config)#',port:'(config-if)#'}[mode];
+    let mode='user', selected, pcIndex=null;
+    const pcLabels=['Sala operativa','Squadra mobile'];
+    const prompt=()=> pcIndex!==null ? pcLabels[pcIndex]+'>' : (config.hostname||'Router')+{user:'>',privileged:'#',global:'(config)#',port:'(config-if)#'}[mode];
     panel.innerHTML=`
       <label>
         <span class="municipal-port-heading">
           <span id="municipal-port-ip-label">Indirizzo IP</span>
-          <span class="municipal-port-badges">
+          <span id="mission-port-badges" class="municipal-port-badges">
             <span id="municipal-port-caption" role="status">Porta —</span>
             <span id="municipal-port-state" role="status">OFF</span>
           </span>
@@ -577,34 +926,92 @@
         <input id="municipal-port-ip" aria-labelledby="municipal-port-ip-label" readonly placeholder="—">
       </label>
       <label>Subnet mask<input id="municipal-port-mask" readonly placeholder="—"></label>
-      <label>Gateway del reparto<input id="municipal-port-gateway" readonly placeholder="—"></label>
-      <label>Server DNS<input name="dns" value="0.0.0.0" readonly></label>
+      <label><span id="municipal-port-gateway-label">Gateway del reparto</span><input id="municipal-port-gateway" readonly placeholder="—"></label>
+      <label>Server DNS<input name="dns" value="0.0.0.0" readonly placeholder="—"></label>
     `;
+    const portBadges=$('mission-port-badges');
+    const ipLabel=$('municipal-port-ip-label');
+    const gatewayLabel=$('municipal-port-gateway-label');
     const portCaption=$('municipal-port-caption');
     const portIp=$('municipal-port-ip');
     const portMask=$('municipal-port-mask');
     const portGateway=$('municipal-port-gateway');
     const status=$('municipal-port-state');
+    const dnsField=panel.querySelector('[name="dns"]');
     function renderPort(){
-      const port=ports[selected];
-      const caption=selected?'Porta '+selected.replace('GigabitEthernet','Gi'):'Porta —';
+      const pc=pcIndex===null?null:routerPorts[pcIndex];
+      const activePort=pc?.name??selected;
+      const port=ports[activePort];
+      const pcConfig=pc?config.pcs?.[pc.name]:null;
+      terminalTitle.textContent=pc?'PC / '+pcLabels[pcIndex]:routerTitle;
+      ipLabel.textContent=pc?'IP del PC':'Indirizzo IP';
+      gatewayLabel.textContent=pc?'Gateway predefinito':'Gateway del reparto';
+      portBadges.hidden=Boolean(pc);
+      const caption=activePort?'Porta '+activePort.replace('GigabitEthernet','Gi'):'Porta —';
       if(portCaption.textContent!==caption)portCaption.textContent=caption;
-      portIp.value=port?.ip||'';
-      portMask.value=port?.mask||'';
-      portGateway.value=portIp.value;
+      portIp.value=(pc?pcConfig?.ip:port?.ip)??'';
+      portMask.value=(pc?pcConfig?.mask:port?.mask)??'';
+      portGateway.value=pc?(pcConfig?.gateway??''):portIp.value;
+      dnsField.value=pc?(pcConfig?.dns??''):'0.0.0.0';
       const enabled=port?.enabled===true;
       status.classList.toggle('is-on',enabled);
       const stateText=enabled?'ON':'OFF';
       if(status.textContent!==stateText)status.textContent=stateText;
       promptLabel.textContent=prompt();
     }
+    function selectDevice(device){
+      pcIndex=device==='router'?null:Number(device);
+      renderPort();
+    }
     renderPort();
-    return (raw,print)=>{
+    async function run(raw,print,ping){
       print(raw,true,prompt());
       const command=raw.toLowerCase().replace(/\s+/g,' ');
-      const iface=/^(?:interface|int) (?:gi|gigabitethernet) ?0\/([0-3])$/.exec(command);
+      const iface=/^(?:interface|int) (?:gi|gigabitethernet) ?0\/([01])$/.exec(command);
       const ipCommand=/^ip address (\S+) (\S+)$/.exec(command);
       if(!allowed){print('Completa prima il percorso richiesto.');return;}
+      if(pcIndex!==null){
+        const port=routerPorts[pcIndex];
+        const pcConfig=config.pcs?.[port.name];
+        if(command==='ipconfig'||command==='ipconfig /all'){
+          print([
+            'Indirizzo IPv4: '+(pcConfig?.ip??'0.0.0.0'),
+            'Subnet mask: '+(pcConfig?.mask??'0.0.0.0'),
+            'Gateway predefinito: '+(pcConfig?.gateway??'0.0.0.0'),
+            ...(command.endsWith('/all')?['Server DNS: '+(pcConfig?.dns??'0.0.0.0')]:[])
+          ].join('\n'));
+          return;
+        }
+        const expected=ReteZero.calculate(port.network,port.prefix);
+        const settings=/^ipconfig (\S+) (\S+) (\S+)(?: (\S+))?$/.exec(command);
+        if(settings){
+          const [,ip,mask,gateway,dns='0.0.0.0']=settings;
+          if(ipv4(ip)!==ipv4(expected.first)||ipv4(mask)!==ipv4(expected.mask)
+            ||ipv4(gateway)!==ipv4(expected.last)||ipv4(dns)===null){
+            print('Controlla il primo IP utile, la maschera e l’ultimo IP utile per il gateway. Il DNS è facoltativo.');
+            return;
+          }
+          const next={ip:expected.first,mask:expected.mask,gateway:expected.last,dns:address(ipv4(dns))};
+          if(Object.keys(next).some(key=>next[key]!==pcConfig?.[key]))delete config.pings?.[port.name];
+          (config.pcs??={})[port.name]=next;
+          renderPort();
+          updateMissionChecklist(index);
+          save();
+          return;
+        }
+        const destination=/^ping (\S+)$/.exec(command)?.[1];
+        if(!destination){print('Usa ipconfig <IP> <maschera> <gateway> [DNS] oppure ping <gateway>.');return;}
+        if(!pcConfig){print('Configura prima questo PC con ipconfig <IP> <maschera> <gateway>.');return;}
+        const target=ipv4(destination);
+        if(target===null){print(`Ping request could not find host ${destination}.`);return;}
+        const reachable=target===ipv4(pcConfig.gateway)&&ReteZero.verifyRouterPort(ports,port,pcIndex).ok;
+        if(await ping(address(target),reachable?255:null)){
+          (config.pings??={})[port.name]=true;
+          updateMissionChecklist(index);
+          save();
+        }
+        return;
+      }
       if(command==='enable'&&mode==='user')mode='privileged';
       else if(['configure terminal','configur terminal','conf terminal','conf t'].includes(command)){
         if(mode==='user'){
@@ -618,7 +1025,7 @@
         mode='global';
       }
       else if(iface&&(mode==='global'||mode==='port')){
-        selected=municipalPorts[Number(iface[1])].name;
+        selected=routerPorts[Number(iface[1])].name;
         mode='port';
       }else if(command==='exit'&&mode==='port')mode='global';
       else if((command==='exit'&&mode==='global')||(command==='end'&&(mode==='global'||mode==='port')))mode='privileged';
@@ -631,28 +1038,30 @@
           return;
         }
         const nextIp=address(ip),nextMask=address(mask);
-        if(ports[selected]?.ip!==nextIp||ports[selected]?.mask!==nextMask)config.routerStep=0;
+        if(ports[selected]?.ip!==nextIp||ports[selected]?.mask!==nextMask){config.routerStep=0;delete config.pings?.[selected];}
         ports[selected]={...ports[selected],ip:nextIp,mask:nextMask};
       }else if((command==='no shutdown'||command==='shutdown')&&mode==='port'){
         const enabled=command==='no shutdown';
-        if(Boolean(ports[selected]?.enabled)!==enabled)config.routerStep=0;
+        if(Boolean(ports[selected]?.enabled)!==enabled){config.routerStep=0;delete config.pings?.[selected];}
         ports[selected]={...ports[selected],enabled};
       }else if(command==='show ip interface brief'&&mode==='privileged'){
-        const lines=municipalPorts.map(({name})=>{
+        const lines=routerPorts.map(({name})=>{
           const port=ports[name],status=port?.enabled?'up':'administratively down';
           return name.padEnd(22)+(port?.ip||'unassigned').padEnd(17)+status.padEnd(23)+(port?.enabled?'up':'down');
         });
         print(['Interface             IP-Address       Status                 Protocol',...lines].join('\n'));
-        const result=ReteZero.verify(index,config);
+        const result=index===2?ReteZero.verify(index,config)
+          :routerPorts.map((port,i)=>ReteZero.verifyRouterPort(ports,port,i)).find(check=>!check.ok)??{ok:true};
         if(result.ok)config.routerStep=Math.max(2,config.routerStep??0);
         const feedback=$('mission-feedback');
         feedback.className=result.ok?'feedback':'feedback error';
-        feedback.textContent=result.ok?'Porte controllate. Premi «Applica e verifica» per concludere.':result.message;
+        feedback.textContent=result.ok?(index===3?'Porte controllate. Configura entrambi i PC e verifica i gateway con un ping.':'Porte controllate. Premi «Applica e verifica» per concludere.'):result.message;
       }else{print('% Comando non valido in questa modalità.');return;}
       renderPort();
       updateMissionChecklist(index);
       save();
-    };
+    }
+    return {selectDevice,run};
   }
   function hostMissionStep(index){
     const draft=state.drafts[index];
@@ -665,11 +1074,15 @@
     const completed=index===0&&state.completed>0 ? list.children.length : hostMissionStep(index);
     let routerChecks;
     if(index===2){
-      const portChecks=ReteZero.municipalPorts.map((_,portIndex)=>
-        ReteZero.verifyMunicipalPort(config?.ports,portIndex).ok);
+      const portChecks=ReteZero.municipalPorts.map((port,portIndex)=>
+        ReteZero.verifyRouterPort(config?.ports,port,portIndex).ok);
       const allPortsReady=portChecks.every(Boolean);
       const routerStep=config?.routerStep??0;
       routerChecks=[...portChecks,allPortsReady&&routerStep>=2,allPortsReady&&routerStep>=3];
+    }
+    if(index===3){
+      const ready=ReteZero.rescuePorts.map((port,i)=>ReteZero.verifyRouterPort(config?.ports,port,i).ok);
+      routerChecks=[...ready,ready.every(Boolean)&&(config?.routerStep??0)>=2,ready.every(Boolean)&&ReteZero.rescuePorts.every(port=>config.pings?.[port.name]),config?.routerStep===3&&ReteZero.verify(3,config).ok];
     }
     Array.from(list.children).forEach((item,stepIndex)=>{
       const done=routerChecks ? routerChecks[stepIndex] : stepIndex<completed;
@@ -679,14 +1092,28 @@
       item.classList.toggle('is-complete',done);
     });
   }
-  function setupMissionTerminal(index,allowed,routerCommand){
+  function setupMissionTerminal(index,allowed,router){
     const terminalForm=document.querySelector('.mission-terminal-form'),output=document.querySelector('.mission-terminal-output'),configForm=$('mission-form'),input=terminalForm.elements.command;
     const logs=state.missionLogs??=[];
     const savedLog=logs[index];
     const log=logs[index]=Array.isArray(savedLog)
       ? savedLog.filter(entry=>entry&&typeof entry.message==='string'&&typeof entry.isCommand==='boolean')
       : [];
-    const history=log.filter(entry=>entry.isCommand).map(entry=>entry.message);
+    let activeDevice='router';
+    const history=[];
+    const rememberCommand=setupCommandHistory(input,history);
+    const legacyPcPrompts=['Sala operativa>','Squadra mobile>'];
+    if(index===3){
+      // Older saves mark the device only on the command that precedes each response.
+      let previousDevice='router';
+      for(const entry of log){
+        if(entry.isCommand){
+          const pc=legacyPcPrompts.indexOf(entry.prompt);
+          previousDevice=pc===-1?'router':String(pc);
+        }
+        entry.device??=previousDevice;
+      }
+    }
     const appendLine=({message,isCommand,prompt})=>{
       const line=document.createElement('p');
       line.className=isCommand?'terminal-command':'';
@@ -694,18 +1121,31 @@
       output.append(line);
     };
     const scrollToLatest=()=>{output.scrollTop=output.scrollHeight;};
-    log.forEach(appendLine);
-    const terminal=output.closest('details');
-    terminal.addEventListener('toggle',scrollToLatest);
-    terminal.querySelector('summary').addEventListener('click',()=>{
-      if(terminal.open)return;
-      requestAnimationFrame(()=>{
-        if(terminal.open&&input.isConnected)input.focus({preventScroll:true});
-      });
-    });
-    if(log.length){
-      terminal.open=true;
-    }else if(index<2&&index<state.completed){
+    function renderLog(){
+      output.replaceChildren();
+      history.length=0;
+      for(const entry of log){
+        if((entry.device??'router')!==activeDevice)continue;
+        appendLine(entry);
+        if(entry.isCommand)history.push(entry.message);
+      }
+      rememberCommand.reset();
+      scrollToLatest();
+    }
+    renderLog();
+    const devices=document.querySelectorAll('[data-field-device]');
+    devices.forEach(button=>button.addEventListener('click',()=>{
+      const device=button.dataset.fieldDevice;
+      if(device!==activeDevice){
+        activeDevice=device;
+        router.selectDevice(device);
+        devices.forEach(item=>item.setAttribute('aria-pressed',String(item.dataset.fieldDevice===device)));
+        input.value='';
+        renderLog();
+      }
+      input.focus({preventScroll:true});
+    }));
+    if(!output.childElementCount&&index<2&&index<state.completed){
       const saved=state.drafts[index];
       if(saved&&ReteZero.verify(index,saved).ok){
         const {mask}=ReteZero.calculate(saved.ip,Number(saved.prefix));
@@ -714,16 +1154,16 @@
         if(saved.gateway&&saved.dns&&saved.dns!=='0.0.0.0')args.push(saved.dns);
         const command='ipconfig '+args.join(' ');
         appendLine({message:command,isCommand:true});
-        history.push(command);
-        terminal.open=true;
+        rememberCommand(command);
       }
     }
-    const rememberCommand=setupCommandHistory(input,history);
-    const print=(message,isCommand=false,prompt)=>{
-      const entry={message,isCommand,prompt};
+    const print=(message,isCommand=false,prompt,device=activeDevice)=>{
+      const entry={message,isCommand,prompt,device};
       log.push(entry);
-      appendLine(entry);
-      scrollToLatest();
+      if(device===activeDevice){
+        appendLine(entry);
+        scrollToLatest();
+      }
       save();
     };
     const setField=(name,value)=>{
@@ -735,10 +1175,15 @@
       event.preventDefault();
       input.focus({preventScroll:true});
       const raw=input.value.trim();
-      if(!raw)return;
+      if(!raw||input.readOnly)return;
       rememberCommand(raw);
       input.value='';
-      if(routerCommand){routerCommand(raw,print);return;}
+      if(router){
+        const device=activeDevice;
+        router.run(raw,print,(destination,ttl)=>
+          runPcPing(destination,ttl,input,message=>print(message,false,undefined,device)));
+        return;
+      }
       print(raw,true);
       const [name,ip,mask,gateway,dns,...extra]=raw.toLowerCase().split(/\s+/);
       if(name==='ipconfig'&&(!ip||(ip==='/all'&&!mask))){
@@ -812,7 +1257,7 @@
   function missionHeader({eyebrow,title,story,reference,done}){
     return `<div class="building-hero mission-hero"><div><p class="eyebrow">${eyebrow}</p><h2 id="building-title">${title}</h2><p>${story}</p></div><div class="mission-hero-tools"><div class="incident-badge ${done?'repaired':''}"><span>${done?'✓':'!'}</span><strong>${done?'COLLEGAMENTO RIPRISTINATO':'SEGNALAZIONE APERTA'}</strong><small>${reference}</small></div><button id="mission-phone" class="icon-button" type="button" aria-label="Apri i messaggi di Elena" title="Messaggi di Elena" aria-haspopup="dialog"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="#b5d9c4"><path transform="translate(24 0) scale(-1 1)" d="M5.1 3.5c.8-.6 1.9-.5 2.5.3l2.6 3.4c.5.7.5 1.6-.1 2.2l-1.6 1.7a14 14 0 0 0 4.4 4.4l1.7-1.6c.6-.6 1.5-.6 2.2-.1l3.4 2.6c.8.6.9 1.7.3 2.5l-1 1.2c-.8.9-2 1.3-3.1 1C9.7 19.4 4.6 14.3 2.9 7.6c-.3-1.1.1-2.3 1-3.1z"/></svg></button></div></div>`;
   }
-  function missionLayout({header,extraClass='',hint='',sheet,ticket,terminalTitle,fields,terminal,picker='',notice='',footer,actions,afterFeedback=''}){
+  function missionLayout({header,extraClass='',hint='',sheet,ticket,terminalTitle,fields,terminal,notice='',footer,actions,afterFeedback=''}){
     return `${missionHeader(header)}
       <div class="intervention-layout ${extraClass}">
         <aside class="ticket-panel">
@@ -835,7 +1280,6 @@
           ${notice}
           <div class="mission-workspace with-prompt">
             <div class="mission-field-column">${fields}</div>
-            ${picker}
             ${terminal}
           </div>
           ${footer}
@@ -844,9 +1288,45 @@
         </section>
       </div>`;
   }
-  function renderMission(site){
-    const index=site.mission,mission=missions[index],allowed=canEnterMission(index,state.completed,state.studied),done=index<state.completed;
+  function renderMission(site,index){
+    const mission=missions[index],allowed=canEnterMission(index,state.completed,state.studied),done=index<state.completed;
+    const isRadio=index===1;
+    const usesRouter=index>=2;
+    const lanLabels=index===2?['PC Sindaco','PC Vicesindaco']:['Sala operativa','Squadra mobile'];
+    const lanPorts=index===2?ReteZero.municipalPorts:ReteZero.rescuePorts;
+    const terminalLabel=isRadio?'Radio Squadra Nord':'PC Pronto soccorso';
+    const consoleDevices=index===3
+      ? [['0',lanLabels[0]],['router','Router'],['1',lanLabels[1]]]
+      : [['router',usesRouter?'Router':terminalLabel]];
+    const nodeTag=index===3?'button':'span';
+    const localTopology=usesRouter?`<div class="routing-path field-local-path">
+      <h3>Schema di rete</h3>
+      <ol>
+        <li><${nodeTag} class="routing-node routing-local-node"${index===3?' type="button" data-field-device="0" aria-pressed="false"':''}><img src="assets/icons/pc.png" alt="" width="56" height="56">${lanLabels[0]}</${nodeTag}></li>
+        <li><button class="routing-node routing-local-node field-local-router" type="button" data-field-device="router" aria-pressed="true">
+          <img src="assets/icons/router.png" alt="" width="56" height="56">Router
+          <span class="routing-router-ports">${lanPorts.map(({name})=>`<span>${name.replace("GigabitEthernet","Gi")}</span>`).join("")}</span>
+        </button></li>
+        <li><${nodeTag} class="routing-node routing-local-node"${index===3?' type="button" data-field-device="1" aria-pressed="false"':''}><img src="assets/icons/pc.png" alt="" width="56" height="56">${lanLabels[1]}</${nodeTag}></li>
+      </ol>
+    </div>`:`<div class="routing-path field-local-path">
+      <h3>Schema di rete</h3>
+      <ol>
+        <li><button type="button" class="routing-node routing-local-node" data-field-device="router" aria-pressed="true"><img src="assets/icons/${isRadio?'radio':'pc'}.png" alt="" width="56" height="56">${terminalLabel}</button></li>
+        <li${isRadio?' class="field-radio-link"':''}>
+          ${isRadio?'<span class="field-radio-symbol" role="img" aria-label="Collegamento radio">)))</span>':''}
+          <span class="routing-node routing-local-node">
+          <img src="assets/icons/switch.png" alt="" width="56" height="56">Switch
+          <span class="routing-router-ports">${isRadio?'':'<span>Fa0/1</span>'}<span class="field-uplink">Gi0/1</span></span>
+        </span></li>
+        <li><span class="routing-node routing-local-node field-local-router">
+          <img src="assets/icons/router.png" alt="" width="56" height="56">Router ${site.name}
+          <span class="routing-router-ports"><span>Gi0/0</span></span>
+        </span></li>
+      </ol>
+    </div>`;
     $('building-content').innerHTML=missionLayout({
+      extraClass:'routing-intervention',
       header:{
         eyebrow:'EPISODIO '+String(index+1).padStart(2,'0')+' / '+site.name,
         title:mission.title+'.',
@@ -854,22 +1334,31 @@
         reference:'PRATICA VN–0'+(index+1)+' · '+mission.topic,
         done
       },
-      sheet:'<div id="mission-evidence" class="evidence"></div>',
-      ticket:`<div class="topology" role="group" aria-label="Collegamento dei dispositivi di rete"><span><img src="assets/icons/${index===1?'radio':'pc'}.png" alt="" width="72" height="72">${index===1?'RADIO MOBILE':'PC'}</span><i class="topology-${index===1?'radio-wave':'cable'}" role="img" aria-label="${index===1?'Collegamento radio':'Collegamento Ethernet'}"></i><span><img src="assets/icons/switch.png" alt="" width="72" height="72">SWITCH</span><i class="topology-cable" role="img" aria-label="Collegamento Ethernet"></i><span><img src="assets/icons/router.png" alt="" width="72" height="72">ROUTER</span></div>${mission.steps ? `<ul class="mission-steps" id="mission-steps" role="list" aria-label="Passaggi dell’intervento">${mission.steps.map(step => `<li><span class="mission-step-status" role="img"></span><span>${step}</span></li>`).join('')}</ul>` : `<div class="ticket-note">${index===2?'Progetta prima le sottoreti, poi verifica gli intervalli.':'Controlla gli indirizzi prima di sostituire apparati funzionanti.'}</div>`}`,
-      terminalTitle:index===1?'Radio mobile / Squadra Nord':index===2?'Router / Municipio':'Terminale / Pronto soccorso',
+      sheet:'<dl id="mission-evidence" class="evidence"></dl>',
+      ticket:`${localTopology}${mission.steps ? `<ul class="mission-steps" id="mission-steps" role="list" aria-label="Passaggi dell’intervento">${mission.steps.map(step => `<li><span class="mission-step-status" role="img"></span><span>${step}</span></li>`).join('')}</ul>` : `<div class="ticket-note">${index===2?'Progetta prima le sottoreti, poi verifica gli intervalli.':'Controlla gli indirizzi prima di sostituire apparati funzionanti.'}</div>`}`,
+      terminalTitle:index===1?'Radio mobile / Squadra Nord':index===2?'Router / Municipio':index===3?'Router / Protezione civile':'Terminale / Pronto soccorso',
       notice:'<div id="mission-lock"></div>',
       fields:'<form id="mission-form"><div id="mission-fields" class="fields"></div></form>',
-      terminal:`<details class="mission-cli"><summary>${index===2?'Usa il prompt del router':'Usa il prompt del PC'}</summary><div class="mission-terminal-output" aria-live="polite"></div><form class="mission-terminal-form"><label><span>C:\\&gt;</span><input name="command" autocomplete="off" spellcheck="false" placeholder="Digita un comando"></label><button type="submit">Esegui</button></form></details>`,
+      terminal:`<div class="field-console"><div class="field-console-devices" role="group" aria-label="Dispositivi della sede">${consoleDevices.map(([device,label])=>`<button type="button" class="routing-device-link" data-field-device="${device}" aria-pressed="${device==='router'}">${label}</button>`).join('')}</div><div class="mission-cli"><div class="mission-terminal-output" aria-live="polite"></div><form class="mission-terminal-form"><label><span>C:\\&gt;</span><input name="command" autocomplete="off" spellcheck="false" placeholder="Digita un comando"></label><button type="submit">Esegui</button></form></div></div>`,
       footer:`<div id="mission-feedback" role="status" class="feedback">${done?'Intervento già completato. Puoi rivedere e provare una configurazione.':'Le modifiche riguardano soltanto la simulazione.'}</div>`,
       afterFeedback:'<div id="mission-next"></div>',
       actions:'<button class="secondary" id="mission-calculator" type="button">Banco di calcolo</button><button class="primary" id="verify-mission" type="submit" form="mission-form">Applica e verifica <span aria-hidden="true">▸</span></button>'
     });
     if(mission.steps)updateMissionChecklist(index);
     $('mission-phone').addEventListener('click', ()=>openPhone());
-    $('mission-evidence').replaceChildren(...mission.evidence.map(text=>Object.assign(document.createElement('span'),{textContent:text})));
+    $('mission-evidence').replaceChildren(...mission.evidence.flatMap(([label,value])=>[
+      Object.assign(document.createElement('dt'),{textContent:label}),
+      Object.assign(document.createElement('dd'),{textContent:value})
+    ]));
+    if(mission.evidenceNote){
+      const note=document.createElement('p');
+      note.className='mission-evidence-note';
+      note.textContent=mission.evidenceNote;
+      $('mission-evidence').after(note);
+    }
     appendFields($('mission-fields'),mission.fields,state.drafts[index]);$('mission-hint-text').textContent=mission.hint;
     setupMissionHint();
-    $('mission-calculator').addEventListener('click',()=>openCalculator({ip:index===0?'192.168.10.20':index===1?'192.168.20.70':'192.168.30.77',prefix:index===0?24:26}));
+    $('mission-calculator').addEventListener('click',()=>openCalculator({ip:index===0?'192.168.10.20':index===1?'192.168.20.70':index===2?'192.168.30.77':'192.168.20.128',prefix:[24,26,25,26][index]}));
     if(index<2){
       const dns=$('mission-form').elements.namedItem('dns');
       dns.value||='0.0.0.0';
@@ -888,20 +1377,21 @@
     }else{
       const config=state.drafts[index]??={};
       config.ports??={};
-      setupMissionTerminal(index,allowed,setupMunicipalRouter(index,config,allowed));
+      setupMissionTerminal(index,allowed,setupFieldRouter(index,config,allowed));
+      updateMissionChecklist(index);
     }
     $('mission-fields').querySelectorAll('input:not([type="hidden"])').forEach(field=>{
       field.readOnly=true;
       field.tabIndex=-1;
     });
-    if(!allowed){const lock=$('mission-lock');lock.className='lock-notice';const text=document.createElement('p');text.textContent=!graduated()?`Prima di intervenire completa le ${lessons.length} prove della scuola e ottieni il tesserino da tecnico.`:'Questo intervento segue quello della sede precedente. Puoi consultare la scheda, poi tornare alla missione aperta.';lock.append(text,makeButton(!graduated()?'Vai alla scuola →':'Apri l’intervento precedente →',()=>openBuilding(!graduated()?'school':buildings.find(b=>b.mission===state.completed).id),'secondary'));$('verify-mission').disabled=true;}
+    if(!allowed){const lock=$('mission-lock');lock.className='lock-notice';const text=document.createElement('p');text.textContent=!graduated()?`Prima di intervenire completa le ${lessons.length} prove della scuola e ottieni il tesserino da tecnico.`:'Questo intervento segue quello della sede precedente. Puoi consultare la scheda, poi tornare alla missione aperta.';lock.append(text,makeButton(!graduated()?'Vai alla scuola →':'Apri l’intervento precedente →',()=>openBuilding(!graduated()?'school':missionBuildings[state.completed]),'secondary'));$('verify-mission').disabled=true;}
     $('mission-form').addEventListener('submit',event=>{
       event.preventDefault();
       if(!canEnterMission(index,state.completed,state.studied))return;
       const config=state.drafts[index]??Object.fromEntries(new FormData(event.currentTarget));
       const result=ReteZero.verify(index,config);
       const feedback=$('mission-feedback');
-      if(result.ok&&index===2&&(config.routerStep??0)<2){
+      if(result.ok&&index>=2&&(config.routerStep??0)<2){
         feedback.className='feedback error';
         feedback.textContent='Controlla le porte con show ip interface brief prima di concludere.';
         return;
@@ -914,19 +1404,11 @@
       feedback.className='feedback '+(result.ok?'success':'error');
       feedback.textContent=result.message;
       if(!result.ok)return;
-      if(index===2)config.routerStep=3;
+      if(index>=2)config.routerStep=3;
       else state.drafts[index]={...config,hostStep:3};
       const fresh=state.completed===index;state.completed=Math.max(state.completed,index+1);if(fresh)state.fieldStage=0;save();renderShell();document.querySelector('.incident-badge').classList.add('repaired');document.querySelector('.incident-badge>span').textContent='✓';document.querySelector('.incident-badge strong').textContent='COLLEGAMENTO RIPRISTINATO';
       if(mission.steps)updateMissionChecklist(index);
-      if(fresh&&districtRestored()){
-        operationalMedalPending=true;
-        state.fieldStage=2;
-        save();
-        renderShell();
-        closeBuilding();
-        openPhone();
-        return;
-      }
+      if(fresh&&districtRestored())operationalMedalPending=true;
       const mapButton=makeButton('Vai alla mappa',closeBuilding,'primary');
       const triangle=document.createElement('span');
       triangle.setAttribute('aria-hidden','true');
@@ -972,6 +1454,7 @@
     }).join('');
   }
   const hasBadgeProfile=()=>Boolean(state.badgeName&&state.badgeAge&&state.avatar);
+  const upcomingChaptersMessage='Nuovi capitoli in arrivo';
   function renderHeadquarters(editing=false){
     const isNew=graduated()&&!hasBadgeProfile();
     const showSettings=isNew||editing;
@@ -982,9 +1465,10 @@
     const routingMissionsDone=routingMissions.filter(Boolean).length;
     const chapterTwo=nextDayStarted();
     const chapterTwoComplete=chapterTwo&&Boolean(state.routing?.municipalComplete);
-    const chapterLabel=chapterTwo?'Cap. 02':'Cap. 01';
-    const chapterSchool=chapterTwo?`${routingSchoolPassed}/${routingLessons.length}`:`${state.studied.length}/${lessons.length}`;
-    const chapterMissions=chapterTwo?`${routingMissionsDone}/${routingMissions.length}`:`${state.completed}/${missions.length}`;
+    const vlanOpen=vlanAvailable();
+    const chapterLabel=vlanOpen?'Cap. 03':chapterTwo?'Cap. 02':'Cap. 01';
+    const chapterSchool=vlanOpen?`${vlanPassed()}/${RZVlanUI.lessons.length}`:chapterTwo?`${routingSchoolPassed}/${routingLessons.length}`:`${state.studied.length}/${lessons.length}`;
+    const chapterMissions=vlanOpen?`${Number(Boolean(state.vlan?.complete))}/1`:chapterTwo?`${routingMissionsDone}/${routingMissions.length}`:`${state.completed}/${missions.length}`;
     $('building-content').innerHTML=`<header class="badge-heading">
       <p class="eyebrow">CENTRALE OPERATIVA / VALLE NORD</p>
       <div class="badge-title-row"><h2 id="building-title">Il tuo tesserino</h2>${showSettings?'':'<button type="button" id="badge-settings" class="secondary">Impostazioni</button>'}</div>
@@ -1011,11 +1495,11 @@
         </div>
         <div class="card-stats">
           <span>
-            <strong>${state.studied.length+routingSchoolPassed}/${lessons.length+routingLessons.length}</strong>PROVE SCUOLA TOTALI
+            <strong>${state.studied.length+routingSchoolPassed+vlanPassed()}/${lessons.length+routingLessons.length+(vlanReleased?RZVlanUI.lessons.length:0)}</strong>PROVE SCUOLA TOTALI
             <small>${chapterLabel} · ${chapterSchool}</small>
           </span>
           <span>
-            <strong>${state.completed+routingMissionsDone}/${missions.length+routingMissions.length}</strong>INTERVENTI TOTALI
+            <strong>${state.completed+routingMissionsDone+Number(vlanComplete())}/${missions.length+routingMissions.length+Number(vlanReleased)}</strong>INTERVENTI TOTALI
             <small>${chapterLabel} · ${chapterMissions}</small>
           </span>
           <span><strong>${xp()}</strong>XP</span>
@@ -1030,10 +1514,13 @@
         <ul class="badge-awards">${renderBadgeAwards()}</ul>
       </section>`}
       ${showSettings?'':`<section class="badge-next">
-        <div><span class="eyebrow">${chapterTwoComplete?'CAPITOLO 02 COMPLETATO':'IL PROSSIMO PASSO'}</span>
-        <h3>${chapterTwoComplete?'Valle Nord è di nuovo online':!graduated()?'Scuola di reti':awaitingDispatch()?'Mappa di Valle Nord':nextMission?nextMission.site:'Primo distretto completato'}</h3>
-        <p>${chapterTwoComplete?'Il Municipio è ora collegato all’ospedale e alla Protezione civile.':!graduated()?'Completa la formazione per ottenere l’abilitazione.':awaitingDispatch()?'Torna in città e attendi le indicazioni di Elena.':nextMission?nextMission.title:'Le tre sedi di Valle Nord sono di nuovo collegate.'}</p></div>
-        <div id="hq-action"></div>
+        <div><span class="eyebrow">${vlanComplete()?'CAPITOLO 03 COMPLETATO':chapterTwoComplete?'CAPITOLO 02 COMPLETATO':'IL PROSSIMO PASSO'}</span>
+        <h3>${vlanComplete()?'Palazzo dei servizi in rete':chapterTwoComplete?'Valle Nord è di nuovo online':!graduated()?'Scuola di reti':awaitingDispatch()?'Mappa di Valle Nord':nextMission?nextMission.site:'Primo distretto completato'}</h3>
+        <p>${vlanComplete()?'I reparti comunicano secondo i permessi previsti.':chapterTwoComplete?'Il Municipio è ora collegato all’ospedale e alla Protezione civile.':!graduated()?'Completa la formazione per ottenere l’abilitazione.':awaitingDispatch()?'Torna in città e attendi le indicazioni di Elena.':nextMission?nextMission.title:'Le tre sedi di Valle Nord sono di nuovo collegate.'}</p></div>
+        <div class="badge-next-actions">
+          <div id="hq-action"></div>
+          ${vlanComplete()?`<small>${upcomingChaptersMessage}</small>`:chapterTwoComplete&&!vlanReleased?'<small>Capitolo 3 in arrivo</small>':''}
+        </div>
       </section>`}
     </div>`;
     function updateBadgePreview(name,age,avatar){
@@ -1098,25 +1585,32 @@
     document.querySelectorAll('.badge-replay').forEach(button=>{
       button.addEventListener('click',()=>celebrateMedal(button.dataset.medal));
     });
-    $('hq-action').append(makeButton(graduated()?'Vai alla mappa':'Entra nella scuola',()=>graduated()?closeBuilding():openBuilding('school'),'primary action-triangle'));
+    $('hq-action').append(makeButton(graduated()?'Vai alla mappa':'Entra nella scuola',
+      ()=>graduated()?closeBuilding():openBuilding('school'),'primary action-triangle'));
   }
   function addSchoolChapterNavigation(nav, active){
     const chapters=document.createElement('nav');
     chapters.className='school-chapters';
     chapters.setAttribute('aria-label','Capitoli del Galilei');
-    ['Formazione di base','Oltre la rete locale'].forEach((title,index)=>{
+    const titles=['Formazione di base','Oltre la rete locale'];
+    if(vlanAvailable())titles.push('Un palazzo, quattro VLAN');
+    else if(!vlanReleased&&state.routing?.municipalComplete&&!state.vlanMorningPending)titles.push('In arrivo');
+    titles.forEach((title,index)=>{
       const chapter=index+1;
       const button=makeButton('',()=>{
         if(chapter===active)return;
         if(chapter===1){
           activeLesson=0;
           renderSchool();
+        }else if(chapter===3){
+          renderVlan(false);
         }else{
           renderRouting(true,0);
         }
         document.querySelector('.school-chapter-button[aria-current]').focus();
       },'school-chapter-button');
       button.dataset.chapter=chapter;
+      if(chapter===3&&!vlanReleased)button.disabled=true;
       if(chapter===active)button.setAttribute('aria-current','true');
       const label=document.createElement('span');
       label.textContent='Capitolo '+String(chapter).padStart(2,'0');
@@ -1126,6 +1620,146 @@
       chapters.append(button);
     });
     nav.prepend(chapters);
+  }
+  function bindSchoolSheet(){
+    const sheet=$('routing-sheet');
+    const trigger=$('open-routing-sheet');
+    function setSheetOpen(open){
+      sheet.hidden=!open;
+      trigger.setAttribute('aria-expanded',String(open));
+    }
+    trigger.addEventListener('click',()=>setSheetOpen(sheet.hidden));
+    trigger.closest('.practice').addEventListener('keydown',event=>{
+      if(event.key!=='Escape'||sheet.hidden)return;
+      event.preventDefault();
+      setSheetOpen(false);
+      trigger.focus({preventScroll:true});
+    });
+  }
+  function renderVlan(field,index=Math.min(vlanPassed(),RZVlanUI.lessons.length-1)){
+    const {lessons:course,panel,bind,schoolLab,bindSchoolLab}=RZVlanUI;
+    const chapter=state.vlan??={passed:[]};
+    const lesson=course[index];
+    const done=field?Boolean(chapter.complete):chapter.passed.includes(index);
+    const net=field?(chapter.field??=RZVlan.fresh()):(chapter.lab??=RZVlan.fresh());
+    const action='<button id="vlan-finish" type="button" class="primary"></button>';
+    const scheme=`<ol class="vlan-floors">${RZVlan.floors.map((name,i)=>`<li><strong>Piano ${i+1} · ${name}</strong><span> VLAN ${RZVlan.vlans[i]}</span></li>`).join('')}</ol>`;
+    const instructions=`<p>Ogni piano ha uno switch collegato alla Centrale. Il piano 1 ospita anche una postazione tecnica su Fa0/2.</p>
+      <p>Usa la VLAN nativa 99 su entrambi i lati di ogni trunk. Ammetti solo le VLAN delle postazioni di quel piano e la VLAN 99.</p>
+      <p>Consenti solo queste richieste tra VLAN: Accoglienza → Servizi al pubblico e Amministrazione → Ufficio tecnico.</p>`;
+    if(field){
+      $('building-content').innerHTML=missionLayout({
+        header:{eyebrow:'GIORNO 04 · VALLE NORD',title:'Palazzo dei servizi',story:vlanMissionMessage[1],reference:'CAPITOLO 03 · VLAN',done},
+        extraClass:'vlan-intervention',
+        hint:'<p>Prima correggi le porte access, poi confronta i due estremi dei trunk. Esegui i ping solo dopo aver applicato il filtro.</p>',
+        sheet:instructions,
+        ticket:`${scheme}<ul class="mission-steps" id="vlan-checks"></ul>`,
+        terminalTitle:'Switch e router del palazzo',
+        fields:panel(net,[0,1,2,3]),terminal:'',footer:'',actions:action
+      });
+      setupMissionHint();
+      $('mission-phone').addEventListener('click',()=>openPhone(vlanMissionMessage, {withHistory:true}));
+    }else{
+      $('building-content').innerHTML=schoolLayout({
+        chapter:3,title:lesson.title,score:`${vlanPassed()} / ${course.length}`,
+        status:done?'SUPERATA ✓':`PROVA ${index+1} / ${course.length}`,
+        question:done?'Prova superata. Puoi consultare la configurazione dal terminale.':lesson.task,practiceContent:schoolLab()+`
+          <footer class="practice-footer">
+            <div id="vlan-progress" class="feedback" role="status"></div>
+            <div class="practice-actions routing-actions"><button type="button" id="vlan-tools" class="secondary">Strumenti</button>${action}</div>
+          </footer>`
+      });
+      const nav=document.querySelector('.course-nav');
+      addSchoolChapterNavigation(nav,3);
+      course.forEach(({title},i)=>{
+        const button=makeButton('',()=>renderVlan(false,i),'course-button'+(i===index?' active':''));
+        const marker=document.createElement('span');
+        marker.textContent=chapter.passed.includes(i)?'✓':String(i+1).padStart(2,'0');
+        const label=document.createElement('span');
+        label.textContent=title;
+        button.append(marker,label);
+        button.disabled=i>vlanPassed();
+        button.classList.toggle('locked',button.disabled);
+        if(i===index)button.setAttribute('aria-current','step');
+        nav.append(button);
+      });
+      $('concept-prev').innerHTML='<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M11.5 4 6.5 9l5 5"/></svg>';
+      $('concept-next').innerHTML='<svg viewBox="0 0 18 18" aria-hidden="true"><path d="m6.5 4 5 5-5 5"/></svg>';
+      bindSchoolSheet();
+      $('vlan-tools').addEventListener('click',()=>openCalculator());
+      const workedExample=document.querySelector('.worked-example');
+      const examples=[
+        ['PORTA ACCESS','SW-2 · Fa0/1','switchport access vlan 20','VLAN assegnata','20 · Amministrazione'],
+        ['TRUNK','SW-2 · Gi0/1','switchport trunk allowed vlan 20,99','VLAN ammesse','20 e 99'],
+        ['SOTTOINTERFACCIA','Router · Gi0/0.30','encapsulation dot1Q 30','Tag 802.1Q','30'],
+        ['FILTRO ICMP','Router · Gi0/0.20','ip access-group REPARTI in','Direzione','In ingresso']
+      ];
+      const [topic,device,example,label,result]=examples[index];
+      workedExample.innerHTML=`<div><span class="eyebrow">ESEMPIO / ${topic}</span><strong>${device}</strong></div><div class="example-result"><span>Comando<strong>${example}</strong></span><span>${label}<strong>${result}</strong></span></div>`;
+      document.querySelector('.elena-tip').innerHTML='<strong>Elena</strong> Usa la scheda tecnica per individuare porte, VLAN e indirizzi. Dal prompt puoi cambiare piano con <code>sw &lt;numero&gt;</code> o scegliere una postazione con <code>pc &lt;numero&gt;</code>.';
+      let concept=0;
+      function showConcept(){
+        const [title,body]=lesson.concepts[concept];
+        $('concept-title').textContent=title;
+        renderConceptBody(body);
+        $('concept-count').textContent=`${concept+1} / ${lesson.concepts.length}`;
+        $('concept-dots').textContent=lesson.concepts.map((_,i)=>i===concept?'●':'○').join(' ');
+        $('concept-prev').disabled=concept===0;
+        $('concept-next').disabled=concept===lesson.concepts.length-1;
+      }
+      $('concept-prev').onclick=()=>{concept--;showConcept();};
+      $('concept-next').onclick=()=>{concept++;showConcept();};
+      showConcept();
+      bindSchoolViews();
+    }
+    const finish=$('vlan-finish');
+    const ready=field?RZVlan.ready:lesson.ready;
+    function refresh(){
+      save();
+      finish.disabled=!done&&!ready(net);
+      if(!field)$('vlan-progress').textContent=done?'Prova completata':finish.disabled?'Passaggio '+(index+1)+' di '+course.length:'Obiettivo raggiunto';
+      if(field){
+        const checks=[
+          [RZVlan.accessReady(net),'Assegna le porte access ai reparti'],
+          [RZVlan.trunksReady(net),'Ripristina i trunk dei quattro piani'],
+          [RZVlan.routingReady(net),'Attiva i quattro gateway'],
+          [RZVlan.policyReady(net),'Applica i permessi tra VLAN'],
+          ...RZVlan.checks.map(([, ,ok,label],i)=>[net.verified.includes(i),`${label} · ${ok?'consentito':'bloccato'}`])
+        ];
+        $('vlan-checks').replaceChildren(...checks.map(([ok,label])=>{
+          const item=document.createElement('li');
+          item.textContent=(ok?'✓ ':'○ ')+label;
+          item.classList.toggle('is-complete',ok);
+          return item;
+        }));
+      }
+    }
+    finish.textContent=field?(done?'Torna in città':'Conferma il collaudo'):index===course.length-1?'Torna in città':'Lezione successiva';
+    finish.addEventListener('click',()=>{
+      if(!done&&!ready(net))return;
+      if(field){
+        chapter.complete=true;
+        save();
+        closeBuilding();
+        renderShell();
+        if(!done)openPhone(vlanDoneMessage, {withHistory:true});
+      }else{
+        if(!done)chapter.passed.push(index);
+        save();
+        renderShell();
+        if(index<course.length-1)renderVlan(false,index+1);
+        else{
+          closeBuilding();
+          if(!done)openPhone(vlanMissionMessage, {withHistory:true});
+        }
+      }
+    });
+    if(field)bind(net,refresh,done);
+    else {
+      finish.classList.add('action-triangle');
+      bindSchoolLab(net,refresh,index,setupCommandHistory($('vlan-command'),[]),done);
+    }
+    refresh();
   }
   const routingLessons=[
     {
@@ -1141,7 +1775,11 @@
           ['ping <IP>','Dal prompt del PC A, usa l’indirizzo del PC B.']
         ],'Il PC A invia una richiesta al PC B. Se riceve una risposta, i pacchetti hanno percorso sia la strada di andata sia quella di ritorno.']
       ],
-      example:['ROTTA STATICA','192.168.80.0/24','ip route 192.168.80.0 255.255.255.0 10.0.0.2','Prossimo router','10.0.0.2'],
+      examples:[
+        ['NOME DEL ROUTER','Router A','hostname Galilei','Nuovo prompt','Galilei(config)#'],
+        ['ROTTA STATICA','192.168.80.0/24','ip route 192.168.80.0 255.255.255.0 10.0.0.2','Prossimo router','10.0.0.2'],
+        ['VERIFICA CON PING','Dal PC A','ping 192.168.60.10','Risposta attesa','Reply from 192.168.60.10']
+      ],
       tip:'Apri la scheda tecnica per trovare le reti e gli indirizzi.'
     },
     {
@@ -1157,8 +1795,12 @@
           ['no ip route <rete> <maschera> <prossimo router>','Rimuove la rotta corrispondente ai valori che hai letto nella tabella.']
         ],'In Configurazione globale · Router(config)#, rimuovi la rotta errata e aggiungi quella corretta come nella prima lezione. Poi ripeti la traccia dal PC A per verificare che la risposta torni.']
       ],
-      example:['RIMOZIONE DI UNA ROTTA','192.168.80.0/24','no ip route 192.168.80.0 255.255.255.0 10.0.0.2','Prossimo router','10.0.0.2'],
-      tip:'La rete è già configurata. Prima di modificarla, osserva il percorso e confronta la tabella delle rotte con la scheda tecnica.'
+      examples:[
+        ['TRACCIA DEL PERCORSO','Dal prompt del PC','tracert 192.168.80.10','Destinazione','192.168.80.10'],
+        ['TABELLA DI INSTRADAMENTO','Router#','show ip route','Esempio di rotta statica','S 192.168.80.0/24 via 10.0.0.2'],
+        ['RIMOZIONE DI UNA ROTTA','192.168.80.0/24','no ip route 192.168.80.0 255.255.255.0 10.0.0.2','Prossimo router','10.0.0.2']
+      ],
+      tip:'Prima di intervenire, osserva la traccia e confronta le rotte con la scheda tecnica.'
     },
     {
       title:'Routing dinamico con RIP',
@@ -1176,7 +1818,11 @@
           ['ping <IP>','Dal PC A verifica che il PC B risponda.']
         ],'Le rotte appaiono quando i router lungo il percorso partecipano a RIP.']
       ],
-      example:['RETE DIRETTAMENTE COLLEGATA','RIPv2','network 10.0.0.0','Sottorete dell’interfaccia','10.30.0.0/30'],
+      examples:[
+        ['ATTIVAZIONE RIPv2','Router A','RouterA(config)# router rip<br>RouterA(config-router)# version 2<br>RouterA(config-router)# no auto-summary','Risultato','RIPv2 senza riepilogo automatico'],
+        ['RETE DIRETTAMENTE COLLEGATA','RIPv2','network 10.0.0.0','Sottorete dell’interfaccia','10.30.0.0/30'],
+        ['ROTTA APPRESA CON RIP','Router A','RouterA# show ip route','Rotta verso la rete del PC B','R 192.168.60.0/24 [120/2] via 10.30.0.2']
+      ],
       tip:'Apri la scheda tecnica del router selezionato per trovare le reti da dichiarare con network.'
     }
   ];
@@ -1201,7 +1847,7 @@
       if(index===lessonIndex)button.setAttribute('aria-current','step');
       nav.append(button);
     });
-    const {concepts,example,tip}=routingLessons[lessonIndex];
+    const {concepts,examples,tip}=routingLessons[lessonIndex];
     let index=0;
     function renderConcept(){
       const [title,body,intro]=concepts[index];
@@ -1212,10 +1858,7 @@
       $('concept-prev').disabled=index===0;
       $('concept-next').disabled=index===concepts.length-1;
       const workedExample=document.querySelector('.worked-example');
-      const exampleIndex=lessonIndex===1?2:1;
-      const currentExample=lessonIndex===0&&index===0
-        ?['NOME DEL ROUTER','Router A','hostname Galilei','Nuovo prompt','Galilei(config)#']
-        :index===exampleIndex?example:null;
+      const currentExample=examples[index];
       workedExample.hidden=!currentExample;
       workedExample.innerHTML=currentExample?`
         <div><span class="eyebrow">ESEMPIO / ${currentExample[0]}</span><strong>${currentExample[1]}</strong></div>
@@ -1308,18 +1951,18 @@
     const routingPath=`<div class="routing-path${municipal?' municipal-lan-path':''}">
             <h3>Percorso del pacchetto</h3>
             <ol id="routing-nodes"></ol>
-            ${isLab?'<p id="routing-status" role="status">Avvia una traccia per vedere quali router attraversa il pacchetto.</p>':''}
+            ${isLab?'<p id="routing-status" class="visually-hidden" role="status"></p>':''}
           </div>`;
-    const routingConsole=`${isLab?'<div class="routing-console training-terminal">':'<details class="mission-cli" open><summary id="routing-console-summary">Usa il prompt</summary>'}
+    const routingConsole=`${isLab?'<div class="routing-console training-terminal">':'<div class="field-console"><div id="routing-local-devices" class="field-console-devices" role="group" aria-label="Dispositivi della sede"></div><div class="mission-cli">'}
             <div id="routing-output" class="${isLab?'terminal-screen':'mission-terminal-output'}" aria-live="polite" tabindex="0"></div>
             <form id="routing-form"${isLab?'':' class="mission-terminal-form"'}>
               <label${isLab?' class="terminal-prompt"':''}><span id="routing-prompt" aria-hidden="true"></span><input aria-label="Comando" autocomplete="off" spellcheck="false" placeholder="Digita un comando"></label>
               ${isLab?'':'<button type="submit">Esegui</button>'}
             </form>
-          ${isLab?'</div>':'</details>'}`;
+          ${isLab?'</div>':'</div></div>'}`;
     const routingButtons=`
             <button id="routing-tools" type="button" class="secondary">Strumenti</button>
-            <button id="routing-finish" type="button" class="primary" disabled>${isLab?(rip?'Concludi l’aggiornamento':diagnosis?'Vai alla lezione RIP':'Vai alla diagnosi'):'Conferma il ripristino'} <span aria-hidden="true">▸</span></button>
+            <button id="routing-finish" type="button" class="primary" disabled>${isLab?'Verifica':'Conferma il ripristino'} <span aria-hidden="true">▸</span></button>
           `;
     const routingHint=staticField
       ? `<p>Configura solo il router di questa sede. Usa gli indirizzi della scheda tecnica e controlla la tabella con <code>show ip route</code>.</p><p>Per intervenire in un’altra sede, torna in città e aprila dalla mappa.</p>`
@@ -1353,19 +1996,7 @@
         </footer>`
       });
       setupRoutingLesson(lessonIndex,chapter);
-      const sheet=$('routing-sheet');
-      const trigger=$('open-routing-sheet');
-      function setSheetOpen(open){
-        sheet.hidden=!open;
-        trigger.setAttribute('aria-expanded',String(open));
-      }
-      trigger.addEventListener('click',()=>setSheetOpen(sheet.hidden));
-      trigger.closest('.practice').addEventListener('keydown',event=>{
-        if(event.key!=='Escape'||sheet.hidden)return;
-        event.preventDefault();
-        setSheetOpen(false);
-        trigger.focus({preventScroll:true});
-      });
+      bindSchoolSheet();
     }else{
       $('building-content').innerHTML=missionLayout({
         header:{
@@ -1384,7 +2015,6 @@
           <ul class="mission-steps" id="routing-checklist" role="list" aria-label="Passaggi di questa sede">${fieldSteps.map(([label])=>`<li><span class="mission-step-status" role="img"></span><span>${label}</span></li>`).join('')}</ul>`,
         terminalTitle:'Terminale',
         fields:'<div id="routing-device-addresses" class="fields"></div>',
-        picker:'<div id="routing-local-devices" class="routing-local-devices" role="group" aria-label="Dispositivi della sede"></div>',
         terminal:routingConsole,
         footer:'<div id="routing-status" role="status" class="feedback">Avvia una traccia per vedere quali router attraversa il pacchetto.</div>',
         actions:routingButtons
@@ -1396,6 +2026,7 @@
     const output=$('routing-output'),path=$('routing-nodes'),status=$('routing-status'),finish=$('routing-finish');
     const question=isLab?$('practice-question'):null;
     const progress=$('routing-progress');
+    let connectionChecked=false;
     function updateFieldChecklist(){
       if(isLab)return;
       Array.from($('routing-checklist').children).forEach((item,index)=>{
@@ -1409,9 +2040,9 @@
     question?.setAttribute('aria-live','polite');
     function updateRoutingInstruction(){
       if(!question)return;
-      if(done()||!finish.disabled){
+      if(done()){
         progress.textContent='Prova completata';
-        question.textContent=rip?'Collegamento verificato con RIP.':diagnosis?'Guasto risolto. Puoi passare alla lezione RIP.':'Collegamento verificato. Puoi passare alla diagnosi.';
+        question.textContent=rip?'Collegamento verificato con RIP. Puoi tornare alla mappa.':diagnosis?'Guasto risolto. Puoi passare alla lezione RIP.':'Collegamento verificato. Puoi passare alla diagnosi.';
         return;
       }
       const reaches=(from,to)=>trace(topology,routers,from,topology.hosts[to],true).forward.ok;
@@ -1421,8 +2052,8 @@
         [false,'Dal PC A, verifica il collegamento con un ping verso il PC B.']
       ]:diagnosis?[
         [diagnosisProgress.traced,'Dal PC A, traccia il percorso verso il PC B e individua l’interruzione.'],
-        [diagnosisProgress.inspected,'Consulta la tabella di instradamento del router indicato dalla traccia.'],
-        [!hasWrongRoute(),'Rimuovi la rotta errata in configurazione globale.'],
+        [diagnosisProgress.inspected,'Consulta la tabella di instradamento del Router B.'],
+        [!hasWrongRoute(),'Il PC A appartiene alla rete 192.168.50.0/24. Sul Router B, rimuovi in configurazione globale la rotta statica 192.168.50.128/25: il suo intervallo esclude il PC A.'],
         [reaches(last,0),'Aggiungi la rotta di ritorno verso la rete del PC A.'],
         [false,'Dal PC A, ripeti la traccia verso il PC B per verificare il ripristino.']
       ]:[
@@ -1431,6 +2062,11 @@
         [reaches(last,0),'Configura sul Router B la rotta di ritorno verso la rete del PC A.'],
         [false,'Dal PC A, verifica il collegamento con un ping verso il PC B.']
       ];
+      if(connectionChecked){
+        question.textContent='Collegamento riuscito. Premi «Verifica» per completare la prova.';
+        progress.textContent='Collegamento riuscito';
+        return;
+      }
       const current=steps.findIndex(([complete])=>!complete);
       question.textContent=steps[current][1];
       progress.textContent=`Passaggio ${current+1} di ${steps.length}`;
@@ -1447,9 +2083,9 @@
       }));
       output.scrollTop=output.scrollHeight;
     }
-    function print(line,isCommand=false){
-      logs.set(selected,[...entries(),{line,isCommand}].slice(-70));
-      renderOutput();
+    function print(line,isCommand=false,device=selected){
+      logs.set(device,[...(logs.get(device)??[]),{line,isCommand}].slice(-70));
+      if(device===selected)renderOutput();
     }
     const labNodes=new Map();
     const localNodes=new Map();
@@ -1485,7 +2121,6 @@
     }
     function openLocalTerminal(choice){
       selectDevice(choice);
-      input.closest('details').open=true;
       input.focus({preventScroll:true});
     }
     const deviceLabel=choice=>{
@@ -1630,8 +2265,6 @@
       if(isLab)$('routing-sheet-device').textContent=deviceLabel(selected);
       else {
         $('mission-terminal-title').textContent='Terminale / '+localLabel(selected);
-        $('routing-console-summary').textContent=pc?'Usa il prompt del '+localLabel(selected)
-          :'Usa il prompt di '+localLabel(selected);
         const deviceAddresses=$('routing-device-addresses');
         deviceAddresses.replaceChildren(...data.splice(0,deviceDataLength).map(([label,value,portName])=>{
           const field=document.createElement('label');
@@ -1691,54 +2324,25 @@
     const activeHistory=[];
     const remember=setupCommandHistory(input,activeHistory);
     function selectDevice(choice){
-      if(input.readOnly||choice===selected)return;
+      if(choice===selected)return;
       selected=choice;
       activeHistory.splice(0,activeHistory.length,...(histories.get(selected)??[]));
       input.value='';
       renderDevice();
     }
     async function runTrace(destination, ping=false){
-      const {index,pc}=selected;
+      const source=selected;
+      const {index,pc}=source;
       if(!topology.hosts.includes(destination)&&!municipalPCs.some(choice=>choice.host===destination)){
         print('% Indica l’indirizzo di uno dei PC riportati nella scheda tecnica.');
         return;
       }
       const result=trace(topology,routers,index,destination,pc,pcHost(selected));
       if(ping){
-        const sent=4;
-        const received=result.ok?sent:0;
-        const lost=sent-received;
         const ttl=result.ok?128-result.reply.hops.length-Number(pcHost(selected)!==destination):null;
-        const times=[12,39,48,40];
-        const buttons=[...labNodes.values()].map(({button})=>button);
-        for(const {item} of localNodes.values())if(item.tagName==='BUTTON')buttons.push(item);
-        for(const selector of localSelectors.values())if(selector.tagName==='BUTTON')buttons.push(selector);
-        input.readOnly=true;
-        buttons.forEach(button=>button.disabled=true);
         status.textContent='Ping in corso…';
-        print(`Pinging ${destination} with 32 bytes of data:\n`);
-        try{
-          for(let attempt=0;attempt<sent;attempt++){
-            await new Promise(resolve=>setTimeout(resolve,result.ok?(attempt===0?250:650):1000));
-            if(!input.isConnected||!$('building-dialog').open)return;
-            print(result.ok
-              ?`Reply from ${destination}: bytes=32 time=${times[attempt]}ms TTL=${ttl}`
-              :'Request timed out.');
-          }
-          const lines=[
-            `\nPing statistics for ${destination}:`,
-            `    Packets: Sent = ${sent}, Received = ${received}, Lost = ${lost} (${lost/sent*100}% loss),`
-          ];
-          if(result.ok){
-            const average=Math.floor(times.reduce((sum,time)=>sum+time,0)/received);
-            lines.push('Approximate round trip times in milli-seconds:',
-              `    Minimum = ${Math.min(...times)}ms, Maximum = ${Math.max(...times)}ms, Average = ${average}ms`);
-          }
-          print(lines.join('\n'));
-        }finally{
-          input.readOnly=false;
-          buttons.forEach(button=>button.disabled=false);
-        }
+        await runPcPing(destination,ttl,input,line=>print(line,false,source));
+        if(!input.isConnected||!$('building-dialog').open)return;
       }else if(pc){
         const lines=['',`Tracing route to ${destination} over a maximum of 30 hops:`,''];
         const hops=[...result.hops];
@@ -1764,9 +2368,9 @@
         ?`${result.forward.loop?'Ciclo di instradamento':'Andata interrotta'} · ${topology.labels[stop]}.`
         :returnStop!==undefined?`Andata riuscita. Ritorno interrotto · ${topology.labels[returnStop]}.`:'La destinazione non ha risposto.';
       if(municipal){
-        if(!pc||!ping||topology.hosts[selected.target]!==destination)return;
-        if(result.ok&&ripConfigured(last))verifiedMunicipalTargets.add(selected.target);
-        else verifiedMunicipalTargets.delete(selected.target);
+        if(!pc||!ping||topology.hosts[source.target]!==destination)return;
+        if(result.ok&&ripConfigured(last))verifiedMunicipalTargets.add(source.target);
+        else verifiedMunicipalTargets.delete(source.target);
         updateFieldChecklist();
         if(!done()&&result.ok)status.textContent=`Collegamenti verificati: ${verifiedMunicipalTargets.size} di ${municipalPCs.length}.`;
         return;
@@ -1787,7 +2391,7 @@
         save();
       }
       if(!isLab||ping!==diagnosis){
-        finish.disabled=!done()&&!(result.ok&&ready());
+        connectionChecked=result.ok&&ready();
         if(result.ok&&!done()&&!ready()){
           status.textContent=rip?'Verifica la configurazione RIP e consulta la tabella del Router A, poi ripeti il ping.':diagnosis
             ?'Controlla la tabella dopo la traccia del guasto e rimuovi la rotta errata.'
@@ -1871,7 +2475,7 @@
       else if(command==='hostname'&&mode==='global'&&/^[a-z][a-z0-9-]{0,31}$/i.test(args)){
         routers[index].name=raw.split(/\s+/)[1];
         renderDevice();
-        if(isLab&&!diagnosis&&index===0&&!done())finish.disabled=true;
+        if(isLab&&!diagnosis&&index===0&&!done())connectionChecked=false;
         save();
       }else if(!rip&&mode==='global'&&((command==='ip'&&parts[0]==='route')||(command==='no'&&parts[0]==='ip'&&parts[1]==='route'))){
         const error=diagnosis&&!done()&&!diagnosisProgress.inspected
@@ -1883,7 +2487,7 @@
       if(changed){
         if(staticField){delete fieldChecks[0];delete fieldChecks[last];}
         save();
-        finish.disabled=!done();
+        connectionChecked=false;
         updateFieldChecklist();
         renderPath();
         status.textContent=municipal
@@ -1897,11 +2501,33 @@
     });
     $('routing-tools').addEventListener('click',()=>openCalculator());
     finish.addEventListener('click',()=>{
-      if(isLab&&!rip){
-        if(!done()&&(!ready()||!trace(topology,routers,0,topology.hosts[last],true).ok))return;
-        chapter[diagnosis?'diagnosisComplete':'labConfigured']=true;
+      if(isLab&&!done()){
+        if(input.readOnly)return;
+        if(!connectionChecked||!ready()||!trace(topology,routers,0,topology.hosts[last],true).ok){
+          progress.textContent=diagnosis
+            ?'Completa i passaggi e verifica il percorso dal PC A con tracert.'
+            :'Completa i passaggi ed esegui un ping riuscito dal PC A verso il PC B.';
+          return;
+        }
+        if(rip){chapter.ripComplete=true;chapter.trained=true;}
+        else chapter[diagnosis?'diagnosisComplete':'labConfigured']=true;
         save();
         renderShell();
+        const currentLesson=document.querySelector('.course-button[aria-current="step"]');
+        currentLesson.firstChild.textContent='✓';
+        const nextLesson=currentLesson.nextElementSibling;
+        if(nextLesson?.classList.contains('course-button')){
+          nextLesson.disabled=false;
+          nextLesson.classList.remove('locked');
+        }
+        document.querySelector('.school-seal strong').textContent=`${routingLessonResults(chapter).filter(Boolean).length} / ${routingLessons.length}`;
+        document.querySelector('.practice-status').textContent='SUPERATA ✓';
+        finish.firstChild.nodeValue=rip?'Vai alla mappa ':'Continua ';
+        updateRoutingInstruction();
+        if(rip)scheduleSchoolMessage(chapter,0);
+        return;
+      }
+      if(isLab&&!rip){
         renderRouting(true,0,lessonIndex+1);
         document.querySelector('.course-button[aria-current]').focus();
         return;
@@ -1909,11 +2535,16 @@
       if(done()){
         closeBuilding();
         if(isLab&&rip&&!chapter.complete){
-          window.setTimeout(()=>{
-            if(state.routing===chapter&&!chapter.complete&&!document.querySelector('dialog[open]')){
-              openPhone();
+          const showRequest=()=>{
+            if(state.routing!==chapter||chapter.complete)return;
+            const phone=$('phone-dialog');
+            if(phone.open){
+              phone.addEventListener('close',showRequest,{once:true});
+              return;
             }
-          },2000);
+            if(!document.querySelector('dialog[open]'))openPhone(routingRequest,{withHistory:true});
+          };
+          window.setTimeout(showRequest,2000);
         }
         return;
       }
@@ -1921,32 +2552,21 @@
         if(!ripConfigured(last)||!municipalPCs.every(({host,target})=>verifiedMunicipalTargets.has(target)
           &&trace(topology,routers,last,topology.hosts[target],true,host).ok))return;
         chapter.municipalComplete=true;
+        chapter.municipalMedalPending=true;
+        state.vlanMorningPending=true;
       }else if(staticField){
         if(!fieldReady())return;
         chapter.complete=true;
-      }else{
-        if(!ready()||!trace(topology,routers,0,topology.hosts[last],true).ok)return;
-        if(rip){chapter.ripComplete=true;chapter.trained=true;}
+        chapter.municipalDispatchPending=true;
       }
       save();
       renderShell();
-      if(isLab){
-        document.querySelector('.school-seal strong').textContent=`${routingLessons.length} / ${routingLessons.length}`;
-        document.querySelector('.practice-status').textContent='SUPERATA ✓';
-        document.querySelector('.course-button[aria-current]').firstChild.textContent='✓';
-        finish.firstChild.nodeValue='Vai alla mappa ';
-        updateRoutingInstruction();
-        scheduleSchoolMessage(finish,schoolUpdateComplete);
-        return;
-      }
       closeBuilding();
-      if(municipal)$('phone-dialog').addEventListener('close',()=>celebrateMedal('specialista'),{once:true});
-      openPhone();
+      if(municipal)showMunicipalCompletion();
+      else showRoutingCompletion(chapter);
     });
-    if(done()){
-      finish.disabled=false;
-      if(!isLab||rip)finish.firstChild.nodeValue='Vai alla mappa ';
-    }
+    finish.disabled=!isLab&&!done();
+    if(done())finish.firstChild.nodeValue=isLab&&!rip?'Continua ':'Vai alla mappa ';
     renderPath();
     renderDevice();
     updateRoutingInstruction();
@@ -2085,9 +2705,10 @@
     const chapter=new FormData(restartForm).get('chapter');
     if((chapter!=='1'&&chapter!=='2')||!canRestartChapter(chapter))return;
     state.highestChapter=highestChapter();
-    for(const timer of [dispatchTimer,fieldTimer,nextDayTimer])window.clearTimeout(timer);
-    dispatchTimer=fieldTimer=nextDayTimer=undefined;
-    phoneHasFinalReport=false;
+    for(const timer of [dispatchTimer,fieldTimer,nextDayTimer,vlanMorningTimer])window.clearTimeout(timer);
+    dispatchTimer=fieldTimer=nextDayTimer=vlanMorningTimer=undefined;
+    phoneHasFinalReport=phoneHasGraduation=false;
+    delete state.graduationPending;
     deliveredMessages.clear();
     if(chapter==='2'){
       if(!districtRestored()){
@@ -2100,6 +2721,8 @@
         state.avatar||='uomo';
       }
       delete state.routing;
+      delete state.vlan;
+      delete state.vlanMorningPending;
       state.nextDayStage=1;
     }else{
       const {avatar,badgeName,badgeAge,highestChapter}=state;
@@ -2116,10 +2739,31 @@
     button.textContent=collapsed?'+':'−';button.setAttribute('aria-expanded',String(!collapsed));button.setAttribute('aria-label',collapsed?'Espandi istruzioni':'Riduci istruzioni');
   });
   renderShell();
-  scheduleDispatch();
+  if(previewSchoolEnding){
+    openBuilding('school');
+    activeLesson=lessons.length-1;
+    renderSchool();
+    celebrateSchoolCompletion();
+  }else if(previewRoutingEnding){
+    openBuilding('hospital');
+  }else if(previewVlsmEnding){
+    openBuilding('rescue',false,3);
+  }else scheduleDispatch();
   scheduleFieldDispatch();
   scheduleNextDay();
+  if(municipalMedalPending())showMunicipalCompletion();
+  else if(municipalDispatchPending())showRoutingCompletion(state.routing);
+  else if(resumeDayThree&&!resumeAfterSchool)openPhone();
   scheduleWelcomeMessage();
+  scheduleVlanMorning();
+  if(replayMunicipio&&nextDayStarted()&&state.routing?.ripComplete&&state.routing.complete)openBuilding('townhall');
+  if(location.hash==='#fine-aggiornamento'){
+    history.replaceState(null,'',location.href.split('#')[0]);
+    if(nextDayStarted()&&state.routing?.ripComplete){
+      openBuilding('school');
+      scheduleSchoolMessage(state.routing);
+    }
+  }
   if(location.protocol==='file:'){document.querySelector('[data-games-home]').href=new URL('../index.html',location.href).href;}else{
     const hub=new URL('../index.html',location.href);fetch(hub,{cache:'no-store'}).then(response=>response.ok?response.text():'').then(html=>{if(html.includes('<meta name="games-hub" content="informatica-in-gioco">'))document.querySelector('[data-games-home]').href=hub.href;}).catch(()=>{});
   }
