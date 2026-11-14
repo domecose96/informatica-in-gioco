@@ -61,10 +61,10 @@
     names:[...district.names,'Municipio'],
     lans:[...district.lans,'192.168.30.0'],
     hosts:[...district.hosts,'192.168.30.10'],
-    gateways:[...district.gateways,'192.168.30.62'],
-    prefixes:[...district.prefixes,26],
+    gateways:[...district.gateways,'192.168.30.126'],
+    prefixes:[...district.prefixes,25],
     branches:[{from:1,to:3,addresses:['10.30.1.9','10.30.1.10']}],
-    additionalLans:[{router:3,host:'192.168.30.74',gateway:'192.168.30.126',prefix:26}]
+    additionalLans:[{router:3,host:'192.168.30.138',gateway:'192.168.30.254',prefix:25}]
   };
   function interfaces(topology,index){
     const result=[];

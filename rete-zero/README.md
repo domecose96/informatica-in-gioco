@@ -1,12 +1,12 @@
 # Rete Zero — La città isolata
 
-Gioco locale di Sistemi e reti: una città 3D da esplorare, una scuola e tre interventi negli edifici del primo distretto.
+Gioco locale di Sistemi e reti: una città 3D da esplorare, una scuola e quattro interventi negli edifici del primo distretto.
 
 ## Percorso
 
-1. Entra nell’Istituto Galilei. Studia e supera sette moduli su IPv4, maschere, subnetting, rete/broadcast/host, default gateway, CLI host e CLI router.
+1. Entra nell’Istituto Galilei. Studia e supera otto moduli su IPv4, maschere, FLSM, rete/broadcast/host, VLSM, default gateway, CLI host e CLI router.
 2. Ottieni il tesserino da tecnico. Le risposte corrette assegnano 25 XP per prova, una sola volta.
-3. Raggiungi ospedale, protezione civile e municipio in sequenza. Configura i dispositivi dal terminale e controlla i risultati prima di confermare il ripristino. Ogni intervento assegna 100 XP una sola volta.
+3. Raggiungi ospedale, protezione civile e Municipio in sequenza, poi torna alla Protezione civile per il piano VLSM. Configura i dispositivi dal terminale e controlla i risultati prima di confermare il ripristino. Ogni intervento assegna 100 XP una sola volta.
 4. La centrale mostra tesserino, avanzamento e prossimo incarico. Strumenti apre il banco IPv4 e il manuale dei comandi CLI dalla città e durante gli interventi.
 
 I progressi restano nel browser. I progressi del precedente prototipo vengono conservati, se presenti. Ricomincia azzera solo questo gioco. Elena cambia messaggio con le prove completate e con ciascun intervento. Il primo distretto si conclude con tre sedi riconnesse; non sono ancora presenti altri distretti giocabili.

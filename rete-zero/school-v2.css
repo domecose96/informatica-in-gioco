@@ -654,6 +654,71 @@
   flex-direction: column;
 }
 
+@media (min-width: 901px) and (min-height: 591px) {
+  .school-screen .fields.vlsm-practice-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .vlsm-practice-fields .field-group {
+    grid-column: 1 / -1;
+  }
+}
+
+.school-screen .vlsm-practice-fields {
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+@media (min-width: 901px) and (min-height: 591px) and (max-height: 650px) {
+  .school-screen .practice:has(.vlsm-practice-fields) h3 { margin-block: 10px; }
+  .school-screen .fields.vlsm-practice-fields {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .vlsm-practice-fields > label { grid-column: span 2; }
+  .vlsm-practice-fields .field-group {
+    grid-column: span 3;
+    gap: 4px;
+  }
+
+  .vlsm-practice-fields .choice-option { padding-inline: 3px; }
+  .vlsm-practice-fields .choice-option,
+  .school-screen .vlsm-practice-fields input {
+    min-height: 32px;
+    padding-block: 5px;
+  }
+}
+
+@media (max-width: 900px), (max-height: 590px) {
+  .school-workspace[data-school-chapter="1"] .course-nav { max-height: 30dvh; }
+
+  .school-workspace[data-school-chapter="1"] #practice-fields:not(.training-terminal) {
+    min-height: 0;
+    overflow: auto;
+    scrollbar-width: thin;
+  }
+
+  #building-dialog.school-screen[open]:has(.school-workspace[data-school-chapter="1"]) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .school-screen #building-content:has(.school-workspace[data-school-chapter="1"]) {
+    display: flex;
+    flex: 1;
+    height: auto;
+  }
+
+  .school-workspace[data-school-chapter="1"] {
+    flex: 1;
+    min-width: 0;
+    height: auto;
+  }
+}
+
 .school-screen .practice-footer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -846,15 +911,6 @@
   border: 1px solid #3f6257;
   border-radius: 5px;
   background: #0a191e;
-}
-
-.mission-cli summary {
-  padding: 11px 13px;
-  color: #b7d9c4;
-  cursor: pointer;
-  font: 10px ui-monospace, SFMono-Regular, Consolas, monospace;
-  text-transform: uppercase;
-  letter-spacing: .04em;
 }
 
 .mission-terminal-output {
@@ -1123,6 +1179,17 @@
   gap: 12px;
 }
 .badge-next h3, .badge-next p { margin: 5px 0 0; }
+.badge-next-actions {
+  position: relative;
+}
+.badge-next-actions > small {
+  position: absolute;
+  inset: calc(100% + 3px) 0 auto;
+  font-size: 11px;
+  line-height: 12px;
+  text-align: center;
+}
+
 @media (max-width: 760px) {
   .badge-layout { grid-template-columns: minmax(0, 1fr); }
 }
@@ -1398,31 +1465,12 @@
     grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
     flex-grow: 1;
   }
-  .mission-screen .mission-field-column,
-  .mission-screen .mission-field-column > #mission-form {
-    display: grid;
+  .mission-screen .mission-workspace.with-prompt > .field-console {
     align-self: stretch;
-  }
-  .mission-screen .mission-workspace.with-prompt .fields {
-    align-content: space-between;
   }
   .mission-screen .mission-workspace.with-prompt .fields > label {
     line-height: var(--label-line-height);
     gap: var(--label-gap);
-  }
-  .mission-screen .mission-workspace.with-prompt .mission-cli {
-    margin-top: calc(var(--label-line-height) + var(--label-gap));
-  }
-  .mission-screen .mission-workspace.with-prompt .mission-cli[open] {
-    align-self: stretch;
-    display: flex;
-    flex-direction: column;
-  }
-  .mission-screen .mission-workspace.with-prompt .mission-cli[open]::details-content {
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    flex: 1;
-    min-height: 0;
   }
   .mission-screen .mission-workspace.with-prompt .mission-terminal-output {
     height: auto;
@@ -1557,6 +1605,10 @@
   overflow: auto;
   border-left-color: var(--mint);
 }
+#mission-sheet-content:has(.mission-evidence-note) {
+  max-height: none;
+  overflow: visible;
+}
 #mission-sheet-content .evidence { margin: 0; }
 #routing-sheet {
   right: auto;
@@ -1614,6 +1666,10 @@
   border: 0;
   background: transparent url("assets/telefono.png") center / 100% 100% no-repeat;
   box-shadow: none;
+}
+body:has(#map-stage:not(.night)) #phone-dialog::backdrop {
+  background: #08171e55;
+  backdrop-filter: blur(3px);
 }
 .phone-screen {
   position: absolute;
@@ -1676,9 +1732,6 @@
   line-height: 1.5;
 }
 
-#map-stage.night #city-canvas {
-  filter: brightness(.52) saturate(.72) contrast(1.08);
-}
 #map-stage.storm::after {
   content: "";
   position: absolute;
@@ -1698,3 +1751,22 @@
 .radio-title #phone-open:not([hidden]) { display: grid; place-items: center; }
 .radio-title #phone-open:hover { background: #254840; }
 .radio-title #phone-open svg { width: 16px; height: 16px; }
+
+.vlan-config {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.vlan-config details, .vlan-config fieldset {
+  border: 1px solid #41645a;
+  border-radius: 6px;
+  padding: 10px;
+}
+.vlan-config summary { cursor: pointer; font-weight: 700; }
+.vlan-config label { display: block; margin: 6px 0; }
+.vlan-config .secondary { margin-top: 6px; }
+.vlan-config .feedback { white-space: pre-wrap; }
+.vlan-tags { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.vlan-floors { padding-inline-start: 20px; }
+.vlan-floors li { padding-block: 5px; }
+.vlan-intervention .mission-workspace.with-prompt { display: block; }

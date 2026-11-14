@@ -431,9 +431,10 @@ html,body{height:100%;min-height:0;overflow:hidden}.icon-definitions{position:ab
   display: grid;
   grid-template-columns: minmax(200px, .8fr) minmax(0, 2fr);
 }
+.mission-evidence-note { margin: 6px 0 0; color: #adc2b6; font-size: 11px; }
 .routing-intervention #routing-addresses { margin: 12px 0; }
-.routing-intervention #routing-addresses dt { margin-top: 7px; color: #adc2b6; font-size: 12px; }
-.routing-intervention #routing-addresses dd { margin: 2px 0 0; padding-bottom: 7px; border-bottom: 1px solid var(--line); color: var(--mint); font: 12px ui-monospace, monospace; }
+.routing-intervention :is(#routing-addresses, #mission-evidence) dt { margin-top: 7px; color: #adc2b6; font-size: 12px; }
+.routing-intervention :is(#routing-addresses, #mission-evidence) dd { margin: 2px 0 0; padding-bottom: 7px; border-bottom: 1px solid var(--line); color: var(--mint); font: 12px ui-monospace, monospace; }
 .routing-intervention .routing-path { margin: 12px 0; padding: 0; border: 0; background: transparent; }
 .routing-intervention .routing-path h3 { margin: 0 0 8px; font-size: 14px; }
 .routing-intervention .routing-path .routing-node {
@@ -473,20 +474,12 @@ button[aria-pressed="true"] .routing-router-ports { display: block; }
 .routing-path li:has(button[aria-pressed="true"] .routing-router-ports) img {
   max-width: max(24px, calc(100% - 76px));
 }
-.routing-intervention .visited .routing-node,
 .routing-intervention .routing-node[aria-pressed="true"] { border-color: var(--mint); }
-.routing-intervention .interrupted .routing-node { border-color: var(--amber); }
 .routing-intervention .mission-terminal-output { overflow-wrap: anywhere; }
-.routing-local-devices { display: flex; flex-wrap: wrap; gap: .25rem .75rem; color: #aac1b7; font-size: 11px; line-height: 1.4; }
-@media (min-width: 1000px) {
-  .routing-local-devices { grid-area: 1 / 2; align-self: start; z-index: 1; justify-self: start; }
-  .routing-local-devices + .mission-cli { grid-area: 1 / 2; }
-}
-@media (max-width: 999px) {
-  .routing-local-devices { grid-area: 2 / 1; align-self: start; justify-self: end; margin: 10px 10px 0 0; z-index: 1; }
-  .routing-local-devices + .mission-cli { grid-area: 2 / 1; }
-  .routing-local-devices + .mission-cli > summary { padding-inline-end: min(40%, 11rem); }
-}
+.field-console { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; gap: .375rem; }
+.field-console-devices { display: flex; flex-wrap: wrap; gap: .25rem .75rem; font-size: 11px; line-height: 1rem; }
+.mission-screen .mission-workspace.with-prompt .field-console .mission-cli { display: grid; grid-template-rows: minmax(145px, 1fr) auto; margin-top: 0; }
+.field-console .mission-terminal-output { border-top: 0; }
 .routing-device-link { padding: 0; border: 0; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
 .routing-device-link:hover, .routing-device-link[aria-pressed="true"] { color: var(--mint); text-decoration: underline; text-underline-offset: .2em; }
 .routing-intervention #routing-device {
@@ -507,8 +500,8 @@ button[aria-pressed="true"] .routing-router-ports { display: block; }
   padding: 5px; border: 1px solid var(--line); background: #0e2228; color: var(--ink);
   font-size: 12px; text-align: center;
 }
-.routing-path li.visited > * { border-color: var(--mint); background: #23453e; }
-.routing-path li.interrupted > * { border-color: var(--amber); color: var(--amber); }
+.routing-path li.visited > * { color: var(--mint); }
+.routing-path li.interrupted > * { color: var(--amber); }
 .municipal-lan-path ol {
   position: relative;
   display: grid;
@@ -564,6 +557,31 @@ button[aria-pressed="true"] .routing-router-ports { display: block; }
 }
 .municipal-routing-path li:nth-child(2).visited ~ li:last-child.visited::before { border-left: 2px solid var(--mint); }
 .municipal-routing-path li > button[aria-pressed="true"] { border-color: var(--mint); box-shadow: 0 0 8px #a2d9bd50; }
+.field-local-path { --routing-link-y: 34px; }
+.field-local-path .routing-router-ports { display: block; }
+.field-local-path .routing-router-ports > :only-child { right: auto; }
+.field-local-path .routing-router-ports > .field-uplink { left: auto; right: 4px; }
+.field-local-path li.field-radio-link::before { content: none; }
+.field-local-path .field-radio-symbol {
+  position: absolute;
+  inset: var(--routing-link-y) 100% auto auto;
+  transform: translateY(-50%);
+  width: 18px;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mint);
+  font: 10px/1 monospace;
+}
+.routing-intervention .field-local-path li:has(.routing-router-ports) img {
+  max-width: max(22px, calc(100% - 80px));
+}
+/* Leave room around the router icon while keeping the port labels in place. */
+.field-local-path :is(button.field-local-router[aria-pressed="true"], span.field-local-router:hover) > img {
+  transform: scale(.88);
+}
 .routing-path p { margin: 8px 0 0; color: #b4cdc2; font-size: 12px; line-height: 1.45; }
 .routing-console { margin-top: 12px; }
 .routing-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px; }
@@ -699,6 +717,35 @@ button[aria-pressed="true"] .routing-router-ports { display: block; }
 }
 .routing-school-practice .routing-router-ports > :first-child { left: 2px; }
 .routing-school-practice .routing-router-ports > :last-child { right: 2px; }
+.routing-school-practice .vlan-switch-ports > .vlan-port-left {
+  left: 2px;
+  right: auto;
+}
+.routing-path ol.vlan-lab-topology {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: auto;
+  gap: 0 18px;
+  --routing-link-y: 50%;
+}
+.routing-path ol.vlan-lab-topology.vlan-two-pcs { grid-template-rows: repeat(2, 1fr); }
+.vlan-lab-topology [data-vlan-node="pc"] { grid-column: 1; }
+.vlan-lab-topology [data-vlan-node="floor"] { grid-column: 2; }
+.vlan-lab-topology [data-vlan-node="core"] { grid-column: 3; }
+.vlan-lab-topology [data-vlan-node="router"] { grid-column: 4; }
+.vlan-lab-topology [data-vlan-node]:not([data-vlan-node="pc"]) { grid-row: 1 / -1; }
+.routing-path .vlan-lab-topology :is([data-vlan-node="pc"], [data-vlan-node="floor"])::before { content: none; }
+.vlan-lab-topology [data-vlan-node="pc"]::after {
+  content: '';
+  position: absolute;
+  inset: 50% auto auto 100%;
+  width: 18px;
+  border-top: 1px dashed #7c978f;
+  pointer-events: none;
+}
+.routing-school-practice .vlan-lab-topology li:not([data-vlan-node="pc"]) > .routing-device-node { justify-content: center; }
+.vlan-two-pcs [data-vlan-device="floor"] .vlan-port-left:first-child { top: 25%; }
+.vlan-two-pcs [data-vlan-device="floor"] .vlan-port-left:nth-child(2) { top: 75%; }
 
 .routing-school-practice .routing-path li > .routing-device-node {
   display: flex;
@@ -718,14 +765,6 @@ button[aria-pressed="true"] .routing-router-ports { display: block; }
   width: 36px;
   height: 36px;
   object-fit: contain;
-}
-
-.routing-school-practice .routing-path li.visited > button {
-  color: var(--mint);
-}
-
-.routing-school-practice .routing-path li.interrupted > button {
-  color: var(--amber);
 }
 
 .routing-school-practice .routing-path li > button:is(:hover, [aria-pressed="true"]) {

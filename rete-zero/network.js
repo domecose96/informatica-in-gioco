@@ -22,16 +22,26 @@
     return n !== null && range !== null && n > range.network && n < range.broadcast;
   }
   function fail(message) { return {ok:false, message}; }
-  const municipalPorts = Array.from({length:4}, (_, index) => ({
+  const municipalPorts = Array.from({length:2}, (_, index) => ({
     name:'GigabitEthernet0/'+index,
-    network:'192.168.30.'+(index*64)
+    network:'192.168.30.'+(index*128),prefix:25
   }));
-  function verifyMunicipalPort(ports, index) {
-    const {name,network}=municipalPorts[index];
+  const rescuePorts=[
+    {name:'GigabitEthernet0/0',network:'192.168.20.128',prefix:27},
+    {name:'GigabitEthernet0/1',network:'192.168.20.160',prefix:28}
+  ];
+  function verifyVlsmPlan(plan) {
+    return rescuePorts.every(({network,prefix}, index)=>{
+      const expected=calculate(network,prefix);
+      return String(plan?.['prefix'+index]).trim().replace(/^\//,'')===String(prefix)
+        && ['network','first','last','broadcast'].every(key=>ipv4(plan?.[key+index])===ipv4(expected[key]));
+    }) && ipv4(plan?.reserve)===ipv4('192.168.20.176');
+  }
+  function verifyRouterPort(ports, {name,network,prefix}, index) {
     const port=ports?.[name];
-    const expected=calculate(network,26);
+    const expected=calculate(network,prefix);
     if(!port?.ip)return fail('Configura l’indirizzo di '+name+' per il reparto '+(index+1)+'.');
-    if(port.mask!==expected.mask)return fail(name+' deve usare la maschera /26.');
+    if(port.mask!==expected.mask)return fail(name+' deve usare la maschera /'+prefix+'.');
     if(ipv4(port.ip)!==ipv4(expected.last))return fail('Assegna a '+name+' l’ultimo indirizzo utilizzabile della sottorete del reparto '+(index+1)+'.');
     if(!port.enabled)return fail('Abilita '+name+' con no shutdown.');
     return {ok:true};
@@ -54,12 +64,14 @@
       if (ipv4(data.dns)!==ipv4('192.168.20.126')) return fail('Imposta il server DNS 192.168.20.126 indicato nella scheda tecnica.');
       return {ok:true,message:'Conflitto risolto. La radio mobile ha un indirizzo unico nella sottorete /26. «Centrale, qui squadra Nord. Finalmente vi sentiamo.»'};
     }
-    if (index === 2) {
-      for(const portIndex of municipalPorts.keys()){
-        const result=verifyMunicipalPort(data.ports,portIndex);
+    if (index === 2 || index === 3) {
+      const ports=index===2?municipalPorts:rescuePorts;
+      for(const [portIndex, port] of ports.entries()){
+        const result=verifyRouterPort(data.ports,port,portIndex);
         if(!result.ok)return result;
       }
-      return {ok:true,message:'Le quattro porte LAN sono attive. Ogni reparto ha la propria sottorete /26 e un gateway. Il Municipio è di nuovo online.'};
+      if(index===3&&!rescuePorts.every(({name})=>data.pings?.[name]))return fail('Verifica il gateway con un ping da ciascun PC.');
+      return {ok:true,message:index===2?'Le due porte LAN sono attive. Sindaco e Vicesindaco hanno ciascuno la propria sottorete /25.':'Le due squadre raggiungono i rispettivi gateway. Il blocco 192.168.20.176/28 resta disponibile.'};
     }
     return fail('Intervento non riconosciuto.');
   }
@@ -80,7 +92,7 @@
       note: prefix === 31 ? 'Rete /31 punto-punto: entrambi gli indirizzi possono essere utilizzati; non c’è broadcast di sottorete.' : prefix === 32 ? 'Una /32 identifica un singolo indirizzo host; non ha broadcast di sottorete.' : 'Il primo e l’ultimo indirizzo sono riservati a rete e broadcast.'
     };
   }
-  const api = {ipv4, address, subnet, hostIn, verify, calculate, municipalPorts, verifyMunicipalPort};
+  const api = {ipv4, address, subnet, hostIn, verify, calculate, municipalPorts, rescuePorts, verifyVlsmPlan, verifyRouterPort};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.ReteZero = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
