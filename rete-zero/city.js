@@ -70,7 +70,9 @@ root.RZCity = function(host, markers, onEnter){
     const river=new T.Mesh(new T.ShapeGeometry(riverShape),mat('#739fa3',{metalness:.15,roughness:.35}));river.rotation.x=Math.PI/2;river.position.y=-.08;river.material.side=T.DoubleSide;city.add(river);
     for(const z of roadsZ){const x=riverX(z);box(city,x,.02,z,8.7,.30,3.3,'#9bada6');box(city,x,.20,z-1.65,9,.34,.14,'#c9d1bc');box(city,x,.20,z+1.65,9,.34,.14,'#c9d1bc');box(city,x,.18,z,8.5,.035,2.95,'#6d8380');for(let i=-3;i<=3;i+=2)box(city,x+i,.21,z,.65,.02,.05,'#e0dec5');}
     function nearRoad(x,z,margin=3.6){return roadsX.some(v=>Math.abs(x-v)<margin)||roadsZ.some(v=>Math.abs(z-v)<margin);}
-    function nearSite(x,z,margin=7){return buildings.some(b=>Math.abs(x-b.position[0])<margin&&Math.abs(z-b.position[1])<margin);}
+    const constructionLot=[-24,3];
+    function nearSite(x,z,margin=7){return Math.abs(x-constructionLot[0])<margin&&Math.abs(z-constructionLot[1])<margin
+      ||buildings.some(b=>Math.abs(x-b.position[0])<margin&&Math.abs(z-b.position[1])<margin);}
     function roadRoute(start,end){
       const closest=(arr,value)=>arr.reduce((best,v)=>Math.abs(v-value)<Math.abs(best-value)?v:best,arr[0]);
       const startRoad=closest(roadsZ,start[1]),endRoad=closest(roadsZ,end[1]),crossRoad=closest(roadsX,end[0]);
@@ -84,6 +86,51 @@ root.RZCity = function(host, markers, onEnter){
     }return lit;}
     function roof(g,y,w,d,color){box(g,0,y,0,w,.22,d,color);box(g,0,y+.2,0,w-.35,.18,d-.35,color);}
     function cross(g,x,y,z,size,color){box(g,x,y,z,size,.10,size*.3,color);box(g,x,y,z,size*.3,.11,size,color);}
+    function constructionSite(x,z){
+      const site=new T.Group();
+      site.name='Cantiere';
+      site.position.set(x,0,z);
+      city.add(site);
+
+      const concrete='#a8afa7', steel='#9a6840', yellow='#d6a34b';
+      box(site,0,.01,0,8.1,.14,7,'#ad9777');
+      box(site,.5,.2,0,5.8,.28,4,concrete);
+      for(const column of [-1.9,.5,2.9]){
+        for(const depth of [-1.65,1.65])box(site,column,1.5,depth,.28,2.5,.28,concrete);
+      }
+      box(site,.5,2.8,0,5.8,.24,3.9,concrete);
+      for(const column of [-1.9,2.9]){
+        box(site,column,3.3,-1.65,.28,.9,.28,concrete);
+      }
+      for(const side of [-1,1]){
+        for(let i=-3;i<=3;i++)box(site,i,.45,side*3.25,.08,.83,.08,steel);
+        box(site,0,.57,side*3.25,6.5,.12,.08,yellow);
+      }
+
+      const mastX=-3.05,mastZ=-2.45;
+      box(site,mastX,.28,mastZ,1.35,.42,1.3,concrete);
+      for(const dx of [-.25,.25]){
+        for(const dz of [-.25,.25])box(site,mastX+dx,3.55,mastZ+dz,.085,6.35,.085,yellow);
+      }
+      for(let y=.8;y<6.6;y+=.65){
+        for(const dz of [-.25,.25]){
+          box(site,mastX,y,mastZ+dz,.58,.07,.07,yellow);
+          box(site,mastX,y+.3,mastZ+dz,.075,.78,.075,yellow).rotation.z=.66;
+        }
+        for(const dx of [-.25,.25])box(site,mastX+dx,y,mastZ,.07,.07,.58,yellow);
+      }
+      box(site,mastX,6.76,mastZ,.85,.3,.85,steel);
+      box(site,-.5,7.03,mastZ,7.3,.16,.34,yellow);
+      box(site,-.5,7.39,mastZ,7.3,.09,.24,yellow);
+      for(let i=-3;i<=2;i+=.55)box(site,i,7.2,mastZ,.07,.52,.09,yellow).rotation.z=.68;
+      box(site,-3.94,6.84,mastZ,.45,.48,.52,concrete);
+      box(site,1.75,6.95,mastZ,.28,.23,.34,steel);
+      box(site,1.75,5.54,mastZ,.035,2.65,.035,'#414743');
+      box(site,1.75,4.18,mastZ,.16,.14,.07,steel);
+      return site;
+    }
+    constructionSite(...constructionLot);
+    layout.reserve(...constructionLot,8.1,7);
     buildings.forEach(site=>{
       const [x,z]=site.position,g=new T.Group();g.position.set(x,0,z);g.userData.siteId=site.id;city.add(g);groups.set(site.id,g);
       if(site.id!=='hq'){
