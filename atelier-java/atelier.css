@@ -212,7 +212,7 @@ dialog::backdrop { background: #0b0e19c9; backdrop-filter: blur(4px); }
 }
 #music-settings-title { color: var(--gold); font-size: 1.1rem; }
 #music-status { margin: 0; color: var(--muted); font-size: .75rem; white-space: nowrap; }
-#music, #workshop-music, .games-home, #music-toggle { border-radius: 4px; aspect-ratio: 1; }
+#music, .games-home, #music-toggle { border-radius: 4px; aspect-ratio: 1; }
 .games-home svg { width: 1.25rem; height: 1.25rem; }
 #music[aria-expanded="true"], #workshop-music[aria-expanded="true"] { background: var(--gold); color: var(--ink); }
 .music-controls { display: grid; gap: .55rem; padding-top: .7rem; font-size: .875rem; }
@@ -296,6 +296,7 @@ h3 { font-size: 1.5rem; }
 #workshop {
   --workshop-gutter: clamp(.5rem, 2.1vmin, 2rem);
   --workshop-text: clamp(1rem, 1.35vmin + .35rem, 1.4rem);
+  --workshop-button-size: clamp(42px, 6vmin, 3.6rem);
   width: calc(100% - 2 * var(--workshop-gutter));
   height: calc(100dvh - 2 * var(--workshop-gutter));
   max-height: none;
@@ -309,7 +310,12 @@ h3 { font-size: 1.5rem; }
 #workshop .workshop-manual { font-size: .875em; }
 #workshop .code-editor { font-size: clamp(.85rem, 2.4vmin, 1.7rem); overflow-wrap: anywhere; }
 #workshop .lesson-actions button, #workshop .workshop-tools button {
-  min-height: clamp(42px, 6vmin, 3.6rem);
+  min-height: var(--workshop-button-size);
+}
+#workshop .workshop-tools .icon:not(.workshop-manual) {
+  width: var(--workshop-button-size);
+  height: var(--workshop-button-size);
+  padding: 0;
 }
 #workshop::backdrop { background: #0b101cf0; backdrop-filter: none; }
 .workshop-tools { display: flex; align-items: center; gap: .6rem; }
