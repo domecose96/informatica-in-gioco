@@ -408,23 +408,33 @@ function startGame(mode='mystery',showGuide=true){
   if (!caseIsUnlocked(mode)) return;
   currentCase=mode;activeMissions=mode==='training'?trainingMissions:mode==='case02'?case02Missions:mode==='case03'?case03Missions:missions;activeClueTexts=mode==='training'?trainingVerificationTexts:mode==='case02'?case02ClueTexts:mode==='case03'?case03Missions.map(mission=>mission.clue):clueTexts;resetDatabase(mode);
   $('brandSubtitle').textContent=mode==='training'?'LABORATORIO SQL · CASO 00':mode==='case02'?'SQL MYSTERY · CASO 02':mode==='case03'?'SQL MYSTERY · CASO 03':'SQL MYSTERY · CASO 01';
-  setSchemaAvailable(true);
+  setCaseControls(true);
   document.body.classList.add('game-active');document.body.classList.toggle('case02-active',mode==='case02');els.case03Intro.classList.add('hidden');els.hub.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.case02Intro.classList.add('hidden');els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.workspace.classList.remove('hidden');step=0;queryCount=0;collectedClues=[];renderNotebook();renderMission();window.scrollTo(0,0);if(showGuide){configureHelp(mode);$('helpDialog').showModal()}
 }
-function setSchemaAvailable(available){$('schemaBtn').classList.toggle('hidden',!available)}
-function openCaseOne(){currentCase='mystery';setSchemaAvailable(true);$('brandSubtitle').textContent='SQL MYSTERY · CASO 01';els.case03Intro.classList.add('hidden');els.hub.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.case02Intro.classList.add('hidden');els.completion.classList.add('hidden');els.intro.classList.remove('hidden');window.scrollTo(0,0)}
-function openCaseTwo(){if (!caseIsUnlocked('case02')) return;currentCase='case02';setSchemaAvailable(true);$('brandSubtitle').textContent='SQL MYSTERY · CASO 02';els.case03Intro.classList.add('hidden');els.hub.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.case02Intro.classList.remove('hidden');window.scrollTo(0,0)}
-function openTraining(){currentCase='training';setSchemaAvailable(true);$('brandSubtitle').textContent='LABORATORIO SQL · CASO 00';els.hub.classList.add('hidden');els.case02Intro.classList.add('hidden');els.trainingIntro.classList.remove('hidden');window.scrollTo(0,0)}
+function setCaseControls(active) {
+  $('schemaBtn').classList.toggle('hidden', !active);
+  const brand = document.querySelector('.brand');
+  if (active) {
+    brand.setAttribute('href', '#caseHub');
+    brand.setAttribute('aria-label', 'Archivio Ombra, torna alla scelta dei casi');
+  } else {
+    brand.removeAttribute('href');
+    brand.removeAttribute('aria-label');
+  }
+}
+function openCaseOne(){currentCase='mystery';setCaseControls(true);$('brandSubtitle').textContent='SQL MYSTERY · CASO 01';els.case03Intro.classList.add('hidden');els.hub.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.case02Intro.classList.add('hidden');els.completion.classList.add('hidden');els.intro.classList.remove('hidden');window.scrollTo(0,0)}
+function openCaseTwo(){if (!caseIsUnlocked('case02')) return;currentCase='case02';setCaseControls(true);$('brandSubtitle').textContent='SQL MYSTERY · CASO 02';els.case03Intro.classList.add('hidden');els.hub.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.case02Intro.classList.remove('hidden');window.scrollTo(0,0)}
+function openTraining(){currentCase='training';setCaseControls(true);$('brandSubtitle').textContent='LABORATORIO SQL · CASO 00';els.hub.classList.add('hidden');els.case02Intro.classList.add('hidden');els.trainingIntro.classList.remove('hidden');window.scrollTo(0,0)}
 function openCaseThree(){
   if (!caseIsUnlocked('case03')) return;
   currentCase='case03';
-  setSchemaAvailable(true);
+  setCaseControls(true);
   $('brandSubtitle').textContent='SQL MYSTERY · CASO 03';
   for(const panel of [els.hub,els.trainingIntro,els.intro,els.case02Intro,els.workspace,els.completion])panel.classList.add('hidden');
   els.case03Intro.classList.remove('hidden');
   window.scrollTo(0,0);
 }
-function goHome(){els.case03Intro.classList.add('hidden');currentCase='mystery';setSchemaAvailable(false);document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());$('brandSubtitle').textContent='SQL MYSTERY · ARCHIVIO DEI CASI';document.body.classList.remove('game-active','case02-active');els.workspace.classList.add('hidden');els.completion.classList.add('hidden');els.intro.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.case02Intro.classList.add('hidden');els.hub.classList.remove('hidden');window.scrollTo(0,0);}
+function goHome(){els.case03Intro.classList.add('hidden');currentCase='mystery';setCaseControls(false);document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());$('brandSubtitle').textContent='SQL MYSTERY · ARCHIVIO DEI CASI';document.body.classList.remove('game-active','case02-active');els.workspace.classList.add('hidden');els.completion.classList.add('hidden');els.intro.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.case02Intro.classList.add('hidden');els.hub.classList.remove('hidden');window.scrollTo(0,0);}
 function renderConceptualSchema(){ $('schemaGrid').innerHTML=`
 <svg viewBox="0 0 1000 510" role="img" aria-labelledby="erConceptTitle erConceptDesc" preserveAspectRatio="xMidYMid meet">
   <title id="erConceptTitle">Modello entità-relazioni concettuale del database comunale</title>
@@ -709,7 +719,11 @@ function renderSqlManual(){
 function openSqlManual(){manualCategory='all';$('manualSearch').value='';$('manualFilters').innerHTML=sqlManualCategories.map(([value,label])=>`<button type="button" data-manual-category="${value}" class="${value==='all'?'active':''}">${label}</button>`).join('');renderSqlManual();$('manualDialog').showModal();setTimeout(()=>$('manualSearch').focus(),0)}
 
 $('startTrainingBtn').onclick=openTraining;$('beginTrainingBtn').onclick=()=>startGame('training',true);$('openCaseOneBtn').onclick=openCaseOne;$('startBtn').onclick=()=>startGame('mystery',true);$('openCaseTwoBtn').onclick=openCaseTwo;$('startCaseTwoBtn').onclick=()=>startGame('case02',true);$('openCaseThreeBtn').onclick=openCaseThree;$('startCaseThreeBtn').onclick=()=>startGame('case03',true);$('replayBtn').onclick=()=>currentCase==='training'?openCaseOne():goHome();$('runBtn').onclick=()=>{if(solvedCurrent){if(currentCase!=='training'&&!collectedClues[step]){setNotebookOpen(true);setFeedback('Salva prima l’indizio nel taccuino; poi potrai continuare.','success');return}if(step===activeMissions.length-1)finish();else{step++;renderMission();window.scrollTo(0,0)}}else runQuery()};$('runBtn').disabled=true;
-document.querySelector('.brand').onclick=e=>{e.preventDefault();goHome()};
+document.querySelector('.brand').onclick = event => {
+  if (!event.currentTarget.hasAttribute('href')) return;
+  event.preventDefault();
+  goHome();
+};
 $('resetQueryBtn').onclick=()=>{els.editor.value=activeMissions[step].starter;els.editor.focus()};
 $('hintBtn').onclick=()=>setHintsOpen($('hintBox').classList.contains('hidden'));
 $('hintCloseBtn').onclick=()=>setHintsOpen(false);
