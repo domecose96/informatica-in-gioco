@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#13192d">
+  <title>Atelier Java — I quadri da ricostruire</title>
+  <link rel="icon" href="assets/atelier.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="atelier.css?v=67">
+  <script src="atelier.js?v=38" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><img src="assets/atelier.svg" width="38" height="38" alt=""><span>Atelier Java<small>Grafica · Java Swing</small></span></div>
+    <nav aria-label="Comandi del gioco">
+      <button id="help" type="button">Come si gioca</button>
+      <button id="music" class="icon" type="button" popovertarget="music-settings" aria-label="Impostazioni audio" title="Impostazioni audio">♫</button>
+      <a href="../index.html" class="icon games-home" aria-label="Home dei giochi" title="Home dei giochi">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m3 10.5 9-7 9 7M5.5 9v11h13V9M9.5 20v-6.5h5V20"/>
+        </svg>
+      </a>
+    </nav>
+  </header>
+  <main class="museum">
+    <div class="museum-copy">
+      <h1>I quadri da<br><em>ricostruire</em></h1>
+      <figure class="guide">
+        <img src="assets/vincent.webp" alt="Van Gogh con tavolozza e pennello">
+        <figcaption>Le opere sono scomparse. Rimettile in mostra, una forma alla volta, con Java.</figcaption>
+      </figure>
+    </div>
+    <section class="exhibit" aria-label="Galleria delle opere">
+      <button class="icon gallery-arrow" id="gallery-prev" type="button" aria-label="Cornice precedente">←</button>
+      <button class="exhibit-button" id="enter" type="button" aria-labelledby="work-title">
+        <span class="frame" aria-hidden="true"><span class="canvas" id="gallery-canvas"><span class="gallery-mystery">?</span></span></span>
+        <span class="plaque"><strong id="work-title">La casa di sera</strong></span>
+      </button>
+      <button class="icon gallery-arrow" id="gallery-next" type="button" aria-label="Cornice successiva">→</button>
+      <div class="gallery-pagination">
+        <div id="gallery-dots" aria-hidden="true">
+          <span class="active"></span><span></span><span></span>
+        </div>
+        <span id="gallery-position" role="status">Cornice 1 di 3</span>
+      </div>
+    </section>
+  </main>
+  <dialog id="instructions" aria-labelledby="help-title">
+    <header class="dialog-heading"><h2 id="help-title">Come si gioca</h2><form method="dialog"><button class="icon" aria-label="Chiudi la guida">×</button></form></header>
+    <p class="instructions-intro">Ricostruisci un quadro con Java, una forma alla volta.</p>
+    <ol class="instructions-steps" role="list">
+      <li>
+        <h3>Scegli un quadro</h3>
+        <p>Sfoglia la galleria con le frecce e clicca sulla cornice per entrare nell’atelier.</p>
+      </li>
+      <li>
+        <h3>Modifica il codice</h3>
+        <p>Cambia i valori evidenziati nell’Editor Java. Guarda l’effetto sulla tela e, quando c’è, segui la sagoma tratteggiata.</p>
+      </li>
+      <li>
+        <h3>Verifica e continua</h3>
+        <p>Premi <strong>Verifica</strong> per controllare il risultato, poi <strong>Continua</strong>. All’ultimo passaggio il quadro viene esposto in galleria.</p>
+      </li>
+    </ol>
+    <footer class="instructions-footer">
+      <p>Ti serve una mano? Nell’atelier, premi <strong>?</strong> per un suggerimento di Vincent o apri il <strong>Manuale</strong> per consultare i comandi Java.</p>
+      <form method="dialog"><button class="lesson-check">Ho capito</button></form>
+    </footer>
+  </dialog>
+  <dialog id="workshop" aria-labelledby="workshop-title">
+    <header class="dialog-heading">
+      <h2 id="workshop-title">La casa di sera</h2>
+      <div class="workshop-tools">
+        <button id="tour-open" class="icon workshop-manual" type="button" aria-haspopup="dialog">Tutorial</button>
+        <button id="manual-open" class="icon workshop-manual" type="button" aria-haspopup="dialog">Manuale</button>
+        <button class="icon" id="lesson-help" type="button" aria-label="Indicazioni di Vincent" aria-haspopup="dialog" title="Indicazioni di Vincent">?</button>
+        <button class="icon" id="workshop-music" type="button" popovertarget="music-settings" aria-label="Impostazioni audio" title="Impostazioni audio">♫</button>
+        <form method="dialog"><button class="icon" aria-label="Torna al museo" title="Torna al museo">×</button></form>
+      </div>
+    </header>
+    <div class="lesson">
+      <section class="lesson-controls" aria-labelledby="lesson-title">
+        <p class="eyebrow" id="lesson-progress">Passaggio 1 di 6</p>
+        <h3 id="lesson-title">Disegna la facciata</h3>
+        <p id="lesson-instruction">Imposta la larghezza della facciata usando il contorno tratteggiato.</p>
+        <form id="rectangle-form">
+          <h4 class="editor-label" id="editor-label">Editor Java</h4>
+          <div class="code-editor" id="lesson-code" role="group" aria-labelledby="editor-label"></div>
+          <div class="lesson-actions">
+            <p id="feedback" role="status"></p>
+            <button class="icon lesson-reset" type="reset" aria-label="Ripristina i valori del passaggio" title="Ripristina i valori del passaggio"><span aria-hidden="true">↺</span></button>
+            <button id="lesson-check" class="lesson-check" type="submit"><span>Verifica</span></button>
+          </div>
+        </form>
+      </section>
+      <figure class="lesson-preview">
+        <figcaption>
+          <button class="preview-open" id="preview-open" type="button" aria-haspopup="dialog" aria-label="Tela: anteprima del quadro finito">Tela</button>
+          <span class="preview-legend"><span class="preview-swatch" aria-hidden="true"></span> Sagoma da seguire</span>
+        </figcaption>
+        <svg id="workshop-canvas" viewBox="0 0 250 175" role="img" aria-label="Tela del paesaggio serale. Le forme compaiono durante la costruzione della casa.">
+          <rect width="250" height="175" fill="#232d50"/>
+          <path d="M0 156H250V175H0Z" fill="#1c2940"/>
+          <rect id="facade" x="20" y="54" width="170" height="104" fill="#865a51" visibility="hidden"/>
+          <polygon id="roof" points="20,54 105,14 190,54" fill="#a16b55" visibility="hidden"/>
+          <rect id="door" x="140" y="118" width="27" height="40" fill="#443751" visibility="hidden"/>
+          <rect id="window" x="80" y="72" width="52" height="34" fill="#f4cc88" visibility="hidden"/>
+          <rect id="moon" x="200" y="16" width="32" height="32" rx="16" fill="#f0d098" visibility="hidden"/>
+          <g id="shape-target" fill="none" stroke="#fff4da" stroke-width="1.5" stroke-dasharray="4 3" aria-hidden="true"></g>
+        </svg>
+      </figure>
+    </div>
+  </dialog>
+  <dialog id="finished-preview" aria-labelledby="finished-preview-title">
+    <header class="dialog-heading">
+      <h2 id="finished-preview-title">Anteprima del quadro finito</h2>
+      <form method="dialog"><button class="icon" aria-label="Chiudi l’anteprima" autofocus>×</button></form>
+    </header>
+    <div id="finished-preview-art"></div>
+  </dialog>
+  <dialog id="workshop-manual" aria-labelledby="manual-title">
+    <header class="dialog-heading"><h2 id="manual-title">Manuale di grafica Java</h2><form method="dialog"><button class="icon" aria-label="Chiudi il manuale" autofocus>×</button></form></header>
+    <div class="manual-tools">
+      <label for="manual-search">Cerca</label>
+      <input id="manual-search" type="search" placeholder="Es. fillRect, colore, coordinate" autocomplete="off">
+      <div class="manual-filters" role="group" aria-label="Filtra per argomento">
+        <button class="icon" type="button" data-category="tutti" aria-pressed="true">Tutti</button>
+        <button class="icon" type="button" data-category="swing" aria-pressed="false">Swing</button>
+        <button class="icon" type="button" data-category="colori" aria-pressed="false">Colori</button>
+        <button class="icon" type="button" data-category="forme" aria-pressed="false">Forme</button>
+      </div>
+    </div>
+    <div class="manual-grid">
+      <details class="manual-card" name="java-manual-entry" data-category="swing">
+        <summary><span><small>Swing</small><code>paintComponent()</code></span></summary>
+        <div class="manual-card-content">
+          <div class="manual-card-description">
+            <p>In Swing, puoi disegnare in un <code>JPanel</code> ridefinendo <code>paintComponent(Graphics g)</code>. Chiama prima <code>super.paintComponent(g)</code>, poi usa <code>g</code> per disegnare. In <code>Graphics g</code>, <code>Graphics</code> è il tipo e <code>g</code> è il nome del parametro con cui accedi al contesto di disegno fornito da Swing.</p>
+          </div>
+          <figure class="manual-example">
+            <figcaption>Esempio Java</figcaption>
+            <pre><code>@Override
+protected void paintComponent(Graphics g) {
+    super.paintComponent(g);
+    g.fillRect(10, 20, 60, 30);
+}</code></pre>
+          </figure>
+        </div>
+      </details>
+      <details class="manual-card" name="java-manual-entry" data-category="colori">
+        <summary><span><small>Colori</small><code>setColor()</code></span></summary>
+        <div class="manual-card-content">
+          <div class="manual-card-description">
+            <p><code>java.awt.Color</code> offre colori già pronti. I nomi delle costanti sono definiti dalla classe <code>Color</code> e distinguono maiuscole e minuscole. <code>Color.GRAY</code> indica il grigio e <code>Color.BLUE</code> indica il blu. In <code>g.setColor(Color.BLUE)</code>, <code>Color.BLUE</code> è l’argomento che imposta il colore corrente. Il successivo <code>g.fillRect(...)</code> usa quel colore, che resta attivo fino alla prossima chiamata a <code>setColor()</code>.</p>
+          </div>
+          <figure class="manual-example">
+            <figcaption>Esempio Java</figcaption>
+            <pre><code>g.setColor(Color.BLUE);
+g.fillRect(10, 20, 60, 30);</code></pre>
+          </figure>
+        </div>
+      </details>
+      <details class="manual-card" name="java-manual-entry" data-category="forme">
+        <summary><span><small>Forme</small><code>fillRect()</code></span></summary>
+        <div class="manual-card-content">
+          <div class="manual-card-description">
+            <p><code>g.fillRect(x, y, larghezza, altezza)</code> disegna un rettangolo pieno con il colore corrente. L’origine delle coordinate della tela è in alto a sinistra.</p>
+            <dl class="manual-parameters">
+              <dt><code>x</code></dt><dd>Distanza dal bordo sinistro. Aumenta verso destra.</dd>
+              <dt><code>y</code></dt><dd>Distanza dal bordo superiore. Aumenta verso il basso.</dd>
+              <dt>Larghezza</dt><dd>Estensione orizzontale, in pixel.</dd>
+              <dt>Altezza</dt><dd>Estensione verticale, in pixel.</dd>
+            </dl>
+            <p>Per esempio, <code>g.fillRect(10, 20, 60, 30)</code> disegna un rettangolo largo 60 pixel e alto 30, con l’angolo in alto a sinistra nel punto (10, 20).</p>
+          </div>
+          <figure class="manual-example">
+            <figcaption>Esempio Java</figcaption>
+            <pre><code>g.fillRect(10, 20, 60, 30);</code></pre>
+          </figure>
+        </div>
+      </details>
+      <details class="manual-card" name="java-manual-entry" data-category="forme">
+        <summary><span><small>Forme</small><code>fillPolygon()</code></span></summary>
+        <div class="manual-card-content">
+          <div class="manual-card-description">
+            <p><code>g.fillPolygon(xs, ys, 3)</code> unisce tre vertici e riempie il triangolo. Per ogni vertice, abbina il valore in <code>xs</code> a quello nella stessa posizione in <code>ys</code>.</p>
+          </div>
+          <figure class="manual-example">
+            <figcaption>Esempio Java</figcaption>
+            <pre><code>int[] xs = {10, 40, 70};
+int[] ys = {60, 20, 60};
+g.fillPolygon(xs, ys, 3);</code></pre>
+          </figure>
+        </div>
+      </details>
+      <details class="manual-card" name="java-manual-entry" data-category="forme">
+        <summary><span><small>Forme</small><code>fillOval()</code></span></summary>
+        <div class="manual-card-content">
+          <div class="manual-card-description">
+            <p><code>g.fillOval(x, y, larghezza, altezza)</code> disegna un ovale dentro il rettangolo indicato. Con larghezza e altezza uguali ottieni un cerchio.</p>
+          </div>
+          <figure class="manual-example">
+            <figcaption>Esempio Java</figcaption>
+            <pre><code>g.fillOval(10, 20, 40, 40);</code></pre>
+          </figure>
+        </div>
+      </details>
+      <p id="manual-empty" role="status"></p>
+    </div>
+  </dialog>
+  <dialog id="vincent-tip" aria-labelledby="vincent-title" aria-describedby="vincent-direction">
+    <div id="vincent-highlight" hidden aria-hidden="true"></div>
+    <div class="vincent-intro">
+      <img src="assets/vincent-guida.webp" alt="">
+      <div class="vincent-bubble">
+        <h2 id="vincent-title">Vincent</h2>
+        <p id="vincent-direction">Ti faccio vedere come si usa l’atelier. Se durante la creazione hai dei dubbi, ti aspetto per darti una mano. Premi ? per il suggerimento del passaggio.</p>
+        <form method="dialog" class="vincent-actions">
+          <button id="vincent-continue" class="lesson-check" autofocus>Inizia</button>
+          <button class="icon vincent-close" aria-label="Chiudi la guida di Vincent" title="Chiudi la guida">×</button>
+        </form>
+      </div>
+    </div>
+  </dialog>
+  <section id="music-settings" popover aria-labelledby="music-settings-title">
+    <div class="music-panel-body">
+      <header class="music-heading">
+        <h2 id="music-settings-title">Controlli audio</h2>
+        <p id="music-status" role="status"></p>
+      </header>
+      <div class="music-controls">
+        <div class="music-volume-label">
+          <label for="music-volume">Musica</label>
+          <output id="music-output" for="music-volume">28%</output>
+        </div>
+        <input id="music-volume" type="range" min="0" max="100" value="28">
+        <div class="music-volume-label">
+          <label for="effects-volume">Effetti sonori</label>
+          <output id="effects-output" for="effects-volume">45%</output>
+        </div>
+        <input id="effects-volume" type="range" min="0" max="100" value="45">
+        <div class="music-volume-label music-master">
+          <span>Audio generale</span>
+          <button class="icon" id="music-toggle" type="button" aria-label="Silenzia audio" title="Silenzia audio">
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9v6h4l5 4V5L7 9Z"/>
+              <g class="music-waves">
+                <path d="M14.5 10a2.7 2.7 0 0 1 0 4"/>
+                <path d="M17 7.5a6 6 0 0 1 0 9"/>
+                <path d="M19.5 5a9.3 9.3 0 0 1 0 14"/>
+              </g>
+              <path class="music-muted" d="m16 10 5 5m0-5-5 5"/>
+            </svg>
+          </button>
+        </div>
+        <p>Brano · Sala del museo</p>
+      </div>
+    </div>
+  </section>
+  <audio id="soundtrack" src="assets/sala-del-museo.wav" preload="none" loop></audio>
+</body>
+</html>

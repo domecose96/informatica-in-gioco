@@ -5,7 +5,7 @@ import shutil
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "dist"
-GAMES = ("archivio-ombra", "programma-il-robot", "rete-zero")
+GAMES = ("archivio-ombra", "programma-il-robot", "rete-zero", "atelier-java")
 
 def build():
     if OUTPUT.exists():
