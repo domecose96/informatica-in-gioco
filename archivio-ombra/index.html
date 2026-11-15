@@ -16,7 +16,7 @@
   <link rel="preload" href="assets/caso00-laboratorio-documento.webp" as="image" type="image/webp">
   <link rel="preload" href="assets/caso02-protocollo-fantasma-sfondo.webp" as="image" type="image/webp">
   <link rel="preload" href="assets/caso02-protocollo-fantasma-documento.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="styles.css?v=91">
+  <link rel="stylesheet" href="styles.css?v=95">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
@@ -96,7 +96,7 @@
             <h2>Protocollo<br>fantasma</h2>
             <span>Ricostruisci il percorso di un plico consegnato soltanto sulla carta, usando aggregazioni e sottoquery.</span>
             <div class="difficulty" aria-label="Difficoltà: 2 su 3"><i></i><i></i><i class="off"></i><b>INTERMEDIO</b></div>
-            <button class="case-cta case-cta-main" id="openCaseTwoBtn" type="button"><span class="case-cta-copy"><small>CASO 02 · DISPONIBILE</small><strong>Apri il protocollo</strong></span><span class="case-cta-seal" aria-hidden="true">02</span></button>
+            <button class="case-cta case-cta-main" id="openCaseTwoBtn" type="button" disabled><span class="case-cta-copy"><small>CASO 02 · BLOCCATO</small><strong>Prima il Caso 01</strong></span><span class="case-cta-seal" aria-hidden="true">02</span></button>
           </article>
           <article class="library-card mystery-card" aria-labelledby="case03Title">
             <div class="library-number">03</div>
@@ -104,10 +104,28 @@
             <h2 id="case03Title">L’ultima<br>rettifica</h2>
             <span>All’ufficio protocollo di Manerbio, una voce del registro cambia durante la notte. Confronta le versioni e ricostruisci la modifica.</span>
             <div class="difficulty" aria-label="Difficoltà: 3 su 3"><i></i><i></i><i></i><b>AVANZATO</b></div>
-            <button class="case-cta case-cta-main" type="button" disabled><span class="case-cta-copy"><small>CASO 03</small><strong>In preparazione</strong></span><span class="case-cta-seal" aria-hidden="true">03</span></button>
+            <button class="case-cta case-cta-main" id="openCaseThreeBtn" type="button" disabled><span class="case-cta-copy"><small>CASO 03 · BLOCCATO</small><strong>Prima il Caso 02</strong></span><span class="case-cta-seal" aria-hidden="true">03</span></button>
           </article>
         </div>
       </div>
+    </section>
+
+    <section class="intro case03-intro hidden" id="case03Intro">
+      <div class="intro-copy">
+        <p class="eyebrow">MANERBIO · UFFICIO PROTOCOLLO · ORE 08:00</p>
+        <h1>L’ultima<br><em>rettifica</em></h1>
+        <p class="lede">Manca poco alla pubblicazione della graduatoria per assegnare tre spazi comunali. Una domanda esclusa ieri per ritardo oggi risulta ammessa. Durante la notte, qualcuno ha cambiato l’ora di consegna.</p>
+        <div class="how-it-works home-steps" aria-label="Come funziona il caso 03">
+          <article><b>01</b><div><span>CONFRONTA</span><strong>Segui le versioni</strong><small>Confronta registro e ricevute.</small></div></article>
+          <article><b>02</b><div><span>VERIFICA</span><strong>Distingui le firme</strong><small>Controlla chi poteva cambiare cosa.</small></div></article>
+          <article><b>03</b><div><span>RICOSTRUISCI</span><strong>Rifai la graduatoria</strong><small>Scopri chi ha perso il posto.</small></div></article>
+        </div>
+        <div class="difficulty" aria-label="Difficoltà: 3 su 3"><span>CASO AVANZATO</span><i></i><i></i><i></i></div>
+        <button class="case-cta case-cta-main" id="startCaseThreeBtn" type="button" disabled><span class="case-cta-copy"><small>CASO 03 · PREPARAZIONE</small><strong>Preparazione database…</strong></span><span class="case-cta-seal" aria-hidden="true">03</span></button>
+      </div>
+      <aside class="case03-evidence">
+        <img src="assets/caso03-graduatoria.webp?v=3" alt="Ricevuta di protocollo sopra la graduatoria provvisoria di Manerbio. L’orario di consegna e i nomi dei tre assegnatari sono coperti.">
+      </aside>
     </section>
 
     <section class="intro case02-intro hidden" id="case02Intro">
@@ -353,6 +371,7 @@ WHERE data = '2026-10-31';</textarea>
 
   <audio id="ambientMusic" src="assets/moil-ruskerdax-cc0.mp3" loop preload="auto"></audio>
   <script src="vendor/sql-wasm.js"></script>
-  <script src="app.js?v=93"></script>
+  <script src="case03.js?v=3"></script>
+  <script src="app.js?v=101"></script>
 </body>
 </html>

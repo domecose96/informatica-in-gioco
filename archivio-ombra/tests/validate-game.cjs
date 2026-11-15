@@ -22,7 +22,7 @@ const solutions = [
   "SELECT c.nome,c.cognome,p.data_prestito,p.data_restituzione FROM prestiti_documenti p JOIN cittadini c ON c.id=p.cittadino_id WHERE p.codice_fascicolo='F-204' ORDER BY p.data_prestito",
   "SELECT DISTINCT mitt.nome,mitt.cognome FROM telefonate t JOIN cittadini mitt ON mitt.id=t.mittente_id JOIN cittadini dest ON dest.id=t.destinatario_id WHERE dest.professione='archivista'",
   "SELECT DISTINCT c.nome,c.cognome,c.professione,t.cella FROM cittadini c JOIN veicoli v ON v.cittadino_id=c.id JOIN telefonate t ON t.mittente_id=c.id WHERE v.targa IN ('TO-314-XR','MI-770-KA') AND t.data='2026-10-31' AND t.ora BETWEEN '21:30' AND '22:00' AND t.cella='Archivio Civico'",
-  "SELECT dest.nome,dest.cognome,t.ora,t.durata_sec FROM telefonate t JOIN cittadini mitt ON mitt.id=t.mittente_id JOIN cittadini dest ON dest.id=t.destinatario_id WHERE mitt.nome='Marco' AND mitt.cognome='Riva' AND t.ora BETWEEN '21:30' AND '22:00'"
+  "SELECT dest.nome,dest.cognome,t.ora,t.durata_sec FROM telefonate t JOIN cittadini mitt ON mitt.id=t.mittente_id JOIN cittadini dest ON dest.id=t.destinatario_id WHERE mitt.nome='Marco' AND mitt.cognome='Riva' AND t.data='2026-10-31' AND t.ora BETWEEN '21:30' AND '22:00'"
 ];
 
 (async()=>{
@@ -43,5 +43,8 @@ const solutions = [
   assert(callsWithoutCellFilter.length===2 && includes(callsWithoutCellFilter,'nome','Marco') && includes(callsWithoutCellFilter,'nome','Giulia'),'Senza la cella telefonica devono restare due proprietari sospetti');
   assert(includes(solvedRows[6],'nome','Marco') && includes(solvedRows[6],'cella','Archivio Civico') && !includes(solvedRows[6],null,'Giulia'),'La penultima prova deve distinguere il colpevole tramite la cella telefonica');
   assert(includes(solvedRows[7],'nome','Laura'),'L’ultima prova deve rivelare la complice');
+  const callsWithoutDate = getRows(solutions[7].replace(" AND t.data='2026-10-31'", ""));
+  assert.equal(callsWithoutDate.length, 2, 'Senza la data devono comparire chiamate di due giorni diversi');
+  assert.equal(missions[7].validate(callsWithoutDate), false, 'L’ultima prova deve respingere la query senza la data');
   console.log(`OK: ${missions.length} query iniziali respinte e ${solutions.length} soluzioni accettate.`);
 })().catch(error=>{console.error(error);process.exit(1)});

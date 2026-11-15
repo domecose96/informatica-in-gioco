@@ -7,7 +7,7 @@ const missions = [
   { skill:'JOIN · ORDER BY', title:'Chi conosceva F-204?', text:'Il registro mostra più persone che avevano consultato il fascicolo e lo avevano regolarmente restituito. La conoscenza del documento apre più piste, ma non basta per accusare qualcuno.', objective:'Mostra tutte le persone che hanno preso F-204, con le date di prestito e restituzione.', tables:['prestiti_documenti','cittadini'], starter:"SELECT c.nome, c.cognome, p.data_prestito, p.data_restituzione\nFROM prestiti_documenti p\nJOIN cittadini c ON c.id = p.cittadino_id", hints:["Filtra il codice del fascicolo richiesto.","Usa p.codice_fascicolo = 'F-204'.","Aggiungi il WHERE sul codice e ordina per p.data_prestito."], validate: rows => rows.length === 3 && includes(rows,'nome','Marco') && includes(rows,'nome','Sara') && includes(rows,'nome','Giulia') && rows.every(r=>r.data_restituzione) },
   { skill:'DISTINCT · JOIN', title:'Una rete intorno all’archivio', text:'Anche i contatti telefonici aprono più piste. Cerca chi ha telefonato a persone che lavorano nell’archivio, mantenendo una sola riga per ogni nome.', objective:'Mostra una sola volta nome e cognome di chi ha chiamato personale con professione “archivista”.', tables:['telefonate','cittadini'], starter:"SELECT DISTINCT mitt.nome, mitt.cognome\nFROM telefonate t\nJOIN cittadini mitt ON mitt.id = t.mittente_id\nJOIN cittadini dest ON dest.id = t.destinatario_id", hints:["La professione da controllare appartiene alla tabella cittadini usata con alias dest.","Filtra dest.professione usando il valore 'archivista'.","Aggiungi un WHERE che confronti la professione del destinatario con quella richiesta."], validate: rows => rows.length === 2 && includes(rows,'nome','Sara') && includes(rows,'nome','Laura') },
   { skill:'JOIN MULTIPLA · IN · BETWEEN', title:'Dalle piste al colpevole', text:'Entrambi i proprietari hanno telefonato poco prima del furto, ma da luoghi diversi. Incrocia le auto sospette con la cella agganciata dal telefono: soltanto uno dei due era nella zona dell’archivio.', objective:'Trova nome, cognome, professione e cella del proprietario di uno dei due veicoli sospetti che ha chiamato tra le 21:30 e le 22:00 dalla zona “Archivio Civico”.', tables:['cittadini','veicoli','telefonate'], starter:"SELECT DISTINCT c.nome, c.cognome, c.professione, t.cella\nFROM cittadini c\nJOIN veicoli v ON v.cittadino_id = c.id\nJOIN telefonate t ON t.mittente_id = c.id", hints:["Confronta v.targa con entrambe le targhe annotate usando IN.","Filtra la data, limita t.ora con BETWEEN e osserva la colonna cella.","Nel WHERE combina le due targhe, la data del 31 ottobre, l’intervallo orario e t.cella = 'Archivio Civico'."], validate: rows => rows.length === 1 && includes(rows,'nome','Marco') && includes(rows,'cognome','Riva') && includes(rows,'professione','geometra comunale') && includes(rows,'cella','Archivio Civico') },
-  { skill:'JOIN MULTIPLA · BETWEEN', title:'L’ultimo contatto', text:'Il colpevole ha telefonato a una delle persone già emerse nella rete di contatti poco prima del furto. Incrocia mittente, destinatario e orario per scoprire chi.', objective:'Trova chi ha ricevuto una chiamata da Marco Riva tra le 21:30 e le 22:00.', tables:['telefonate','cittadini'], starter:"SELECT dest.nome, dest.cognome, t.ora, t.durata_sec\nFROM telefonate t\nJOIN cittadini mitt ON mitt.id = t.mittente_id\nJOIN cittadini dest ON dest.id = t.destinatario_id", hints:["Filtra il mittente usando nome e cognome del colpevole.","Limita t.ora con BETWEEN '21:30' AND '22:00'.","Nel WHERE combina nome e cognome del mittente con l’intervallo orario."], validate: rows => rows.length === 1 && includes(rows,'nome','Laura') && includes(rows,'cognome','Neri') && includes(rows,'ora','21:48') }
+  { skill:'JOIN MULTIPLA · BETWEEN', title:'L’ultimo contatto', text:'Il colpevole ha telefonato a una delle persone già emerse nella rete di contatti poco prima del furto. Incrocia mittente, destinatario e orario per scoprire chi.', objective:'Trova chi ha ricevuto una chiamata da Marco Riva il 31 ottobre 2026, tra le 21:30 e le 22:00.', tables:['telefonate','cittadini'], starter:"SELECT dest.nome, dest.cognome, t.ora, t.durata_sec\nFROM telefonate t\nJOIN cittadini mitt ON mitt.id = t.mittente_id\nJOIN cittadini dest ON dest.id = t.destinatario_id", hints:["Filtra il mittente usando nome e cognome del colpevole.","Filtra t.data con '2026-10-31' e limita t.ora con BETWEEN '21:30' AND '22:00'.","Nel WHERE combina nome e cognome del mittente con la data e l’intervallo orario."], validate: rows => rows.length === 1 && includes(rows,'nome','Laura') && includes(rows,'cognome','Neri') && includes(rows,'ora','21:48') }
 ];
 
 const clueTexts = [
@@ -35,7 +35,7 @@ INSERT INTO veicoli VALUES ('TO-314-XR',1,'Fiat Tipo','grigio'),('FI-091-NN',5,'
 CREATE TABLE prestiti_documenti (id INTEGER PRIMARY KEY, cittadino_id INTEGER, codice_fascicolo TEXT, data_prestito TEXT, data_restituzione TEXT);
 INSERT INTO prestiti_documenti VALUES (1,7,'A-117','2026-09-11','2026-09-18'),(2,1,'F-204','2026-10-12','2026-10-20'),(3,3,'G-881','2026-10-20','2026-10-27'),(4,5,'B-044','2026-10-02','2026-10-03'),(5,2,'F-204','2026-09-20','2026-09-21'),(6,7,'F-204','2026-10-25','2026-10-26');
 CREATE TABLE telefonate (id INTEGER PRIMARY KEY, mittente_id INTEGER, destinatario_id INTEGER, data TEXT, ora TEXT, durata_sec INTEGER, cella TEXT);
-INSERT INTO telefonate VALUES (1,1,3,'2026-10-31','21:48',92,'Archivio Civico'),(2,3,2,'2026-10-26','11:20',145,'Piazza del Grano'),(3,3,4,'2026-10-28','16:02',61,'Piazza del Grano'),(4,3,6,'2026-10-30','09:14',203,'Piazza del Grano'),(5,2,4,'2026-10-31','18:11',34,'Archivio Civico'),(6,5,7,'2026-10-31','20:05',180,'Via del Portico'),(7,1,3,'2026-10-31','22:27',18,'Tangenziale Nord'),(8,3,7,'2026-10-29','12:05',51,'Piazza del Grano'),(9,2,6,'2026-10-29','10:36',74,'Via Garibaldi'),(10,7,5,'2026-10-31','21:42',48,'Stazione Centrale');
+INSERT INTO telefonate VALUES (1,1,3,'2026-10-31','21:48',92,'Archivio Civico'),(2,3,2,'2026-10-26','11:20',145,'Piazza del Grano'),(3,3,4,'2026-10-28','16:02',61,'Piazza del Grano'),(4,3,6,'2026-10-30','09:14',203,'Piazza del Grano'),(5,2,4,'2026-10-31','18:11',34,'Archivio Civico'),(6,5,7,'2026-10-31','20:05',180,'Via del Portico'),(7,1,3,'2026-10-31','22:27',18,'Tangenziale Nord'),(8,3,7,'2026-10-29','12:05',51,'Piazza del Grano'),(9,2,6,'2026-10-29','10:36',74,'Via Garibaldi'),(10,7,5,'2026-10-31','21:42',48,'Stazione Centrale'),(11,1,3,'2026-10-30','21:54',46,'Via delle Mura');
 `;
 
 const case02Seed = `
@@ -125,7 +125,7 @@ const trainingVerificationTexts = [
 
 let SQLRuntime, db, currentCase='mystery', activeMissions=missions, activeClueTexts=clueTexts, step = 0, hintLevel = 0, queryCount = 0, solvedCurrent = false, collectedClues = [];
 const $ = id => document.getElementById(id);
-const els = {hub:$('caseHub'),trainingIntro:$('trainingIntro'),case02Intro:$('case02Intro'),intro:$('intro'),workspace:$('workspace'),completion:$('completion'),editor:$('sqlEditor'),results:$('results'),feedback:$('feedback'),feedbackText:$('feedbackText')};
+const els = {hub:$('caseHub'),trainingIntro:$('trainingIntro'),case02Intro:$('case02Intro'),case03Intro:$('case03Intro'),intro:$('intro'),workspace:$('workspace'),completion:$('completion'),editor:$('sqlEditor'),results:$('results'),feedback:$('feedback'),feedbackText:$('feedbackText')};
 
 const readVolume=(key,fallback)=>{try{const value=Number(localStorage.getItem(key));return Number.isFinite(value)?Math.max(0,Math.min(1,value)):fallback}catch(e){return fallback}};
 const readFlag=key=>{try{return localStorage.getItem(key)==='true'}catch(e){return false}};
@@ -165,7 +165,7 @@ function beep(freq=540,duration=.06,level=.045){if(audio.muted||!audio.effectsVo
 function resetDatabase(mode=currentCase){
   if(db)db.close();
   db=new SQLRuntime.Database();
-  db.run(mode==='training'?trainingSeed:mode==='case02'?case02Seed:seed);
+  db.run(mode==='training'?trainingSeed:mode==='case02'?case02Seed:mode==='case03'?case03Seed:seed);
 }
 
 async function initDb(){
@@ -186,6 +186,9 @@ async function initDb(){
   $('runBtn').disabled=false;$('startBtn').disabled=false;$('startTrainingBtn').disabled=false;$('beginTrainingBtn').disabled=false;$('startCaseTwoBtn').disabled=false;
   $('startBtn').innerHTML='<span class="case-cta-copy"><small>CASO 01 · PRONTO</small><strong>Avvia il gioco</strong></span><span class="case-cta-seal" aria-hidden="true">01</span>';
   $('startCaseTwoBtn').innerHTML='<span class="case-cta-copy"><small>CASO 02 · PROTOCOLLO APERTO</small><strong>Inizia l’indagine</strong></span><span class="case-cta-seal" aria-hidden="true">02</span>';
+  $('startCaseThreeBtn').disabled=false;
+  $('startCaseThreeBtn').querySelector('small').textContent='CASO 03 · PRONTO';
+  $('startCaseThreeBtn').querySelector('strong').textContent='Inizia l’indagine';
   $('dbStatus').className='footer-status db-status ready';$('dbStatus').innerHTML='<i></i><span>DATABASE PRONTO</span>';
 }
 
@@ -194,13 +197,15 @@ function renderMission(){
   const training=currentCase==='training',case02=currentCase==='case02';
   $('briefingLabel').innerHTML=training?'<b>01</b> LEGGI LA CONSEGNA':'<b>01</b> LEGGI QUI COSA CERCARE';
   $('queryLabel').innerHTML=training?'<b>02</b> SCRIVI IL COMANDO SQL':'<b>02</b> COMPLETA LA QUERY QUI SOTTO';
-  $('queryFilename').textContent=training?'laboratorio_sql.sql':case02?'protocollo_p27.sql':'query_indagine.sql';
-  $('notebookCaseLabel').textContent=training?'CASO 00 · LABORATORIO':case02?'CASO P–27':'CASO F–204';
+  $('queryFilename').textContent=training?'laboratorio_sql.sql':case02?'protocollo_p27.sql':currentCase==='case03'?'rettifica_sp103.sql':'query_indagine.sql';
+  $('notebookCaseLabel').textContent=training?'CASO 00 · LABORATORIO':case02?'CASO P–27':currentCase==='case03'?'CASO 03 · PROTOCOLLO':'CASO F–204';
   $('stepCount').textContent=`${training?'FASE':'INDIZIO'} ${step+1} DI ${activeMissions.length}`;updateProgress(step);setNotebookOpen(false);
   $('missionSkill').textContent=m.skill;$('missionTitle').textContent=m.title;$('missionText').textContent=m.text;$('missionObjective').textContent=m.objective;els.editor.value=m.starter;
   $('nextAction').textContent=training
     ?'Scrivi il comando richiesto, eseguilo e usa il risultato per controllare il lavoro. Se ti blocchi, apri i suggerimenti progressivi.'
-    :currentCase==='case02'
+    :currentCase==='case03'
+      ?'Completa la query seguendo l’obiettivo. Verifica il risultato e annota la prova nel taccuino.'
+      :currentCase==='case02'
       ?(step===0?'Completa raggruppamento e ordinamento per confrontare tutti i protocolli, poi esegui la query.':'Collega o raggruppa i dati richiesti dall’obiettivo, poi esegui la query e annota la prova.')
       :step===0
         ?'Esegui la query iniziale, osserva le righe ottenute e prova a restringere la ricerca fino a isolare un solo evento.'
@@ -314,8 +319,10 @@ function runQuery(){
     if(training){db.run('SAVEPOINT mission_attempt');savepointOpen=true}
     const started=performance.now();const result=db.exec(sql);const elapsed=Math.max(1,Math.round(performance.now()-started));queryCount++;const rows=rowsFrom(result);
     const normalized=sql.replace(/--.*$/gm,' ').replace(/\/\*[\s\S]*?\*\//g,' ').trim();
-    const structureOk=training?m.command.test(normalized):(step===activeMissions.length-1||usesRequiredTables(sql,m.tables));
-    const solved=structureOk&&(m.validateDb?m.validateDb():m.validate(rows));
+    const structureOk=training?m.command.test(normalized):(currentCase==='case03'?usesRequiredTables(normalized,m.tables):step===activeMissions.length-1||usesRequiredTables(sql,m.tables));
+    const solved=structureOk&&(currentCase==='case03'
+      ?compareCase03Rows(rows,queryRows(m.solution))
+      :m.validateDb?m.validateDb():m.validate(rows));
     if(training){db.run(solved?'RELEASE mission_attempt':'ROLLBACK TO mission_attempt');if(!solved)db.run('RELEASE mission_attempt');savepointOpen=false}
     let displayResult=result;
     if(m.preview){try{displayResult=db.exec(m.preview)}catch(e){}}
@@ -336,14 +343,45 @@ function runQuery(){
   }catch(err){if(savepointOpen){try{db.run('ROLLBACK TO mission_attempt');db.run('RELEASE mission_attempt')}catch(e){}}beep(180,.12);setFeedback(`Errore SQL: ${err.message.replace('Error: ','')}`,'error')}
 }
 
+const caseProgressKey = 'ao-case-progress-v1';
+const investigationNumbers = {mystery:1, case02:2, case03:3};
+let completedCase = 0;
+try {
+  const saved = Number(localStorage.getItem(caseProgressKey));
+  if (Number.isInteger(saved) && saved >= 1 && saved <= 3) completedCase = saved;
+} catch {}
+
+function caseIsUnlocked(mode){
+  return (investigationNumbers[mode] ?? 0) <= completedCase + 1;
+}
+
+function updateCaseLocks(){
+  for (const [mode, id, number, action] of [
+    ['case02', 'openCaseTwoBtn', '02', 'Apri il protocollo'],
+    ['case03', 'openCaseThreeBtn', '03', 'Apri il registro']
+  ]) {
+    const button = $(id);
+    const unlocked = caseIsUnlocked(mode);
+    button.disabled = !unlocked;
+    button.querySelector('small').textContent = unlocked ? `CASO ${number} · DISPONIBILE` : `CASO ${number} · BLOCCATO`;
+    button.querySelector('strong').textContent = unlocked ? action : `Prima il Caso 0${investigationNumbers[mode] - 1}`;
+  }
+}
+
 function finish(){
+  const number = investigationNumbers[currentCase];
+  if (number > completedCase && caseIsUnlocked(currentCase)) {
+    completedCase = number;
+    try { localStorage.setItem(caseProgressKey, String(completedCase)); } catch {}
+    updateCaseLocks();
+  }
   if($('trainingSuccessDialog').open)$('trainingSuccessDialog').close();
   document.body.classList.remove('game-active');els.workspace.classList.add('hidden');els.completion.classList.remove('hidden');$('queryStat').textContent=queryCount;
   const training=currentCase==='training',case02=currentCase==='case02';
-  $('completionEyebrow').textContent=training?'CASO 00 · CONTROLLO FINALE':case02?'CASO 02 · RISOLTO':'CASO 01 · RISOLTO';
-  if(training)$('completionTitle').innerHTML='Il registro è pronto.<br><span>Ma F‑204 non c’è.</span>';else if(case02)$('completionTitle').textContent='Il protocollo fantasma ha due firme.';else $('completionTitle').textContent='Hai fatto parlare i dati.';
-  $('completionText').innerHTML=training?'Nel database la scheda del fascicolo <strong>F‑204</strong> esiste ed è classificata come riservata. Durante la verifica fisica dell’archivio, però, il fascicolo cartaceo non si trova: <strong>qualcuno lo ha sottratto</strong>. Il Caso 01 può iniziare.':case02?'Le registrazioni indicano <strong>Davide Moretti</strong> come autore della falsa consegna e <strong>Paolo Serra</strong> come complice al varco nord. Aggregazioni, sottoquery e incroci temporali hanno ricostruito il percorso di P‑27.':'Le prove indicano <strong>Marco Riva</strong> come autore del furto e <strong>Laura Neri</strong> come complice. Hai usato filtri, ordinamenti e JOIN per ricostruire la notte.';
-  $('missionStat').textContent=activeMissions.length;$('missionStatLabel').textContent=training?'fasi SQL':'indizi';$('completionStatLabel').textContent=training?'laboratorio completato':'caso risolto';$('completionSeal').textContent=case02?'02':'01';
+  $('completionEyebrow').textContent=training?'CASO 00 · CONTROLLO FINALE':case02?'CASO 02 · RISOLTO':currentCase==='case03'?'CASO 03 · RISOLTO':'CASO 01 · RISOLTO';
+  if(training)$('completionTitle').innerHTML='Il registro è pronto.<br><span>Ma F‑204 non c’è.</span>';else if(currentCase==='case03')$('completionTitle').textContent='La graduatoria torna corretta.';else if(case02)$('completionTitle').textContent='Il protocollo fantasma ha due firme.';else $('completionTitle').textContent='Hai fatto parlare i dati.';
+  $('completionText').innerHTML=training?'Nel database la scheda del fascicolo <strong>F‑204</strong> esiste ed è classificata come riservata. Durante la verifica fisica dell’archivio, però, il fascicolo cartaceo non si trova: <strong>qualcuno lo ha sottratto</strong>. Il Caso 01 può iniziare.':currentCase==='case03'?'La ricevuta SP-103 attesta le <strong>18:07</strong>. <strong>Matteo Bellini</strong> ha registrato le 17:57 usando una richiesta che autorizzava solo la correzione del civico. Con le ricevute originali <strong>Spazio Aperto</strong> torna al terzo posto.':case02?'Le registrazioni indicano <strong>Davide Moretti</strong> come autore della falsa consegna e <strong>Paolo Serra</strong> come complice al varco nord. Aggregazioni, sottoquery e incroci temporali hanno ricostruito il percorso di P‑27.':'Le prove indicano <strong>Marco Riva</strong> come autore del furto e <strong>Laura Neri</strong> come complice. Hai usato filtri, ordinamenti e JOIN per ricostruire la notte.';
+  $('missionStat').textContent=activeMissions.length;$('missionStatLabel').textContent=training?'fasi SQL':'indizi';$('completionStatLabel').textContent=training?'laboratorio completato':'caso risolto';$('completionSeal').textContent=case02?'02':currentCase==='case03'?'03':'01';
   $('replayBtn').querySelector('small').textContent=training?'NUOVA INDAGINE':'CASO ARCHIVIATO';$('replayBtn').querySelector('strong').textContent=training?'Apri il Caso 01':'Torna alla home';window.scrollTo(0,0);
 }
 function configureHelp(mode=currentCase){
@@ -356,25 +394,37 @@ function configureHelp(mode=currentCase){
     :'<article><b>01</b><div><span>OSSERVA</span><h3>Leggi la missione</h3><p>L’obiettivo ti dice quale informazione devi far emergere dal database.</p></div></article><article><b>02</b><div><span>INTERROGA</span><h3>Completa la query</h3><p>Modifica il codice e premi <strong>Esegui e verifica</strong>. Un tentativo errato mostra comunque risultati utili.</p></div></article><article><b>03</b><div><span>DEDUCI</span><h3>Annota la prova</h3><p>Salva la risposta nel taccuino; poi lo stesso pulsante diventa <strong>Continua</strong>.</p></div></article>';
   dialog.querySelector('.help-demo').innerHTML=training
     ?'<div class="demo-bar"><i></i><i></i><i></i><span>laboratorio_sql.sql</span></div><div class="demo-code"><span>1</span><code><em>CREATE TABLE</em> fascicoli (<br>&nbsp;&nbsp;codice TEXT <mark>PRIMARY KEY</mark><br>);</code></div><div class="demo-result"><span>VERIFICA</span><strong>Struttura creata correttamente</strong></div><div class="demo-note"><span>✓</span><div><small>AVANZAMENTO</small><p>Il pulsante diventa Continua.</p></div></div>'
-    :case02
-      ?'<div class="demo-bar"><i></i><i></i><i></i><span>protocollo_p27.sql</span></div><div class="demo-code"><span>1</span><code><em>SELECT</em> p.codice, <mark>COUNT</mark>(*) AS passaggi<br><em>FROM</em> movimenti m<br><em>JOIN</em> plichi p ON p.id = m.plico_id<br><em>GROUP BY</em> p.codice;</code></div><div class="demo-result"><span>RISULTATO</span><strong>P‑27 · 5 passaggi registrati</strong></div><div class="demo-note"><span>✓</span><div><small>TACCUINO</small><p>P‑27 ha un percorso anomalo.</p></div></div>'
+    :mode==='case03'
+      ?'<div class="demo-bar"><i></i><i></i><i></i><span>storico.sql</span></div><div class="demo-code"><span>1</span><code><em>SELECT</em> versione, registrata_alle<br><em>FROM</em> versioni<br><em>ORDER BY</em> registrata_alle <mark>DESC</mark><br><em>LIMIT</em> 1;</code></div><div class="demo-result"><span>RISULTATO · VERSIONE / REGISTRATA_ALLE</span><strong>2 · 23:42</strong></div><div class="demo-note"><span>✓</span><div><small>TACCUINO</small><p>L’ultima registrazione della serata è delle 23:42.</p></div></div>'
+      :case02
+      ?'<div class="demo-bar"><i></i><i></i><i></i><span>protocollo_p27.sql</span></div><div class="demo-code"><span>1</span><code><em>SELECT</em> p.protocollo, <mark>COUNT</mark>(*) AS passaggi<br><em>FROM</em> movimenti m<br><em>JOIN</em> plichi p ON p.id = m.plico_id<br><em>WHERE</em> p.protocollo = \'P-27\'<br><em>GROUP BY</em> p.protocollo;</code></div><div class="demo-result"><span>RISULTATO</span><strong>P‑27 · 5 passaggi registrati</strong></div><div class="demo-note"><span>✓</span><div><small>TACCUINO</small><p>P‑27 ha un percorso anomalo.</p></div></div>'
       :'<div class="demo-bar"><i></i><i></i><i></i><span>prova_01.sql</span></div><div class="demo-code"><span>1</span><code><em>SELECT</em> ora, descrizione<br><em>FROM</em> eventi<br><em>WHERE</em> tipo = <mark>\'allarme\'</mark>;</code></div><div class="demo-result"><span>RISULTATO</span><strong>22:14 · Fondo Riservato F-204</strong></div><div class="demo-note"><span>✓</span><div><small>TACCUINO</small><p>L’allarme è scattato alle 22:14.</p></div></div>';
   dialog.querySelector('.help-footer>p').innerHTML=training?'<span>?</span>Se ti blocchi, usa i suggerimenti progressivi. Ogni tentativo errato viene annullato senza danneggiare il database.':'<span>?</span>Se ti blocchi, usa i suggerimenti progressivi: l’ultimo orienta il ragionamento senza mostrare la query completa.';
   $('beginBtn').querySelector('small').textContent=training?'ISTRUZIONI COMPLETATE':'BRIEFING COMPLETATO';
   $('beginBtn').querySelector('strong').textContent=training?'Inizia il laboratorio':'Entra nell’archivio';
-  $('beginBtn').querySelector('.case-cta-seal').textContent=training?'00':case02?'02':'01';
+  $('beginBtn').querySelector('.case-cta-seal').textContent=training?'00':case02?'02':mode==='case03'?'03':'01';
 }
 function startGame(mode='mystery',showGuide=true){
-  currentCase=mode;activeMissions=mode==='training'?trainingMissions:mode==='case02'?case02Missions:missions;activeClueTexts=mode==='training'?trainingVerificationTexts:mode==='case02'?case02ClueTexts:clueTexts;resetDatabase(mode);
-  $('brandSubtitle').textContent=mode==='training'?'LABORATORIO SQL · CASO 00':mode==='case02'?'SQL MYSTERY · CASO 02':'SQL MYSTERY · CASO 01';
+  if (!caseIsUnlocked(mode)) return;
+  currentCase=mode;activeMissions=mode==='training'?trainingMissions:mode==='case02'?case02Missions:mode==='case03'?case03Missions:missions;activeClueTexts=mode==='training'?trainingVerificationTexts:mode==='case02'?case02ClueTexts:mode==='case03'?case03Missions.map(mission=>mission.clue):clueTexts;resetDatabase(mode);
+  $('brandSubtitle').textContent=mode==='training'?'LABORATORIO SQL · CASO 00':mode==='case02'?'SQL MYSTERY · CASO 02':mode==='case03'?'SQL MYSTERY · CASO 03':'SQL MYSTERY · CASO 01';
   setSchemaAvailable(true);
-  document.body.classList.add('game-active');document.body.classList.toggle('case02-active',mode==='case02');els.hub.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.case02Intro.classList.add('hidden');els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.workspace.classList.remove('hidden');step=0;queryCount=0;collectedClues=[];renderNotebook();renderMission();window.scrollTo(0,0);if(showGuide){configureHelp(mode);$('helpDialog').showModal()}
+  document.body.classList.add('game-active');document.body.classList.toggle('case02-active',mode==='case02');els.case03Intro.classList.add('hidden');els.hub.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.case02Intro.classList.add('hidden');els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.workspace.classList.remove('hidden');step=0;queryCount=0;collectedClues=[];renderNotebook();renderMission();window.scrollTo(0,0);if(showGuide){configureHelp(mode);$('helpDialog').showModal()}
 }
 function setSchemaAvailable(available){$('schemaBtn').classList.toggle('hidden',!available)}
-function openCaseOne(){currentCase='mystery';setSchemaAvailable(true);$('brandSubtitle').textContent='SQL MYSTERY · CASO 01';els.hub.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.case02Intro.classList.add('hidden');els.completion.classList.add('hidden');els.intro.classList.remove('hidden');window.scrollTo(0,0)}
-function openCaseTwo(){currentCase='case02';setSchemaAvailable(true);$('brandSubtitle').textContent='SQL MYSTERY · CASO 02';els.hub.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.case02Intro.classList.remove('hidden');window.scrollTo(0,0)}
+function openCaseOne(){currentCase='mystery';setSchemaAvailable(true);$('brandSubtitle').textContent='SQL MYSTERY · CASO 01';els.case03Intro.classList.add('hidden');els.hub.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.case02Intro.classList.add('hidden');els.completion.classList.add('hidden');els.intro.classList.remove('hidden');window.scrollTo(0,0)}
+function openCaseTwo(){if (!caseIsUnlocked('case02')) return;currentCase='case02';setSchemaAvailable(true);$('brandSubtitle').textContent='SQL MYSTERY · CASO 02';els.case03Intro.classList.add('hidden');els.hub.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.intro.classList.add('hidden');els.completion.classList.add('hidden');els.case02Intro.classList.remove('hidden');window.scrollTo(0,0)}
 function openTraining(){currentCase='training';setSchemaAvailable(true);$('brandSubtitle').textContent='LABORATORIO SQL · CASO 00';els.hub.classList.add('hidden');els.case02Intro.classList.add('hidden');els.trainingIntro.classList.remove('hidden');window.scrollTo(0,0)}
-function goHome(){currentCase='mystery';setSchemaAvailable(false);document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());$('brandSubtitle').textContent='SQL MYSTERY · ARCHIVIO DEI CASI';document.body.classList.remove('game-active','case02-active');els.workspace.classList.add('hidden');els.completion.classList.add('hidden');els.intro.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.case02Intro.classList.add('hidden');els.hub.classList.remove('hidden');window.scrollTo(0,0);}
+function openCaseThree(){
+  if (!caseIsUnlocked('case03')) return;
+  currentCase='case03';
+  setSchemaAvailable(true);
+  $('brandSubtitle').textContent='SQL MYSTERY · CASO 03';
+  for(const panel of [els.hub,els.trainingIntro,els.intro,els.case02Intro,els.workspace,els.completion])panel.classList.add('hidden');
+  els.case03Intro.classList.remove('hidden');
+  window.scrollTo(0,0);
+}
+function goHome(){els.case03Intro.classList.add('hidden');currentCase='mystery';setSchemaAvailable(false);document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());$('brandSubtitle').textContent='SQL MYSTERY · ARCHIVIO DEI CASI';document.body.classList.remove('game-active','case02-active');els.workspace.classList.add('hidden');els.completion.classList.add('hidden');els.intro.classList.add('hidden');els.trainingIntro.classList.add('hidden');els.case02Intro.classList.add('hidden');els.hub.classList.remove('hidden');window.scrollTo(0,0);}
 function renderConceptualSchema(){ $('schemaGrid').innerHTML=`
 <svg viewBox="0 0 1000 510" role="img" aria-labelledby="erConceptTitle erConceptDesc" preserveAspectRatio="xMidYMid meet">
   <title id="erConceptTitle">Modello entità-relazioni concettuale del database comunale</title>
@@ -541,8 +591,42 @@ function renderCase02Schema(){$('schemaGrid').innerHTML=`
   ${erCard(390,450,240,165,'scansioni',['id  INTEGER  PK','plico_id  INTEGER  FK','data  TEXT','ora  TEXT','varco  TEXT','peso_grammi  INTEGER'],false,19)}
 </svg>`}
 
+function renderCase03Schema(){
+  const links = [
+    ['M145 150 V81 H363', 'M363 81 H410', 293, 81, 100, 'RICEVUTA', 155, 137, 395, 72, '1'],
+    ['M270 201 H510', 'M510 201 H735', 500, 201, 94, 'VERSIONI', 285, 192, 719, 192, 'N'],
+    ['M270 270 H330 V320 H490', 'M490 320 H650 V425 H735', 483, 320, 106, 'RICHIESTE', 285, 261, 719, 416, 'N'],
+    ['M270 454 H510', 'M510 454 H735', 500, 454, 104, 'RICHIEDE', 285, 445, 719, 445, 'N'],
+    ['M270 502 H510', 'M510 502 H735', 500, 502, 104, 'AUTORIZZA', 285, 493, 719, 493, 'N'],
+    ['M145 405 V377 H510', 'M510 377 H642 M658 377 H695 V283 H735', 505, 377, 104, 'APPLICA', 155, 394, 719, 274, 'N'],
+    ['M860 400 V369', 'M860 369 V323', 860, 366, 112, 'GIUSTIFICA', 874, 390, 874, 337, 'N', true]
+  ];
+  const connectors = links.map(([required, optional, x, y, width, label, oneX, oneY, endX, endY, end, nullable]) => `
+    <path class="er-link ${nullable ? 'optional' : 'required'}" d="${required}"/>
+    <path class="er-link optional" ${end === 'N' ? 'marker-end="url(#case03CrowFoot)"' : ''} d="${optional}"/>
+    ${erRelationTag(x,y,width,label)}
+    <text class="er-cardinality er-one-label" x="${oneX}" y="${oneY}">${nullable ? '0–1' : '1'}</text>
+    <text class="er-cardinality er-many-label" x="${endX}" y="${endY}">${end}</text>`).join('');
+  $('schemaGrid').innerHTML=`
+<svg viewBox="0 0 1000 570" role="img" aria-labelledby="case03SchemaTitle case03SchemaDesc">
+  <title id="case03SchemaTitle">Schema del database del Caso 03</title>
+  <desc id="case03SchemaDesc">Una pratica può avere una ricevuta, più richieste e più versioni. Gli operatori richiedono e autorizzano richieste e applicano versioni. Una versione può riferirsi a una richiesta. La chiave primaria delle versioni comprende pratica e numero di versione.</desc>
+  <defs><marker id="case03CrowFoot" markerWidth="18" markerHeight="18" refX="17" refY="9" orient="auto" markerUnits="userSpaceOnUse"><path class="er-crow-foot" d="M1 9 L17 1 M1 9 L17 9 M1 9 L17 17"/></marker></defs>
+  <g aria-hidden="true">${connectors}</g>
+  ${erCard(20,150,250,146,'pratiche',['id  INTEGER  PK','protocollo  TEXT  UNIQUE','richiedente  TEXT','punteggio  INTEGER'],true)}
+  ${erCard(410,24,250,94,'ricevute',['pratica_id  INTEGER  PK · FK','ora  TEXT'])}
+  ${erCard(20,405,250,126,'operatori',['id  INTEGER  PK','nome  TEXT','ruolo  TEXT'])}
+  ${erCard(735,105,250,218,'versioni',['pratica_id  INTEGER  PK · FK','versione  INTEGER  PK','ora_arrivo  TEXT','civico  INTEGER','registrata_alle  TEXT','richiesta_id  INTEGER  FK','applicata_da  INTEGER  FK'])}
+  ${erCard(735,400,250,158,'richieste',['id  INTEGER  PK','pratica_id  INTEGER  FK','richiedente_id  INTEGER  FK','autorizzata_da  INTEGER  FK','campo  TEXT'])}
+</svg>`;
+}
+
 const sqlManualCategories=[['all','Tutti'],['struttura','Struttura'],['vincoli','Vincoli'],['dati','Dati'],['ricerca','Ricerca'],['relazioni','Relazioni'],['calcoli','Calcoli'],['avanzati','Avanzati']];
 const sqlManualCommands=[
+  {c:'avanzati',n:'WITH (CTE)',d:'Assegna un nome a un risultato intermedio da usare nella stessa query. Se hai più CTE, separale con una virgola.',s:'WITH in_servizio AS (\n  SELECT id, nome FROM operatori WHERE attivo = 1\n)\nSELECT nome FROM in_servizio;'},
+  {c:'avanzati',n:'LAG',d:'Legge il valore della riga precedente secondo l’ordine indicato in OVER. Alla prima riga del gruppo restituisce NULL.',s:'SELECT versione, LAG(valore) OVER (\n  PARTITION BY documento_id ORDER BY versione\n) AS valore_precedente\nFROM storico;'},
+  {c:'avanzati',n:'ROW_NUMBER',d:'Numera le righe nell’ordine indicato in OVER. PARTITION BY fa ripartire la numerazione per ogni gruppo. Per filtrare il numero usa una query esterna.',s:'WITH classifica AS (\n  SELECT nome, ROW_NUMBER() OVER (ORDER BY punti DESC, id) AS posto\n  FROM concorrenti\n)\nSELECT nome, posto FROM classifica WHERE posto <= 3;'},
+  {c:'avanzati',n:'NOT EXISTS',d:'Mantiene una riga quando la sottoquery collegata non restituisce risultati.',s:'SELECT p.nome FROM persone p\nWHERE NOT EXISTS (\n  SELECT 1 FROM iscrizioni i WHERE i.persona_id = p.id\n);'},
   {c:'struttura',n:'CREATE TABLE',d:'Crea una nuova tabella definendo colonne e tipi di dato.',s:'CREATE TABLE tabella (\n  id INTEGER PRIMARY KEY,\n  nome TEXT NOT NULL\n);'},
   {c:'struttura',n:'ALTER TABLE',d:'Modifica la struttura di una tabella esistente, per esempio aggiungendo una colonna.',s:'ALTER TABLE fascicoli\nADD COLUMN scaffale TEXT;'},
   {c:'struttura',n:'DROP TABLE',d:'Elimina definitivamente una tabella e tutti i dati che contiene.',s:'DROP TABLE IF EXISTS bozze;'},
@@ -624,7 +708,7 @@ function renderSqlManual(){
 }
 function openSqlManual(){manualCategory='all';$('manualSearch').value='';$('manualFilters').innerHTML=sqlManualCategories.map(([value,label])=>`<button type="button" data-manual-category="${value}" class="${value==='all'?'active':''}">${label}</button>`).join('');renderSqlManual();$('manualDialog').showModal();setTimeout(()=>$('manualSearch').focus(),0)}
 
-$('startTrainingBtn').onclick=openTraining;$('beginTrainingBtn').onclick=()=>startGame('training',true);$('openCaseOneBtn').onclick=openCaseOne;$('startBtn').onclick=()=>startGame('mystery',true);$('openCaseTwoBtn').onclick=openCaseTwo;$('startCaseTwoBtn').onclick=()=>startGame('case02',true);$('replayBtn').onclick=()=>currentCase==='training'?openCaseOne():goHome();$('runBtn').onclick=()=>{if(solvedCurrent){if(currentCase!=='training'&&!collectedClues[step]){setNotebookOpen(true);setFeedback('Salva prima l’indizio nel taccuino; poi potrai continuare.','success');return}if(step===activeMissions.length-1)finish();else{step++;renderMission();window.scrollTo(0,0)}}else runQuery()};$('runBtn').disabled=true;
+$('startTrainingBtn').onclick=openTraining;$('beginTrainingBtn').onclick=()=>startGame('training',true);$('openCaseOneBtn').onclick=openCaseOne;$('startBtn').onclick=()=>startGame('mystery',true);$('openCaseTwoBtn').onclick=openCaseTwo;$('startCaseTwoBtn').onclick=()=>startGame('case02',true);$('openCaseThreeBtn').onclick=openCaseThree;$('startCaseThreeBtn').onclick=()=>startGame('case03',true);$('replayBtn').onclick=()=>currentCase==='training'?openCaseOne():goHome();$('runBtn').onclick=()=>{if(solvedCurrent){if(currentCase!=='training'&&!collectedClues[step]){setNotebookOpen(true);setFeedback('Salva prima l’indizio nel taccuino; poi potrai continuare.','success');return}if(step===activeMissions.length-1)finish();else{step++;renderMission();window.scrollTo(0,0)}}else runQuery()};$('runBtn').disabled=true;
 document.querySelector('.brand').onclick=e=>{e.preventDefault();goHome()};
 $('resetQueryBtn').onclick=()=>{els.editor.value=activeMissions[step].starter;els.editor.focus()};
 $('hintBtn').onclick=()=>setHintsOpen($('hintBox').classList.contains('hidden'));
@@ -638,7 +722,17 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape'){setNotebook
 $('trainingContinueBtn').onclick=()=>{if(currentCase!=='training'||!solvedCurrent)return;if($('trainingSuccessDialog').open)$('trainingSuccessDialog').close();if(step===activeMissions.length-1){finish()}else{step++;renderMission();window.scrollTo(0,0)}};
 $('trainingSuccessDialog').addEventListener('cancel',event=>event.preventDefault());
 $('continueBtn').onclick=()=>{if(!solvedCurrent)return;const note=$('clueInput').value.trim();if(!note){$('clueInputHelp').textContent='Scrivi liberamente: basta anche un solo carattere.';$('clueInputHelp').className='input-error';return}if(!collectedClues[step])collectedClues.push(note);renderNotebook();$('clueInput').value='';$('clueInputHelp').textContent='Indizio salvato. Ora puoi continuare.';$('clueInputHelp').className='';$('continueBtn').disabled=true;$('runBtn').disabled=false;$('runBtn').querySelector('.run-label').textContent=step===activeMissions.length-1?'Concludi':'Continua';$('runBtn').querySelector('.run-step').innerHTML='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 4.5 5 5.5-5 5.5"/></svg>';$('runBtn').querySelector('.run-step').classList.add('advance');setFeedback(step===activeMissions.length-1?'Indizio salvato. Premi «Concludi» per chiudere il caso.':'Indizio salvato nel taccuino. Premi «Continua» per passare al prossimo.','success')};
-$('schemaBtn').onclick=()=>{const training=currentCase==='training',case02=currentCase==='case02';$('schemaDialog').classList.toggle('training-schema',training);$('schemaEyebrow').textContent=training?'CASO 00 · LABORATORIO SQL':case02?'CASO 02 · PROTOCOLLO P‑27':'CASO 01 · DATABASE COMUNALE';$('schemaTitle').textContent='Schema del database';$('schemaNote').innerHTML=training?'Ogni <strong>consultazione</strong> riguarda un solo <strong>fascicolo</strong>; più consultazioni possono riferirsi allo stesso fascicolo tramite <strong>consultazioni.fascicolo_codice</strong>.':case02?'I riferimenti mostrati sono obbligatori (NOT NULL). Lo schema SQLite non dichiara vincoli FOREIGN KEY.':'I riferimenti a cittadini ammettono NULL. Lo schema SQLite non dichiara vincoli FOREIGN KEY.';$('schemaDialog').showModal();training?renderTrainingSchema():case02?renderCase02Schema():renderRelationalSchema()};$('closeSchemaBtn').onclick=()=>$('schemaDialog').close();
+$('schemaBtn').onclick=()=>{
+  if(currentCase==='case03'){
+    $('schemaDialog').classList.remove('training-schema');
+    $('schemaEyebrow').textContent='CASO 03 · L’ULTIMA RETTIFICA';
+    $('schemaTitle').textContent='Schema del database';
+    $('schemaNote').textContent='In versioni, pratica_id e versione formano la chiave primaria composta. Una pratica può avere al massimo una ricevuta e richiesta_id può essere NULL.';
+    renderCase03Schema();
+    $('schemaDialog').showModal();
+    return;
+  }
+const training=currentCase==='training',case02=currentCase==='case02';$('schemaDialog').classList.toggle('training-schema',training);$('schemaEyebrow').textContent=training?'CASO 00 · LABORATORIO SQL':case02?'CASO 02 · PROTOCOLLO P‑27':'CASO 01 · DATABASE COMUNALE';$('schemaTitle').textContent='Schema del database';$('schemaNote').innerHTML=training?'Ogni <strong>consultazione</strong> riguarda un solo <strong>fascicolo</strong>; più consultazioni possono riferirsi allo stesso fascicolo tramite <strong>consultazioni.fascicolo_codice</strong>.':case02?'I riferimenti mostrati sono obbligatori (NOT NULL). Lo schema SQLite non dichiara vincoli FOREIGN KEY.':'I riferimenti a cittadini ammettono NULL. Lo schema SQLite non dichiara vincoli FOREIGN KEY.';$('schemaDialog').showModal();training?renderTrainingSchema():case02?renderCase02Schema():renderRelationalSchema()};$('closeSchemaBtn').onclick=()=>$('schemaDialog').close();
 $('manualBtn').onclick=openSqlManual;$('closeManualBtn').onclick=()=>$('manualDialog').close();$('manualSearch').addEventListener('input',renderSqlManual);$('manualFilters').addEventListener('click',event=>{const button=event.target.closest('[data-manual-category]');if(!button)return;manualCategory=button.dataset.manualCategory;$('manualFilters').querySelectorAll('button').forEach(item=>item.classList.toggle('active',item===button));renderSqlManual()});
 $('helpBtn').onclick=()=>{configureHelp(currentCase);$('helpDialog').showModal()};$('closeHelpBtn').onclick=()=>$('helpDialog').close();$('beginBtn').onclick=()=>{$('helpDialog').close();els.editor.focus()};
 $('soundBtn').onclick=()=>setAudioPanel($('audioPanel').classList.contains('hidden'));
@@ -649,7 +743,7 @@ document.addEventListener('pointerdown',ensureAudio,{once:true,capture:true});
 document.addEventListener('click',event=>{const button=event.target.closest('button');if(button&&!button.disabled&&button.id!=='runBtn'&&button.id!=='soundBtn')beep(420,.025,.018);if(!event.target.closest('.audio-control'))setAudioPanel(false)});
 syncAudioControls();
 els.editor.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();$('runBtn').click()}if(e.key==='Tab'){e.preventDefault();const s=e.target.selectionStart;e.target.value=e.target.value.slice(0,s)+'  '+e.target.value.slice(e.target.selectionEnd);e.target.selectionStart=e.target.selectionEnd=s+2}});
-renderRelationalSchema();initDb().catch(err=>{$('dbStatus').className='footer-status db-status error';$('dbStatus').innerHTML='<i></i><span>DATABASE NON DISPONIBILE</span>';$('startBtn').innerHTML='Errore caricamento <span>!</span>';setFeedback('Impossibile avviare SQLite: '+err.message,'error')});
+updateCaseLocks();renderRelationalSchema();initDb().catch(err=>{$('dbStatus').className='footer-status db-status error';$('dbStatus').innerHTML='<i></i><span>DATABASE NON DISPONIBILE</span>';$('startBtn').innerHTML='Errore caricamento <span>!</span>';setFeedback('Impossibile avviare SQLite: '+err.message,'error')});
 
 // Home returns to the shared hub when present; standalone copies keep their own home.
 (() => {
