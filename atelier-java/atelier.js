@@ -189,7 +189,8 @@ const galleryPosition = byId('gallery-position');
 const galleryExhibitionActions = byId('gallery-exhibition-actions');
 const galleryExhibitionTitle = byId('gallery-exhibition-title');
 const galleryCanvas = byId('gallery-canvas');
-const galleryMystery = galleryCanvas.firstElementChild;
+const galleryMystery = byId('gallery-mystery');
+const galleryLock = byId('gallery-lock');
 const finishedPreviewArt = byId('finished-preview-art');
 const galleryMoon = createCityMoon();
 const workshopMoon = createCityMoon();
@@ -210,7 +211,6 @@ function showFrame(direction) {
   frameIndex = (frameIndex + direction + frames.length) % frames.length;
   galleryDots[frameIndex].classList.add('active');
   const frame = frames[frameIndex];
-  exhibit.disabled = !frame.id;
   workTitle.textContent = frame.title;
   frameAnimation?.cancel();
   renderGalleryArtwork();
@@ -555,9 +555,26 @@ function isFrameCompleted(frame) {
   try { return localStorage.getItem(key) === 'yes'; } catch { return false; }
 }
 
+function firstIncompleteFrame() {
+  return frames.findIndex(frame => !isFrameCompleted(frame));
+}
+
+function isFrameUnlocked(index) {
+  const firstIncomplete = firstIncompleteFrame();
+  return index >= 0 && (firstIncomplete === -1 || index <= firstIncomplete);
+}
+
+window.addEventListener('storage', event => {
+  if (event.key === null || frames.some(frame => frame.completedKey === event.key)) renderGalleryArtwork();
+});
+
 function renderGalleryArtwork() {
   const frame = frames[frameIndex];
-  const completed = isFrameCompleted(frame);
+  const unlocked = isFrameUnlocked(frameIndex);
+  const completed = unlocked && isFrameCompleted(frame);
+  const lockMessage = unlocked ? '' : 'Completa il quadro ' + (firstIncompleteFrame() + 1) + ' per proseguire.';
+  exhibit.disabled = !unlocked;
+  galleryLock.textContent = lockMessage;
   const exhibitionFinished = completed && frame.id === 'mostra';
   galleryExhibitionActions.hidden = !exhibitionFinished;
   galleryExhibitionActions.replaceChildren();
@@ -566,7 +583,8 @@ function renderGalleryArtwork() {
     controls: galleryExhibitionActions,
     announce: title => { galleryExhibitionTitle.textContent = title; }
   } : undefined;
-  galleryCanvas.replaceChildren(completed ? finishedArtwork(frame, true, navigation) : galleryMystery);
+  const artwork = completed ? finishedArtwork(frame, true, navigation) : galleryMystery;
+  galleryCanvas.replaceChildren(unlocked ? artwork : galleryLock);
   exhibit.toggleAttribute('data-exhibition-finished', exhibitionFinished);
   positionGalleryExhibitionActions();
   const cityFinished = completed && frame.id === 'citta';
@@ -574,7 +592,7 @@ function renderGalleryArtwork() {
   exhibit.toggleAttribute('data-city-finished', cityFinished);
   positionGalleryMoon();
   galleryPosition.textContent = 'Cornice ' + (frameIndex + 1) + ' di ' + frames.length +
-    (completed ? ' · Quadro completato' : '');
+    (unlocked ? (completed ? ' · Quadro completato' : '') : ' · ' + lockMessage);
 }
 
 function positionGalleryExhibitionActions() {
@@ -1202,7 +1220,7 @@ function resetDrawing() {
 }
 
 function openWorkshop(frame, restoring = false) {
-  if (!frame.id) return;
+  if (!isFrameUnlocked(frames.indexOf(frame))) return;
   if (activeFrame !== frame && !activeFrame.steps) saveProgress();
   activeFrame = frame;
   const usesEditor = Boolean(frame.steps);
@@ -1251,6 +1269,11 @@ let savedWorkshop;
 try { savedWorkshop = sessionStorage.getItem(workshopOpenKey); } catch {}
 const resumeIndex = frames.findIndex(frame => frame.id && frame.id === (savedWorkshop === 'yes' ? 'casa' : savedWorkshop));
 if (resumeIndex >= 0) {
-  if (resumeIndex !== frameIndex) showFrame(resumeIndex);
-  openWorkshop(frames[resumeIndex], true);
+  const unlocked = isFrameUnlocked(resumeIndex);
+  const selectedIndex = unlocked ? resumeIndex : firstIncompleteFrame();
+  if (selectedIndex !== frameIndex) showFrame(selectedIndex - frameIndex);
+  if (unlocked) openWorkshop(frames[resumeIndex], true);
+  else {
+    try { sessionStorage.removeItem(workshopOpenKey); } catch {}
+  }
 }

@@ -6,12 +6,12 @@
   <meta name="theme-color" content="#13192d">
   <title>Atelier Java — I quadri da ricostruire</title>
   <link rel="icon" href="assets/atelier.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="atelier.css?v=113">
+  <link rel="stylesheet" href="atelier.css?v=114">
   <script src="ponte.js?v=13" defer></script>
   <script src="citta.js?v=25" defer></script>
   <script src="biglietteria.js?v=14" defer></script>
   <script src="mostra.js?v=5" defer></script>
-  <script src="atelier.js?v=93" defer></script>
+  <script src="atelier.js?v=94" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -39,7 +39,7 @@
       <button class="icon gallery-arrow" id="gallery-prev" type="button" aria-label="Cornice precedente">←</button>
       <div class="exhibit-piece">
         <button class="exhibit-button" id="enter" type="button" aria-labelledby="work-title">
-          <span class="frame" aria-hidden="true"><span class="canvas" id="gallery-canvas"><span class="gallery-mystery">?</span></span></span>
+          <span class="frame" aria-hidden="true"><span class="canvas" id="gallery-canvas"><span class="gallery-mystery" id="gallery-mystery">?</span><span class="gallery-lock" id="gallery-lock"></span></span></span>
           <span class="plaque"><strong id="work-title">La casa di sera</strong></span>
         </button>
         <div id="gallery-exhibition-actions" class="exhibition-controls" role="group" aria-label="Comandi della mostra" hidden></div>
@@ -59,8 +59,8 @@
     <p class="instructions-intro">Ricostruisci un quadro con Java, una forma alla volta.</p>
     <ol class="instructions-steps" role="list">
       <li>
-        <h3>Scegli un quadro</h3>
-        <p>Sfoglia la galleria con le frecce e clicca sulla cornice per entrare nell’atelier.</p>
+        <h3>Parti dal primo quadro</h3>
+        <p>Sfoglia la galleria con le frecce. Clicca sulla cornice di un quadro sbloccato per entrare nell’atelier. Ogni quadro completato sblocca il successivo.</p>
       </li>
       <li>
         <h3>Modifica il codice</h3>
