@@ -6,14 +6,19 @@
   <meta name="theme-color" content="#13192d">
   <title>Atelier Java — I quadri da ricostruire</title>
   <link rel="icon" href="assets/atelier.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="atelier.css?v=68">
-  <script src="atelier.js?v=38" defer></script>
+  <link rel="stylesheet" href="atelier.css?v=113">
+  <script src="ponte.js?v=13" defer></script>
+  <script src="citta.js?v=25" defer></script>
+  <script src="biglietteria.js?v=14" defer></script>
+  <script src="mostra.js?v=5" defer></script>
+  <script src="atelier.js?v=93" defer></script>
 </head>
 <body>
   <header class="topbar">
     <div class="brand"><img src="assets/atelier.svg" width="38" height="38" alt=""><span>Atelier Java<small>Grafica · Java Swing</small></span></div>
     <nav aria-label="Comandi del gioco">
       <button id="help" type="button">Come si gioca</button>
+      <button id="gallery-manual-open" type="button" aria-haspopup="dialog">Manuale</button>
       <button id="music" class="icon" type="button" popovertarget="music-settings" aria-label="Impostazioni audio" title="Impostazioni audio">♫</button>
       <a href="../index.html" class="icon games-home" aria-label="Home dei giochi" title="Home dei giochi">
         <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">
@@ -32,16 +37,20 @@
     </div>
     <section class="exhibit" aria-label="Galleria delle opere">
       <button class="icon gallery-arrow" id="gallery-prev" type="button" aria-label="Cornice precedente">←</button>
-      <button class="exhibit-button" id="enter" type="button" aria-labelledby="work-title">
-        <span class="frame" aria-hidden="true"><span class="canvas" id="gallery-canvas"><span class="gallery-mystery">?</span></span></span>
-        <span class="plaque"><strong id="work-title">La casa di sera</strong></span>
-      </button>
+      <div class="exhibit-piece">
+        <button class="exhibit-button" id="enter" type="button" aria-labelledby="work-title">
+          <span class="frame" aria-hidden="true"><span class="canvas" id="gallery-canvas"><span class="gallery-mystery">?</span></span></span>
+          <span class="plaque"><strong id="work-title">La casa di sera</strong></span>
+        </button>
+        <div id="gallery-exhibition-actions" class="exhibition-controls" role="group" aria-label="Comandi della mostra" hidden></div>
+        <span id="gallery-exhibition-title" role="status"></span>
+      </div>
       <button class="icon gallery-arrow" id="gallery-next" type="button" aria-label="Cornice successiva">→</button>
       <div class="gallery-pagination">
         <div id="gallery-dots" aria-hidden="true">
-          <span class="active"></span><span></span><span></span>
+          <span class="active"></span><span></span><span></span><span></span><span></span>
         </div>
-        <span id="gallery-position" role="status">Cornice 1 di 3</span>
+        <span id="gallery-position" role="status">Cornice 1 di 5</span>
       </div>
     </section>
   </main>
@@ -55,7 +64,7 @@
       </li>
       <li>
         <h3>Modifica il codice</h3>
-        <p>Cambia i valori evidenziati nell’Editor Java. Guarda l’effetto sulla tela e, quando c’è, segui la sagoma tratteggiata.</p>
+        <p>Modifica i valori evidenziati o scrivi il tuo codice nell’Editor Java, a seconda del quadro. Guarda l’effetto sulla tela e segui la sagoma tratteggiata.</p>
       </li>
       <li>
         <h3>Verifica e continua</h3>
@@ -80,12 +89,24 @@
     </header>
     <div class="lesson">
       <section class="lesson-controls" aria-labelledby="lesson-title">
-        <p class="eyebrow" id="lesson-progress">Passaggio 1 di 6</p>
-        <h3 id="lesson-title">Disegna la facciata</h3>
+        <div class="lesson-heading">
+          <p class="eyebrow" id="lesson-progress">Passaggio 1 di 6</p>
+          <h3 id="lesson-title">Disegna la facciata</h3>
+          <button id="code-help-open" class="icon workshop-manual" type="button" aria-haspopup="dialog" aria-controls="code-help" hidden>Codice già pronto</button>
+        </div>
         <p id="lesson-instruction">Imposta la larghezza della facciata usando il contorno tratteggiato.</p>
         <form id="rectangle-form">
           <h4 class="editor-label" id="editor-label">Editor Java</h4>
           <div class="code-editor" id="lesson-code" role="group" aria-labelledby="editor-label"></div>
+          <div id="drawing-code">
+            <fieldset id="halo-guide" class="code-editor" aria-label="Parametri della sfumatura" hidden disabled>RadialGradientPaint alone =
+    new RadialGradientPaint(
+        <input type="number" step="any" placeholder="x" aria-label="Coordinata x del centro">, <input type="number" step="any" placeholder="y" aria-label="Coordinata y del centro">, <input type="number" step="any" placeholder="r" aria-label="Raggio dell’alone">,
+        new float[] {0f, 0.5f, 1f},
+        new Color[] {luce, luce, bordo}
+    );</fieldset>
+            <textarea id="bridge-code" class="code-editor" aria-labelledby="editor-label" placeholder="// Scrivi qui il codice Java" maxlength="4000" spellcheck="false" autocapitalize="off" autocomplete="off" hidden></textarea>
+          </div>
           <div class="lesson-actions">
             <p id="feedback" role="status"></p>
             <button class="icon lesson-reset" type="reset" aria-label="Ripristina i valori del passaggio" title="Ripristina i valori del passaggio"><span aria-hidden="true">↺</span></button>
@@ -97,17 +118,23 @@
         <figcaption>
           <button class="preview-open" id="preview-open" type="button" aria-haspopup="dialog" aria-label="Tela: anteprima del quadro finito">Tela</button>
           <span class="preview-legend"><span class="preview-swatch" aria-hidden="true"></span> Sagoma da seguire</span>
+          <output id="drawing-coordinates" aria-label="Coordinate sulla tela" aria-live="off" hidden>x — · y —</output>
         </figcaption>
-        <svg id="workshop-canvas" viewBox="0 0 250 175" role="img" aria-label="Tela del paesaggio serale. Le forme compaiono durante la costruzione della casa.">
-          <rect width="250" height="175" fill="#232d50"/>
-          <path d="M0 156H250V175H0Z" fill="#1c2940"/>
-          <rect id="facade" x="20" y="54" width="170" height="104" fill="#865a51" visibility="hidden"/>
-          <polygon id="roof" points="20,54 105,14 190,54" fill="#a16b55" visibility="hidden"/>
-          <rect id="door" x="140" y="118" width="27" height="40" fill="#443751" visibility="hidden"/>
-          <rect id="window" x="80" y="72" width="52" height="34" fill="#f4cc88" visibility="hidden"/>
-          <rect id="moon" x="200" y="16" width="32" height="32" rx="16" fill="#f0d098" visibility="hidden"/>
-          <g id="shape-target" fill="none" stroke="#fff4da" stroke-width="1.5" stroke-dasharray="4 3" aria-hidden="true"></g>
-        </svg>
+        <div id="drawing-viewport">
+          <svg id="workshop-canvas" viewBox="0 0 250 175" role="img" tabindex="0" aria-label="Tela del paesaggio serale. Usa le frecce per spostare il cursore e leggere le coordinate.">
+            <rect width="250" height="175" fill="#232d50"/>
+            <path d="M0 156H250V175H0Z" fill="#1c2940"/>
+            <rect id="facade" x="20" y="54" width="170" height="104" fill="#865a51" visibility="hidden"/>
+            <polygon id="roof" points="20,54 105,14 190,54" fill="#a16b55" visibility="hidden"/>
+            <rect id="door" x="140" y="118" width="27" height="40" fill="#443751" visibility="hidden"/>
+            <rect id="window" x="80" y="72" width="52" height="34" fill="#f4cc88" visibility="hidden"/>
+            <rect id="moon" x="200" y="16" width="32" height="32" rx="16" fill="#f0d098" visibility="hidden"/>
+            <g id="shape-target" fill="none" stroke="#fff4da" stroke-width="1.5" stroke-dasharray="4 3" aria-hidden="true"></g>
+          </svg>
+          <canvas id="bridge-canvas" width="1000" height="700" role="img" aria-label="Tela del ponte sul fiume. Usa le frecce per spostare il cursore e leggere le coordinate." tabindex="-1" hidden></canvas>
+          <div id="ticket-preview" hidden></div>
+          <span id="drawing-cursor" aria-hidden="true" hidden></span>
+        </div>
       </figure>
     </div>
   </dialog>
@@ -125,38 +152,90 @@
       <input id="manual-search" type="search" placeholder="Es. fillRect, colore, coordinate" autocomplete="off">
       <div class="manual-filters" role="group" aria-label="Filtra per argomento">
         <button class="icon" type="button" data-category="tutti" aria-pressed="true">Tutti</button>
-        <button class="icon" type="button" data-category="swing" aria-pressed="false">Swing</button>
         <button class="icon" type="button" data-category="colori" aria-pressed="false">Colori</button>
         <button class="icon" type="button" data-category="forme" aria-pressed="false">Forme</button>
+        <button class="icon" type="button" data-category="interazione" aria-pressed="false">Interazione</button>
+        <button class="icon" type="button" data-category="swing" aria-pressed="false" hidden>Swing</button>
+        <button class="icon" type="button" data-category="cicli" aria-pressed="false">Cicli</button>
       </div>
     </div>
     <div class="manual-grid">
-      <details class="manual-card" name="java-manual-entry" data-category="swing">
-        <summary><span><small>Swing</small><code>paintComponent()</code></span></summary>
+      <details class="manual-card" name="java-manual-entry" data-category="colori">
+        <summary><span><small>Colori</small>Colori predefiniti</span></summary>
         <div class="manual-card-content">
-          <div class="manual-card-description">
-            <p>In Swing, puoi disegnare in un <code>JPanel</code> ridefinendo <code>paintComponent(Graphics g)</code>. Chiama prima <code>super.paintComponent(g)</code>, poi usa <code>g</code> per disegnare. In <code>Graphics g</code>, <code>Graphics</code> è il tipo e <code>g</code> è il nome del parametro con cui accedi al contesto di disegno fornito da Swing.</p>
+          <div class="manual-card-description manual-color-list">
+            <p>Questi colori sono già definiti nella classe <code>java.awt.Color</code>. Scrivi il nome della costante rispettando le maiuscole.</p>
+            <div class="manual-color-tables">
+              <table aria-label="Blu, rosso, verde e giallo">
+                <thead>
+                  <tr><th scope="col">Costante</th><th scope="col">Colore</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><code>Color.BLUE</code></td><td>Blu</td></tr>
+                  <tr><td><code>Color.RED</code></td><td>Rosso</td></tr>
+                  <tr><td><code>Color.GREEN</code></td><td>Verde</td></tr>
+                  <tr><td><code>Color.YELLOW</code></td><td>Giallo</td></tr>
+                  <tr class="manual-color-spacer" aria-hidden="true"><td colspan="2">&nbsp;</td></tr>
+                </tbody>
+              </table>
+              <table aria-label="Arancione, rosa, ciano e magenta">
+                <thead>
+                  <tr><th scope="col">Costante</th><th scope="col">Colore</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><code>Color.ORANGE</code></td><td>Arancione</td></tr>
+                  <tr><td><code>Color.PINK</code></td><td>Rosa</td></tr>
+                  <tr><td><code>Color.CYAN</code></td><td>Ciano</td></tr>
+                  <tr><td><code>Color.MAGENTA</code></td><td>Magenta</td></tr>
+                  <tr class="manual-color-spacer" aria-hidden="true"><td colspan="2">&nbsp;</td></tr>
+                </tbody>
+              </table>
+              <table aria-label="Colori neutri">
+                <thead>
+                  <tr><th scope="col">Costante</th><th scope="col">Colore</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><code>Color.WHITE</code></td><td>Bianco</td></tr>
+                  <tr><td><code>Color.LIGHT_GRAY</code></td><td>Grigio chiaro</td></tr>
+                  <tr><td><code>Color.GRAY</code></td><td>Grigio</td></tr>
+                  <tr><td><code>Color.DARK_GRAY</code></td><td>Grigio scuro</td></tr>
+                  <tr><td><code>Color.BLACK</code></td><td>Nero</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-          <figure class="manual-example">
-            <figcaption>Esempio Java</figcaption>
-            <pre><code>@Override
-protected void paintComponent(Graphics g) {
-    super.paintComponent(g);
-    g.fillRect(10, 20, 60, 30);
-}</code></pre>
-          </figure>
         </div>
       </details>
       <details class="manual-card" name="java-manual-entry" data-category="colori">
         <summary><span><small>Colori</small><code>setColor()</code></span></summary>
         <div class="manual-card-content">
           <div class="manual-card-description">
-            <p><code>java.awt.Color</code> offre colori già pronti. I nomi delle costanti sono definiti dalla classe <code>Color</code> e distinguono maiuscole e minuscole. <code>Color.GRAY</code> indica il grigio e <code>Color.BLUE</code> indica il blu. In <code>g.setColor(Color.BLUE)</code>, <code>Color.BLUE</code> è l’argomento che imposta il colore corrente. Il successivo <code>g.fillRect(...)</code> usa quel colore, che resta attivo fino alla prossima chiamata a <code>setColor()</code>.</p>
+            <p><code>java.awt.Color</code> offre colori già pronti. I nomi delle costanti sono definiti dalla classe <code>Color</code> e distinguono maiuscole e minuscole. <code>Color.GRAY</code> indica il grigio e <code>Color.BLUE</code> indica il blu. In <code>g.setColor(Color.BLUE)</code>, <code>Color.BLUE</code> è l’argomento che imposta il colore corrente. Il successivo <code>g.fillRect(...)</code> usa quel colore, che resta attivo finché cambi il colore o il riempimento.</p>
+            <p>Per creare un colore personalizzato, usa <code>new Color(rosso, verde, blu)</code>. I tre argomenti sono interi da <strong>0 a 255</strong> e indicano l’intensità di ciascun componente RGB. Passa il nuovo colore a <code>g.setColor(...)</code> prima di disegnare le forme che devono usarlo.</p>
           </div>
           <figure class="manual-example">
             <figcaption>Esempio Java</figcaption>
-            <pre><code>g.setColor(Color.BLUE);
-g.fillRect(10, 20, 60, 30);</code></pre>
+            <pre><code>// Colore predefinito
+g.setColor(Color.BLUE);
+g.fillRect(10, 20, 60, 30);
+
+// Colore personalizzato in RGB
+g.setColor(new Color(210, 120, 80));
+g.fillOval(80, 20, 25, 25);</code></pre>
+          </figure>
+        </div>
+      </details>
+      <details class="manual-card" name="java-manual-entry" data-category="colori" data-from-frame="citta">
+        <summary><span><small>Colori</small><code>setPaint()</code></span></summary>
+        <div class="manual-card-content">
+          <div class="manual-card-description">
+            <p><code>g.setPaint(alone)</code> imposta la sfumatura già pronta. Il successivo <code>fillOval()</code> la usa per disegnare l’alone.</p>
+            <p>Per centrare l’ovale, sottrai il raggio da <code>x</code> e da <code>y</code>. Usa il diametro come larghezza e altezza.</p>
+          </div>
+          <figure class="manual-example">
+            <figcaption>Esempio Java con centro (80, 60) e raggio 20</figcaption>
+            <pre><code>g.setPaint(alone);
+g.fillOval(60, 40, 40, 40);</code></pre>
           </figure>
         </div>
       </details>
@@ -168,8 +247,8 @@ g.fillRect(10, 20, 60, 30);</code></pre>
             <dl class="manual-parameters">
               <dt><code>x</code></dt><dd>Distanza dal bordo sinistro. Aumenta verso destra.</dd>
               <dt><code>y</code></dt><dd>Distanza dal bordo superiore. Aumenta verso il basso.</dd>
-              <dt>Larghezza</dt><dd>Estensione orizzontale, in pixel.</dd>
-              <dt>Altezza</dt><dd>Estensione verticale, in pixel.</dd>
+              <dt><code>larghezza</code></dt><dd>Estensione orizzontale, in pixel.</dd>
+              <dt><code>altezza</code></dt><dd>Estensione verticale, in pixel.</dd>
             </dl>
             <p>Per esempio, <code>g.fillRect(10, 20, 60, 30)</code> disegna un rettangolo largo 60 pixel e alto 30, con l’angolo in alto a sinistra nel punto (10, 20).</p>
           </div>
@@ -183,7 +262,13 @@ g.fillRect(10, 20, 60, 30);</code></pre>
         <summary><span><small>Forme</small><code>fillPolygon()</code></span></summary>
         <div class="manual-card-content">
           <div class="manual-card-description">
-            <p><code>g.fillPolygon(xs, ys, 3)</code> unisce tre vertici e riempie il triangolo. Per ogni vertice, abbina il valore in <code>xs</code> a quello nella stessa posizione in <code>ys</code>.</p>
+            <p><code>g.fillPolygon(xs, ys, nVertici)</code> riempie un poligono con il colore corrente. Il lato finale unisce l’ultimo vertice al primo.</p>
+            <dl class="manual-parameters">
+              <dt><code>xs</code></dt><dd>Array delle coordinate orizzontali dei vertici.</dd>
+              <dt><code>ys</code></dt><dd>Array delle coordinate verticali dei vertici. Abbina ogni valore alla stessa posizione in <code>xs</code>.</dd>
+              <dt><code>nVertici</code></dt><dd>Numero di coppie di coordinate da leggere, a partire dalla prima.</dd>
+            </dl>
+            <p>Nell’esempio, i tre vertici (10, 60), (40, 20) e (70, 60) formano un triangolo.</p>
           </div>
           <figure class="manual-example">
             <figcaption>Esempio Java</figcaption>
@@ -197,7 +282,14 @@ g.fillPolygon(xs, ys, 3);</code></pre>
         <summary><span><small>Forme</small><code>fillOval()</code></span></summary>
         <div class="manual-card-content">
           <div class="manual-card-description">
-            <p><code>g.fillOval(x, y, larghezza, altezza)</code> disegna un ovale dentro il rettangolo indicato. Con larghezza e altezza uguali ottieni un cerchio.</p>
+            <p><code>g.fillOval(x, y, larghezza, altezza)</code> riempie un ovale inscritto nel rettangolo indicato.</p>
+            <dl class="manual-parameters">
+              <dt><code>x</code></dt><dd>Coordinata orizzontale dell’angolo in alto a sinistra del rettangolo.</dd>
+              <dt><code>y</code></dt><dd>Coordinata verticale dello stesso angolo.</dd>
+              <dt><code>larghezza</code></dt><dd>Diametro orizzontale, in pixel.</dd>
+              <dt><code>altezza</code></dt><dd>Diametro verticale, in pixel.</dd>
+            </dl>
+            <p>Con larghezza e altezza uguali si ottiene un cerchio. Nell’esempio ha un diametro di 40 pixel.</p>
           </div>
           <figure class="manual-example">
             <figcaption>Esempio Java</figcaption>
@@ -205,8 +297,211 @@ g.fillPolygon(xs, ys, 3);</code></pre>
           </figure>
         </div>
       </details>
+      <details class="manual-card" name="java-manual-entry" data-category="forme" data-from-frame="ponte">
+        <summary><span><small>Forme</small><code>drawLine()</code></span></summary>
+        <div class="manual-card-content">
+          <div class="manual-card-description">
+            <p><code>g.drawLine(x1, y1, x2, y2)</code> traccia un segmento tra due punti.</p>
+            <dl class="manual-parameters">
+              <dt><code>x1</code></dt><dd>Coordinata orizzontale del punto di partenza.</dd>
+              <dt><code>y1</code></dt><dd>Coordinata verticale del punto di partenza.</dd>
+              <dt><code>x2</code></dt><dd>Coordinata orizzontale del punto di arrivo.</dd>
+              <dt><code>y2</code></dt><dd>Coordinata verticale del punto di arrivo.</dd>
+            </dl>
+            <p>Nell’esempio, i due punti hanno la stessa x e il segmento è verticale.</p>
+          </div>
+          <figure class="manual-example">
+            <figcaption>Esempio Java</figcaption>
+            <pre><code>g.drawLine(10, 20, 10, 45);</code></pre>
+          </figure>
+        </div>
+      </details>
+      <details class="manual-card" name="java-manual-entry" data-category="forme" data-from-frame="ponte">
+        <summary><span><small>Forme</small><code>drawArc()</code></span></summary>
+        <div class="manual-card-content">
+          <div class="manual-card-description">
+            <p><code>g.drawArc(x, y, larghezza, altezza, inizio, ampiezza)</code> traccia un arco dell’ellisse inscritta nel rettangolo indicato.</p>
+            <dl class="manual-parameters">
+              <dt><code>x</code></dt><dd>Coordinata orizzontale dell’angolo in alto a sinistra del rettangolo.</dd>
+              <dt><code>y</code></dt><dd>Coordinata verticale dello stesso angolo.</dd>
+              <dt><code>larghezza</code></dt><dd>Larghezza del rettangolo, in pixel.</dd>
+              <dt><code>altezza</code></dt><dd>Altezza del rettangolo, in pixel.</dd>
+              <dt><code>inizio</code></dt><dd>Angolo iniziale in gradi. Lo zero è all’estremità destra dell’ellisse.</dd>
+              <dt><code>ampiezza</code></dt><dd>Gradi percorsi a partire dall’angolo iniziale. Un valore positivo procede in senso antiorario, uno negativo in senso orario.</dd>
+            </dl>
+            <p>Nell’esempio, da 0° con ampiezza 180° si ottiene la metà superiore dell’ellisse.</p>
+          </div>
+          <figure class="manual-example">
+            <figcaption>Esempio Java</figcaption>
+            <pre><code>g.drawArc(10, 20, 40, 30, 0, 180);</code></pre>
+          </figure>
+        </div>
+      </details>
+      <details class="manual-card" name="java-manual-entry" data-category="cicli" data-from-frame="ponte">
+        <summary><span><small>Ripetizione a intervalli regolari</small><code>for</code></span></summary>
+        <div class="manual-card-content">
+          <div class="manual-card-description">
+            <p>Dichiara un contatore <code>int</code>, indica fino a dove ripetere e aggiorna il contatore a ogni giro.</p>
+          </div>
+          <figure class="manual-example">
+            <figcaption>Esempio Java</figcaption>
+            <pre><code>for (int x = 10; x &lt;= 70; x += 20) {
+  g.drawLine(x, 20, x, 35);
+}</code></pre>
+          </figure>
+        </div>
+      </details>
+      <details class="manual-card" name="java-manual-entry" data-category="interazione" data-from-frame="citta">
+        <summary><span><small>Collegare un metodo a un pulsante</small><code>addActionListener() e repaint()</code></span></summary>
+        <div class="manual-card-content">
+          <div class="manual-card-description">
+            <p>Usa <code>addActionListener()</code> per dire a un <code>JButton</code> cosa fare quando viene premuto. Nel blocco dopo <code>evento -&gt;</code>, richiama il metodo che esegue l’azione.</p>
+            <p>Prima aggiorna lo stato, poi chiama <code>repaint()</code> per ridisegnare la tela.</p>
+          </div>
+          <figure class="manual-example">
+            <figcaption>Esempio con un pulsante che cambia colore</figcaption>
+            <pre><code>pulsante.addActionListener(evento -&gt; {
+    cambiaColore();
+    repaint();
+});</code></pre>
+          </figure>
+        </div>
+      </details>
+      <details class="manual-card" name="java-manual-entry" data-category="interazione" data-from-frame="citta">
+        <summary><span><small>Sovrapporre un pulsante a un disegno</small><code>JButton e setBounds()</code></span></summary>
+        <div class="manual-card-content">
+          <div class="manual-card-description">
+            <p><code>new JButton("Luna")</code> crea un pulsante con l’etichetta indicata. <code>setBounds(x, y, larghezza, altezza)</code> ne imposta la posizione e le dimensioni.</p>
+            <p>Per sovrapporre un pulsante a un cerchio, usa gli stessi quattro argomenti di <code>fillOval()</code>. Il gioco rende il pulsante trasparente.</p>
+          </div>
+          <figure class="manual-example">
+            <figcaption>Esempio con un disco di 30 × 30</figcaption>
+            <pre><code>JButton pulsante = new JButton("Luna");
+pulsante.setBounds(20, 20, 30, 30);</code></pre>
+          </figure>
+        </div>
+      </details>
+      <details class="manual-card" name="java-manual-entry" data-category="swing" data-from-frame="biglietteria" hidden>
+        <summary><span><small>Finestra e pannello</small><code>JFrame e JPanel</code></span></summary>
+        <div class="manual-card-content">
+          <div class="manual-card-description">
+            <p><code>JFrame</code> è la finestra. <code>JPanel</code> è il contenitore in cui metti i componenti. Crea entrambi, poi usa <code>add()</code> sulla finestra per inserire il pannello.</p>
+            <p>Dopo aver aggiunto i componenti, puoi configurare e mostrare la finestra.</p>
+            <dl class="manual-parameters">
+              <dt><code>setDefaultCloseOperation()</code></dt><dd>Con <code>JFrame.EXIT_ON_CLOSE</code> il programma termina quando chiudi la finestra. Usa questa opzione per la finestra principale se vuoi che la chiusura termini l’applicazione. Il comportamento predefinito nasconde la finestra.</dd>
+              <dt><code>pack()</code></dt><dd>Calcola le dimensioni della finestra a partire dai componenti. Chiamalo dopo averli aggiunti. Puoi impostare una dimensione esplicita con <code>setSize()</code>.</dd>
+              <dt><code>setVisible(true)</code></dt><dd>Mostra la finestra, che alla creazione è nascosta. Chiamalo dopo aver impostato le dimensioni.</dd>
+            </dl>
+            <p>Nella Biglietteria queste tre istruzioni sono già fornite in <strong>Codice già pronto</strong>.</p>
+          </div>
+          <figure class="manual-example">
+            <figcaption>Esempio Java</figcaption>
+            <pre><code>JFrame finestra = new JFrame("Iscrizioni");
+JPanel pannello = new JPanel();
+pannello.add(new JLabel("Benvenuto"));
+finestra.add(pannello);
+
+finestra.setDefaultCloseOperation(
+    JFrame.EXIT_ON_CLOSE);
+finestra.pack();
+finestra.setVisible(true);</code></pre>
+          </figure>
+        </div>
+      </details>
+      <details class="manual-card" name="java-manual-entry" data-category="swing" data-from-frame="biglietteria" hidden>
+        <summary><span><small>Disporre i componenti</small><code>GridLayout e add()</code></span></summary>
+        <div class="manual-card-content">
+          <div class="manual-card-description">
+            <p><code>new GridLayout(righe, colonne)</code> crea una griglia di celle uguali. Con <code>add()</code> le riempi da sinistra a destra e dall’alto in basso. Per mettere un’etichetta accanto al campo, aggiungili uno dopo l’altro. Quando imposti un numero di righe maggiore di zero, Swing mantiene quel numero di righe e ricava le colonne dal numero di componenti. Nell’esempio quattro componenti riempiono la griglia di due righe e due colonne.</p>
+          </div>
+          <figure class="manual-example">
+            <figcaption>Esempio Java</figcaption>
+            <pre><code>pannello.setLayout(new GridLayout(2, 2));
+pannello.add(new JLabel("Nome"));
+pannello.add(new JTextField(10));
+pannello.add(new JLabel("Cognome"));
+pannello.add(new JTextField(10));</code></pre>
+          </figure>
+        </div>
+      </details>
+      <details class="manual-card" name="java-manual-entry" data-category="swing" data-from-frame="biglietteria" hidden>
+        <summary><span><small>Leggere la scelta e la quantità</small><code>getSelectedItem() e getText()</code></span></summary>
+        <div class="manual-card-content">
+          <div class="manual-card-description">
+            <p>Un <code>JComboBox&lt;String&gt;</code> mostra un menu di opzioni testuali. Passa un array di testi al costruttore, come nell’esempio. Usa <code>new JTextField(5)</code> per creare un campo di testo largo circa cinque caratteri.</p>
+            <p><code>getSelectedItem()</code> legge la scelta da un menu <code>JComboBox</code>. Se le opzioni sono testi, usa <code>(String)</code> per assegnare la scelta a una variabile di tipo <code>String</code>. <code>getText()</code> legge il testo da un <code>JTextField</code>. Per usarlo in un calcolo, convertilo con <code>Integer.parseInt()</code>.</p>
+          </div>
+          <figure class="manual-example">
+            <figcaption>Esempio Java</figcaption>
+            <pre><code>JComboBox&lt;String&gt; menu =
+    new JComboBox&lt;&gt;(new String[]{"Blu", "Verde"});
+JTextField campo = new JTextField(5);
+
+String colore = (String) menu.getSelectedItem();
+int copie = Integer.parseInt(campo.getText());</code></pre>
+          </figure>
+        </div>
+      </details>
+      <details class="manual-card" name="java-manual-entry" data-category="swing" data-from-frame="biglietteria" hidden>
+        <summary><span><small>Aggiungere un pulsante al pannello</small><code>JButton e JLabel</code></span></summary>
+        <div class="manual-card-content">
+          <div class="manual-card-description">
+            <p><code>JButton</code> crea un pulsante e <code>JLabel</code> mostra del testo. Aggiungili al pannello con <code>add()</code>. Per cambiare il testo di una JLabel già visibile, chiama <code>setText()</code>.</p>
+          </div>
+          <figure class="manual-example">
+            <figcaption>Esempio Java</figcaption>
+            <pre><code>JButton conferma = new JButton("Conferma");
+JLabel stato = new JLabel("In attesa");
+pannello.add(conferma);
+pannello.add(stato);
+conferma.addActionListener(evento -&gt; {
+    stato.setText("Confermato");
+});</code></pre>
+          </figure>
+        </div>
+      </details>
+      <details class="manual-card" name="java-manual-entry" data-category="swing" data-from-frame="mostra" hidden>
+        <summary><span><small>Dividere una finestra in zone</small><code>BorderLayout</code></span></summary>
+        <div class="manual-card-content">
+          <div class="manual-card-description">
+            <p><code>BorderLayout</code> organizza il contenitore in cinque zone. Metti il contenuto principale in <code>CENTER</code> e i comandi in <code>SOUTH</code>. Le altre zone disponibili sono <code>NORTH</code>, <code>WEST</code> ed <code>EAST</code>.</p>
+            <p>Indica la zona come secondo argomento di <code>add()</code>. Il centro occupa lo spazio lasciato libero dalle altre zone.</p>
+          </div>
+          <figure class="manual-example">
+            <figcaption>Esempio Java</figcaption>
+            <pre><code>JPanel pagina = new JPanel(new BorderLayout());
+pagina.add(new JLabel("Risultati"),
+    BorderLayout.CENTER);
+pagina.add(new JLabel("Pronto"),
+    BorderLayout.SOUTH);</code></pre>
+          </figure>
+        </div>
+      </details>
+      <details class="manual-card" name="java-manual-entry" data-category="swing" data-from-frame="mostra" hidden>
+        <summary><span><small>Disporre i componenti in fila</small><code>FlowLayout</code></span></summary>
+        <div class="manual-card-content">
+          <div class="manual-card-description">
+            <p><code>FlowLayout</code> dispone i componenti uno dopo l’altro nell’ordine in cui li aggiungi. Se lo spazio finisce, va a capo.</p>
+            <p>Usa <code>FlowLayout.CENTER</code> per centrare la fila. Puoi usare un <code>FlowLayout</code> dentro un pannello che a sua volta occupa una zona di un <code>BorderLayout</code>.</p>
+          </div>
+          <figure class="manual-example">
+            <figcaption>Esempio Java</figcaption>
+            <pre><code>JPanel azioni = new JPanel();
+azioni.setLayout(new FlowLayout(FlowLayout.CENTER));
+azioni.add(new JButton("Apri"));
+azioni.add(new JButton("Chiudi"));</code></pre>
+          </figure>
+        </div>
+      </details>
       <p id="manual-empty" role="status"></p>
     </div>
+  </dialog>
+  <dialog id="code-help" aria-labelledby="code-help-title">
+    <header class="dialog-heading">
+      <h2 id="code-help-title">Codice già pronto</h2>
+      <form method="dialog"><button class="icon" aria-label="Chiudi il codice già pronto" autofocus>×</button></form>
+    </header>
+    <pre class="code-editor" id="code-help-content" tabindex="0" aria-label="Codice Java di riferimento"><code></code></pre>
   </dialog>
   <dialog id="vincent-tip" aria-labelledby="vincent-title" aria-describedby="vincent-direction">
     <div id="vincent-highlight" hidden aria-hidden="true"></div>

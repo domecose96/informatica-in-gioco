@@ -151,17 +151,53 @@ document.addEventListener('click', event => {
 });
 
 const frames = [
-  { title: 'La casa di sera', dialog: byId('workshop'), completedKey: 'atelier-java:la-casa-di-sera:completed' },
-  { title: 'Opera in preparazione' },
-  { title: 'Opera in preparazione' }
+  { id: 'casa', title: 'La casa di sera', completedKey: 'atelier-java:la-casa-di-sera:completed' },
+  {
+    id: 'ponte', title: bridgeTitle, storagePrefix: 'atelier-java:il-ponte-sul-fiume',
+    drawing: bridgeDrawing, steps: bridgeSteps, draw: drawBridge, finished: finishedBridge,
+    intro: 'Per il ponte scrivi tu il codice. Passa il puntatore sulla sagoma o tocca la tela per leggere le coordinate. Quando il disegno coincide, premi Verifica. Se ti blocchi, premi ?.'
+  },
+  {
+    id: 'citta', title: cityTitle, storagePrefix: 'atelier-java:la-citta-di-notte',
+    drawing: cityDrawing, steps: citySteps, draw: drawCity, finished: finishedCity,
+    intro: 'Disegna i palazzi e le finestre seguendo le sagome. Poi programma le luci casuali e collegale alla luna. Se ti blocchi, premi ? o consulta il Manuale.'
+  },
+  {
+    id: 'biglietteria', title: ticketTitle, storagePrefix: 'atelier-java:biglietteria',
+    steps: ticketSteps, checkCode: ticketCodeMatches, preview: renderTicketPreview, finished: finishedTicketOffice,
+    previewClass: 'ticket-desk', demoFocus: 'select',
+    demoInstruction: 'Scegli Intero, scrivi 3 e premi Calcola per stampare i biglietti.',
+    intro: 'Il museo sta per aprire. Ricostruisci sul monitor la biglietteria, un pezzo alla volta. Mi servono tre biglietti interi per provare la stampante.'
+  },
+  {
+    id: 'mostra', title: exhibitionTitle, storagePrefix: 'atelier-java:mostra-interattiva',
+    steps: exhibitionSteps, checkCode: exhibitionCodeMatches, preview: renderExhibitionPreview, finished: finishedExhibition,
+    previewClass: 'exhibition-scene', demoFocus: 'button:last-child',
+    demoInstruction: 'Premi Successivo per vedere il Ponte, poi Precedente per tornare alla Casa.',
+    intro: 'Riapriamo la mostra del museo. Metti l’opera al centro, sistema i pulsanti in basso e provali per visitare la sala.'
+  }
 ];
-const workshop = frames[0].dialog;
+for (const frame of frames.slice(1)) frame.completedKey = frame.storagePrefix + ':completed';
+const workshop = byId('workshop');
+const workshopTitle = byId('workshop-title');
+let activeFrame = frames[0];
 const progressKey = 'atelier-java:la-casa-di-sera:progress';
 const workshopOpenKey = 'atelier-java:workshop-open';
 const exhibit = byId('enter');
+const exhibitPiece = exhibit.parentElement;
 const galleryPosition = byId('gallery-position');
+const galleryExhibitionActions = byId('gallery-exhibition-actions');
+const galleryExhibitionTitle = byId('gallery-exhibition-title');
 const galleryCanvas = byId('gallery-canvas');
 const galleryMystery = galleryCanvas.firstElementChild;
+const finishedPreviewArt = byId('finished-preview-art');
+const galleryMoon = createCityMoon();
+const workshopMoon = createCityMoon();
+exhibit.after(galleryMoon);
+byId('drawing-viewport').append(workshopMoon);
+new ResizeObserver(positionGalleryMoon).observe(galleryCanvas);
+const galleryExhibitionObserver = new ResizeObserver(positionGalleryExhibitionActions);
+galleryExhibitionObserver.observe(galleryCanvas);
 const completedFrames = new Set();
 const workTitle = byId('work-title');
 const galleryDots = byId('gallery-dots').children;
@@ -174,12 +210,12 @@ function showFrame(direction) {
   frameIndex = (frameIndex + direction + frames.length) % frames.length;
   galleryDots[frameIndex].classList.add('active');
   const frame = frames[frameIndex];
-  exhibit.disabled = !frame.dialog;
+  exhibit.disabled = !frame.id;
   workTitle.textContent = frame.title;
-  renderGalleryArtwork();
   frameAnimation?.cancel();
+  renderGalleryArtwork();
   if (!reducedMotion.matches) {
-    frameAnimation = exhibit.animate(
+    frameAnimation = exhibitPiece.animate(
       [{ opacity: .35, transform: `translateX(${direction * 16}px)` }, { opacity: 1, transform: 'none' }],
       { duration: 180, easing: 'ease-out' }
     );
@@ -188,14 +224,7 @@ function showFrame(direction) {
 
 byId('gallery-prev').addEventListener('click', () => showFrame(-1));
 byId('gallery-next').addEventListener('click', () => showFrame(1));
-exhibit.addEventListener('click', () => {
-  const workshop = frames[frameIndex].dialog;
-  if (!workshop) return;
-  workshop.showModal();
-  try { sessionStorage.setItem(workshopOpenKey, 'yes'); } catch {}
-  if (workshop === frames[0].dialog && !tourSeen) startTour(fields[0]);
-  playMusic();
-});
+exhibit.addEventListener('click', () => openWorkshop(frames[frameIndex]));
 
 const steps = [
   {
@@ -219,8 +248,8 @@ const steps = [
     shape: 'door', title: 'Dipingi la porta', color: true,
     code: 'g.setColor(?);\ng.fillRect(140, 118, 27, 40);',
     parameters: [{ attribute: 'fill', label: 'Colore', initial: 'Color.GRAY', goal: 'Color.BLUE' }],
-    instruction: 'La porta è al suo posto ed è grigia. Sostituisci Color.GRAY con la costante del blu. Trovi il nome esatto in Manuale → Colori → setColor().',
-    hint: 'Scrivi Color.BLUE al posto di Color.GRAY. BLUE è una costante di Java. La riga con fillRect() usa il colore appena impostato.'
+    instruction: 'La porta è grigia. Sostituisci Color.GRAY con la costante del blu. La trovi in Manuale → Colori → Colori predefiniti.',
+    hint: 'Le costanti dei colori si scrivono come Color.NOME. Usa la costante del blu come argomento di setColor().'
   },
   {
     shape: 'window', title: 'Accendi la finestra',
@@ -260,8 +289,28 @@ const steps = [
 ];
 const form = byId('rectangle-form');
 const codeEditor = byId('lesson-code');
+const houseCanvas = byId('workshop-canvas');
+const drawingEditor = byId('bridge-code');
+const haloGuide = byId('halo-guide');
+const haloFields = [...haloGuide.querySelectorAll('input')];
+const drawingCanvas = byId('bridge-canvas');
+const drawingViewport = byId('drawing-viewport');
+const drawingCoordinates = byId('drawing-coordinates');
+const drawingCursor = byId('drawing-cursor');
 const target = byId('shape-target');
-const doorColors = new Map([['Color.GRAY', '#808080'], ['Color.BLUE', '#0000ff'], ['Color.RED', '#ff0000']]);
+const doorColors = new Map([
+  ['Color.GRAY', 'rgb(128,128,128)'], ['Color.BLUE', 'rgb(0,0,255)'], ['Color.RED', 'rgb(255,0,0)']
+]);
+
+function readDoorColor(code) {
+  if (!/^new\s+Color\s*\([^;{}]*\)$/.test(code)) return doorColors.get(code);
+  try {
+    const [command] = readDrawingCode('g.setColor(' + code + ');');
+    return command[1][0];
+  } catch {
+    return undefined;
+  }
+}
 let fields = [];
 const previewLegend = document.querySelector('.preview-legend');
 const feedback = byId('feedback');
@@ -283,7 +332,7 @@ const tourSteps = [
   [null, 'Vincent', vincentIntro],
   ['#lesson-instruction', 'La consegna', 'Qui leggi quale parte del quadro devi sistemare e cosa deve cambiare.'],
   ['#lesson-code', 'Editor Java', 'Modifica gli argomenti evidenziati nel codice e osserva subito l’effetto sulla tela. Nei passaggi successivi potrai correggere più valori.'],
-  ['.lesson-preview figcaption', 'La tela', 'Il tratteggio indica la forma da ottenere nei passaggi di disegno. Premi Tela per confrontare il tuo lavoro con il quadro finito.'],
+  ['.lesson-preview figcaption', 'La tela', 'Il tratteggio indica la forma da ottenere nei passaggi di disegno. Punta o tocca la tela per leggere le coordinate. Premi Tela per vedere il quadro finito.'],
   ['.lesson-actions', 'Verifica', 'Premi Verifica per controllare i valori. Quando la prova è riuscita, premi Continua. La freccia circolare ripristina i valori iniziali.'],
   ['#manual-open', 'Il manuale Java', 'Da qui puoi consultare il significato di g, l’ordine degli argomenti di disegno e come usare i colori.'],
   ['#lesson-help', 'I suggerimenti di Vincent', 'Premi ? ogni volta che vuoi un suggerimento per il passaggio che stai svolgendo.']
@@ -292,6 +341,7 @@ let tourSeen = false;
 try { tourSeen = localStorage.getItem(tourKey) === 'yes'; } catch {}
 let tourIndex = 0;
 let stepIndex = 0;
+let houseProgress;
 let stepVerified = false;
 let replaying = false;
 let tipReturnFocus;
@@ -346,20 +396,28 @@ vincentContinue.addEventListener('click', event => {
 window.addEventListener('resize', updateTourHighlight);
 byId('workshop').addEventListener('scroll', updateTourHighlight);
 
+function showVincent(title, message, action, returnFocus) {
+  tipReturnFocus = returnFocus;
+  vincentTitle.textContent = title;
+  vincentDirection.textContent = message;
+  vincentContinue.textContent = action;
+  vincentTip.showModal();
+}
+
 lessonHelp.addEventListener('click', () => {
-  tipReturnFocus = lessonHelp;
-  vincentTitle.textContent = 'Vincent';
-  vincentDirection.textContent = steps[stepIndex].hint;
-  vincentContinue.textContent = 'Torna alla prova';
-  vincentTip.showModal();
+  const step = activeFrame.steps ? activeFrame.steps[drawingProgress.index] : steps[stepIndex];
+  if (step.hint) showVincent('Vincent', step.hint, 'Torna alla prova', lessonHelp);
 });
+
 function showCompletion() {
-  tipReturnFocus = checkLabel.parentElement;
-  vincentPortrait.src = 'assets/vincent.webp';
-  vincentTitle.textContent = 'Complimenti!';
-  vincentDirection.textContent = 'Hai ricostruito «La casa di sera». La tua opera è di nuovo appesa nel museo!';
-  vincentContinue.textContent = 'Guarda il quadro';
-  vincentTip.showModal();
+  vincentPortrait.src = 'assets/vincent-ok.webp';
+  const extraMessage = {
+    citta: ' Anche nel museo puoi cliccare sulla luna per cambiare le luci.',
+    biglietteria: ' Hai stampato tre biglietti interi per un totale di 18 €.',
+    mostra: ' I visitatori possono scorrere le opere della mostra.'
+  }[activeFrame.id] ?? '';
+  showVincent('Complimenti!', 'Hai ricostruito «' + activeFrame.title + '». La tua opera è di nuovo appesa nel museo!' + extraMessage,
+    'Guarda il quadro', checkLabel.parentElement);
 }
 
 vincentTip.addEventListener('close', () => {
@@ -370,18 +428,29 @@ vincentTip.addEventListener('close', () => {
   tipReturnFocus?.focus();
 });
 const manual = byId('workshop-manual');
+const interfacePreview = byId('ticket-preview');
 const manualSearch = byId('manual-search');
+const codeHelpOpen = byId('code-help-open');
+const codeHelp = byId('code-help');
+const codeHelpContent = byId('code-help-content');
 const manualFilters = [...manual.querySelectorAll('.manual-filters button')];
 const manualCards = [...manual.querySelectorAll('.manual-card')];
 const manualEmpty = byId('manual-empty');
 let manualCategory = 'tutti';
+let manualFrameIndex = 0;
+
+function availableInManual(card) {
+  const firstFrame = card.dataset.fromFrame;
+  return !firstFrame || frames.slice(0, manualFrameIndex + 1).some(frame => frame.id === firstFrame);
+}
 
 function filterManual() {
   const terms = manualSearch.value.toLocaleLowerCase('it').trim().split(/\s+/);
   let matchFound = false;
   for (const card of manualCards) {
     const text = card.textContent.toLocaleLowerCase('it');
-    const matches = (manualCategory === 'tutti' || card.dataset.category === manualCategory)
+    const matches = availableInManual(card)
+      && (manualCategory === 'tutti' || card.dataset.category === manualCategory)
       && terms.every(term => text.includes(term));
     card.hidden = !matches;
     if (!matches) card.open = false;
@@ -402,11 +471,31 @@ for (const button of manualFilters) {
   button.addEventListener('click', () => selectManualCategory(button.dataset.category));
 }
 manualSearch.addEventListener('input', filterManual);
-byId('manual-open').addEventListener('click', () => {
+function openManual(index) {
+  manualFrameIndex = index;
   manualSearch.value = '';
   for (const card of manualCards) card.open = false;
+  const categories = new Set(manualCards.filter(availableInManual).map(card => card.dataset.category));
+  for (const button of manualFilters) {
+    const category = button.dataset.category;
+    button.hidden = category !== 'tutti' && !categories.has(category);
+  }
   selectManualCategory('tutti');
   manual.showModal();
+}
+
+byId('gallery-manual-open').addEventListener('click', () => {
+  const furthestCompleted = frames.findLastIndex(isFrameCompleted);
+  openManual(Math.max(frameIndex, furthestCompleted));
+});
+byId('manual-open').addEventListener('click', () => openManual(frames.indexOf(activeFrame)));
+
+codeHelpOpen.addEventListener('click', () => {
+  const step = activeFrame.steps ? activeFrame.steps[drawingProgress.index] : steps[stepIndex];
+  codeHelpContent.firstElementChild.textContent = step.readyCode;
+  codeHelpContent.scrollTop = 0;
+  codeHelpContent.scrollLeft = 0;
+  codeHelp.showModal();
 });
 
 function drawShape(shape, step, values) {
@@ -416,7 +505,7 @@ function drawShape(shape, step, values) {
     return;
   }
   step.parameters.forEach((parameter, index) => {
-    shape.setAttribute(parameter.attribute, step.color ? doorColors.get(values[index]) ?? doorColors.get(parameter.initial) : values[index]);
+    shape.setAttribute(parameter.attribute, step.color ? readDoorColor(values[index]) ?? readDoorColor(parameter.initial) : values[index]);
   });
   if (step.shape === 'moon') {
     shape.setAttribute('rx', Number(shape.getAttribute('width')) / 2);
@@ -424,8 +513,11 @@ function drawShape(shape, step, values) {
   }
 }
 
-function finishedArtwork() {
-  const artwork = byId('workshop-canvas').cloneNode(true);
+function finishedArtwork(frame, inGallery = false, galleryNavigation) {
+  if (frame.finished) return frame.finished(inGallery, galleryNavigation);
+  const artwork = houseCanvas.cloneNode(true);
+  artwork.removeAttribute('hidden');
+  artwork.removeAttribute('tabindex');
   artwork.removeAttribute('id');
   artwork.setAttribute('aria-label', 'La casa di sera, quadro finito');
   artwork.querySelector('#shape-target').remove();
@@ -441,7 +533,18 @@ function finishedArtwork() {
 }
 
 byId('preview-open').addEventListener('click', () => {
-  byId('finished-preview-art').replaceChildren(finishedArtwork());
+  const artwork = finishedArtwork(activeFrame);
+  byId('finished-preview-title').textContent = activeFrame.preview ? activeFrame.title : 'Anteprima del quadro finito';
+  if (activeFrame.id === 'citta' && isFrameCompleted(activeFrame)) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'city-preview';
+    const moon = createCityMoon();
+    moon.hidden = false;
+    wrapper.append(artwork, moon);
+    finishedPreviewArt.replaceChildren(wrapper);
+  } else {
+    finishedPreviewArt.replaceChildren(artwork);
+  }
   byId('finished-preview').showModal();
 });
 
@@ -453,10 +556,51 @@ function isFrameCompleted(frame) {
 }
 
 function renderGalleryArtwork() {
-  const completed = isFrameCompleted(frames[frameIndex]);
-  galleryCanvas.replaceChildren(completed ? finishedArtwork() : galleryMystery);
+  const frame = frames[frameIndex];
+  const completed = isFrameCompleted(frame);
+  const exhibitionFinished = completed && frame.id === 'mostra';
+  galleryExhibitionActions.hidden = !exhibitionFinished;
+  galleryExhibitionActions.replaceChildren();
+  galleryExhibitionTitle.textContent = '';
+  const navigation = exhibitionFinished ? {
+    controls: galleryExhibitionActions,
+    announce: title => { galleryExhibitionTitle.textContent = title; }
+  } : undefined;
+  galleryCanvas.replaceChildren(completed ? finishedArtwork(frame, true, navigation) : galleryMystery);
+  exhibit.toggleAttribute('data-exhibition-finished', exhibitionFinished);
+  positionGalleryExhibitionActions();
+  const cityFinished = completed && frame.id === 'citta';
+  galleryMoon.hidden = !cityFinished;
+  exhibit.toggleAttribute('data-city-finished', cityFinished);
+  positionGalleryMoon();
   galleryPosition.textContent = 'Cornice ' + (frameIndex + 1) + ' di ' + frames.length +
     (completed ? ' · Quadro completato' : '');
+}
+
+function positionGalleryExhibitionActions() {
+  if (galleryExhibitionActions.hidden) return;
+  const row = galleryCanvas.querySelector('.exhibition-controls').getBoundingClientRect();
+  const piece = exhibitPiece.getBoundingClientRect();
+  galleryExhibitionActions.style.left = row.left - piece.left + 'px';
+  galleryExhibitionActions.style.top = row.top - piece.top + 'px';
+  galleryExhibitionActions.style.width = row.width + 'px';
+  galleryExhibitionActions.style.height = row.height + 'px';
+}
+
+function positionGalleryMoon() {
+  if (galleryMoon.hidden) return;
+  const canvas = galleryCanvas.firstElementChild;
+  const bounds = canvas.getBoundingClientRect();
+  const gallery = galleryMoon.parentElement;
+  const galleryBounds = gallery.getBoundingClientRect();
+  const scale = Math.min(bounds.width / paintingSize[0], bounds.height / paintingSize[1]);
+  const left = bounds.left - galleryBounds.left - gallery.clientLeft
+    + (bounds.width - paintingSize[0] * scale) / 2;
+  const top = bounds.top - galleryBounds.top - gallery.clientTop
+    + (bounds.height - paintingSize[1] * scale) / 2;
+  galleryMoon.style.left = left + cityMoon.x * scale + 'px';
+  galleryMoon.style.top = top + cityMoon.y * scale + 'px';
+  galleryMoon.style.width = cityMoon.radius * 2 * scale + 'px';
 }
 
 function fieldValues(step) {
@@ -467,13 +611,15 @@ function fieldValues(step) {
 }
 
 function saveProgress() {
-  const progress = { stepIndex, verified: stepVerified, replaying, values: fields.map(field => field.value) };
-  try { localStorage.setItem(progressKey, JSON.stringify(progress)); } catch {}
+  houseProgress = { stepIndex, verified: stepVerified, replaying, values: fields.map(field => field.value) };
+  try { localStorage.setItem(progressKey, JSON.stringify(houseProgress)); } catch {}
 }
 
 function restoreProgress() {
-  let saved;
-  try { saved = JSON.parse(localStorage.getItem(progressKey)); } catch {}
+  let saved = houseProgress;
+  if (!saved) {
+    try { saved = JSON.parse(localStorage.getItem(progressKey)); } catch {}
+  }
   if (saved?.replaying !== true && isFrameCompleted(frames[0])) {
     const lastStepIndex = steps.length - 1;
     saved = {
@@ -493,9 +639,13 @@ function restoreProgress() {
   replaying = saved.replaying === true;
   renderStep();
   fields.forEach((field, index) => { field.value = saved.values[index]; });
+  if (step.color && saved.verified === true) {
+    const color = fields[0].value.trim();
+    const { goal } = step.parameters[0];
+    if (color === 'blu' || readDoorColor(color) === readDoorColor(goal)) fields[0].value = goal;
+  }
   updateDrawing();
-  if (saved.verified === true && fieldValues(step).every((value, index) =>
-    fields[index].validity.valid && value === step.parameters[index].goal)) {
+  if (saved.verified === true && houseStepMatches(step, fieldValues(step))) {
     markStepVerified();
   }
 }
@@ -508,7 +658,9 @@ function renderStep() {
     drawShape(shape, entry, values);
     if (!entry.color) shape.setAttribute('visibility', index <= stepIndex ? 'visible' : 'hidden');
   });
-  const outline = byId(step.shape).cloneNode();
+  const currentShape = byId(step.shape);
+  currentShape.before(target);
+  const outline = currentShape.cloneNode();
   outline.removeAttribute('id');
   outline.removeAttribute('fill');
   outline.removeAttribute('visibility');
@@ -520,6 +672,8 @@ function renderStep() {
   byId('lesson-progress').textContent = 'Passaggio ' + (stepIndex + 1) + ' di ' + steps.length;
   byId('lesson-title').textContent = step.title;
   byId('lesson-instruction').textContent = step.instruction;
+  codeHelpOpen.hidden = !step.readyCode;
+  lessonHelp.hidden = !step.hint;
 
   fields = step.parameters.map(parameter => {
     const input = document.createElement('input');
@@ -549,9 +703,22 @@ function renderStep() {
   stepVerified = false;
 }
 
+function houseParameterMatches(step, index, value) {
+  const { goal } = step.parameters[index];
+  return fields[index].validity.valid && value === goal;
+}
+
+function houseStepMatches(step, values) {
+  return values.every((value, index) => houseParameterMatches(step, index, value));
+}
+
 function updateDrawing(event) {
   const step = steps[stepIndex];
-  drawShape(byId(step.shape), step, fieldValues(step));
+  const values = fieldValues(step);
+  drawShape(byId(step.shape), step, values);
+  const showGuide = !step.color && !houseStepMatches(step, values);
+  target.setAttribute('visibility', showGuide ? 'visible' : 'hidden');
+  previewLegend.hidden = !showGuide;
   feedback.textContent = '';
   if (event) saveProgress();
 }
@@ -565,6 +732,10 @@ codeEditor.addEventListener('change', updateDrawing);
 
 form.addEventListener('submit', event => {
   event.preventDefault();
+  if (activeFrame.steps) {
+    checkDrawing();
+    return;
+  }
   if (stepVerified) {
     playEffect('click');
     if (stepIndex === steps.length - 1) {
@@ -577,12 +748,12 @@ form.addEventListener('submit', event => {
 
   const step = steps[stepIndex];
   const values = fieldValues(step);
-  const incorrect = step.parameters.findIndex((parameter, index) => values[index] !== parameter.goal);
+  const incorrect = values.findIndex((value, index) => !houseParameterMatches(step, index, value));
   if (incorrect !== -1) {
     playEffect('retry');
     const parameter = step.parameters[incorrect];
     const direction = values[incorrect] < parameter.goal ? 'aumenta' : 'riduci';
-    feedback.textContent = step.color ? 'Scrivi la costante del blu nel formato Color.NOME, rispettando le maiuscole.' :
+    feedback.textContent = step.color ? 'Controlla come si scrive la costante del blu in Manuale → Colori → Colori predefiniti.' :
       parameter.label + ' · ' + direction + ' il valore.';
     return;
   }
@@ -595,14 +766,26 @@ form.addEventListener('submit', event => {
   }
 
   replaying = false;
-  const key = frames[0].completedKey;
+  saveProgress();
+  completeFrame();
+});
+
+function completeFrame() {
+  const frame = activeFrame;
+  const key = frame.completedKey;
   completedFrames.add(key);
   try { localStorage.setItem(key, 'yes'); } catch {}
-  saveProgress();
   renderGalleryArtwork();
   playEffect('complete');
-  showCompletion();
-});
+  if (frame.id === 'citta' || frame.preview) {
+    // Lascia visibile il risultato della prova prima di aprire il dialogo.
+    window.setTimeout(() => {
+      if (activeFrame === frame && workshop.open && drawingProgress.verified && !vincentTip.open) showCompletion();
+    }, 500);
+  } else {
+    showCompletion();
+  }
+}
 
 function advanceStep() {
   stepIndex += 1;
@@ -615,6 +798,7 @@ function markStepVerified() {
   stepVerified = true;
   for (const field of fields) field.readOnly = true;
   target.setAttribute('visibility', 'hidden');
+  previewLegend.hidden = true;
   const finished = stepIndex === steps.length - 1;
   feedback.textContent = finished ? 'Quadro completato! La casa di sera è pronta.' : 'Passaggio completato.';
   checkLabel.textContent = finished ? 'Torna al museo' : 'Continua';
@@ -623,14 +807,24 @@ function markStepVerified() {
 
 function setResetMode(finished) {
   const label = finished ? 'Rigioca' : 'Ripristina i valori del passaggio';
-  reset.setAttribute('aria-label', label);
-  reset.title = finished ? 'Ricomincia dal primo passaggio' : label;
+  let resetLabel = label;
+  if (!finished && activeFrame.steps) {
+    resetLabel = activeFrame.steps[drawingProgress.index].starter
+      ? 'Ripristina il codice iniziale del passaggio'
+      : 'Svuota l’editor del passaggio';
+  }
+  reset.setAttribute('aria-label', resetLabel);
+  reset.title = finished ? 'Ricomincia dal primo passaggio' : resetLabel;
   reset.toggleAttribute('data-restart', finished);
   reset.firstElementChild.textContent = finished ? label : '↺';
 }
 
 form.addEventListener('reset', event => {
   event.preventDefault();
+  if (activeFrame.steps) {
+    resetDrawing();
+    return;
+  }
   if (stepVerified && stepIndex === steps.length - 1) {
     replaying = true;
     stepIndex = 0;
@@ -643,9 +837,420 @@ form.addEventListener('reset', event => {
 workshop.addEventListener('close', () => {
   try { sessionStorage.removeItem(workshopOpenKey); } catch {}
 });
+const drawingProgressByFrame = new Map();
+const seenDrawingIntros = new Set();
+let drawingProgress;
+
+function loadDrawingProgress(frame) {
+  if (drawingProgressByFrame.has(frame.id)) return drawingProgressByFrame.get(frame.id);
+  let saved;
+  try { saved = JSON.parse(localStorage.getItem(frame.storagePrefix + ':progress')); } catch {}
+  const final = frame.steps.length - 1;
+  const completed = isFrameCompleted(frame) && saved?.replaying !== true;
+  const hasDraft = Number.isInteger(saved?.index) && typeof saved.code === 'string' && saved.code.length <= 4000;
+  if (hasDraft && frame.id === 'biglietteria') {
+    saved = restoreTicketProgress(saved);
+    if (saved.checkedTicketCode !== undefined) {
+      saved.checkedPreviewCode ??= saved.checkedTicketCode;
+      delete saved.checkedTicketCode;
+    }
+  }
+  if (frame.id === 'citta' && saved?.cityVersion !== 6) {
+    if (completed) {
+      const code = citySteps[cityListenerStep].goal;
+      return { ...saved, index: final, verified: true, code, moonCode: code, replaying: false };
+    }
+    if (hasDraft && saved.index >= cityMoonDrawingStep) {
+      const version = saved.cityVersion;
+      const oldButtonStep = version === 4 ? 3 : 2;
+      if (version === 4 && saved.index === 2) {
+        saved = { ...saved, index: cityMoonDrawingStep, verified: false, code: '' };
+      } else if (version >= 3 && saved.index === oldButtonStep) {
+        const buttonDraft = saved.code.replace(/\bg\s*\.\s*fillOval\s*\([^;]*;/, '').trim();
+        saved = { ...saved, index: cityMoonDrawingStep, verified: false, code: '', buttonDraft };
+      } else if (version >= 3) {
+        saved.index = cityLightsStep + saved.index - (oldButtonStep + 1);
+        if (saved.index === cityListenerStep && (version === 4 || (version === 3 && !saved.listenerEditor))) {
+          saved.code = restoreCityListener(saved.code);
+        }
+      } else {
+        const lightsDraft = saved.index === 2 ? saved.code : saved.randomCode;
+        const listenerDraft = saved.index === 3 ? saved.code : undefined;
+        return { ...saved, index: cityMoonDrawingStep, verified: false, code: '', lightsDraft, listenerDraft };
+      }
+    }
+  }
+  const valid = hasDraft && Boolean(frame.steps[saved.index]);
+  if (valid && saved.code.trim() === frame.steps[saved.index].legacyStarter) saved.code = '';
+  let verified = false;
+  if (valid && saved.verified === true) {
+    try { verified = drawingCodeMatches(frame, saved.index, saved.code); } catch {}
+    if (verified && frame.steps[saved.index].exercise === 'moonDrawing') {
+      saved.haloValues ??= [...cityHaloValues];
+      verified = cityHaloMatches(saved.haloValues);
+    }
+  }
+  if (completed && (!verified || saved.index !== final)) {
+    return { ...saved, index: final, verified: true, code: frame.steps[final].goal, replaying: false };
+  }
+  if (!valid) return { index: 0, verified: false, code: frame.steps[0].starter ?? '', replaying: false };
+  return { ...saved, verified, replaying: saved.replaying === true };
+}
+
+function saveDrawingProgress() {
+  if (activeFrame.id === 'citta') drawingProgress.cityVersion = 6;
+  if (activeFrame.id === 'biglietteria') drawingProgress.ticketVersion = ticketProgressVersion;
+  drawingProgressByFrame.set(activeFrame.id, drawingProgress);
+  try { localStorage.setItem(activeFrame.storagePrefix + ':progress', JSON.stringify(drawingProgress)); } catch {}
+}
+
+function showDrawingIntro(frame) {
+  const key = frame.storagePrefix + ':intro-seen';
+  let seen = seenDrawingIntros.has(frame.id);
+  try { seen ||= localStorage.getItem(key) === 'yes'; } catch {}
+  if (seen) return;
+  seenDrawingIntros.add(frame.id);
+  try { localStorage.setItem(key, 'yes'); } catch {}
+  showVincent('Vincent', frame.intro, 'Inizia', drawingEditor);
+}
+
+let drawingPoint;
+function setDrawingPoint(x, y) {
+  const [width, height] = paintingSize;
+  const clamp = (value, limit) => Math.max(0, Math.min(limit, Math.round(value)));
+  drawingPoint = [clamp(x, width), clamp(y, height)];
+  const [column, row] = drawingPoint;
+  drawingCoordinates.textContent = 'x ' + column + ' · y ' + row;
+  drawingCursor.style.left = column / width * 100 + '%';
+  drawingCursor.style.top = row / height * 100 + '%';
+  drawingCursor.hidden = false;
+}
+
+function readDrawingPoint(event) {
+  if (drawingCoordinates.hidden) return;
+  const surface = activeFrame.steps ? drawingCanvas : houseCanvas;
+  const bounds = surface.getBoundingClientRect();
+  const [width, height] = paintingSize;
+  setDrawingPoint((event.clientX - bounds.left) / bounds.width * width,
+    (event.clientY - bounds.top) / bounds.height * height);
+}
+drawingViewport.addEventListener('pointermove', readDrawingPoint);
+drawingViewport.addEventListener('pointerdown', readDrawingPoint);
+drawingViewport.addEventListener('keydown', event => {
+  const direction = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[event.key];
+  if (!direction || drawingCoordinates.hidden) return;
+  event.preventDefault();
+  const [x, y] = drawingPoint ?? [0, 0];
+  const distance = event.shiftKey ? 10 : 1;
+  setDrawingPoint(x + direction[0] * distance, y + direction[1] * distance);
+});
+
+function resetDrawingCoordinates(surface) {
+  drawingCoordinates.hidden = false;
+  drawingCoordinates.textContent = 'x — · y —';
+  drawingCursor.hidden = true;
+  drawingPoint = undefined;
+  surface.setAttribute('tabindex', '0');
+}
+
+function renderDrawingStep() {
+  const { index, verified, code } = drawingProgress;
+  const step = activeFrame.steps[index];
+  byId('lesson-progress').textContent = 'Passaggio ' + (index + 1) + ' di ' + activeFrame.steps.length;
+  byId('lesson-title').textContent = step.title;
+  const guidedHalo = step.exercise === 'moonDrawing';
+  codeHelpOpen.hidden = !step.readyCode;
+  lessonHelp.hidden = !step.hint;
+  haloGuide.hidden = !guidedHalo;
+  haloGuide.disabled = !guidedHalo;
+  if (guidedHalo) {
+    haloFields.forEach((field, position) => {
+      field.value = drawingProgress.haloValues?.[position] ?? '';
+      field.readOnly = verified;
+    });
+  }
+  drawingEditor.value = code;
+  drawingEditor.readOnly = verified;
+  const finished = verified && index === activeFrame.steps.length - 1;
+  const moonStep = step.exercise === 'moon';
+  const waitingForMoon = moonStep && !verified && drawingProgress.checkedMoonCode === code;
+  const waitingForDemo = Boolean(activeFrame.preview && !verified && drawingProgress.checkedPreviewCode === code);
+  byId('lesson-instruction').textContent = step.instruction;
+  checkLabel.textContent = finished ? 'Torna al museo' : verified ? 'Continua' : 'Verifica';
+  feedback.textContent = finished ? 'Quadro completato!' : verified ? 'Passaggio completato.' : '';
+  if (waitingForMoon) feedback.textContent = 'Codice corretto. Prova a cliccare sulla luna.';
+  if (waitingForDemo) feedback.textContent = 'Codice corretto. ' + activeFrame.demoInstruction;
+  setResetMode(finished);
+  workshopMoon.hidden = !(step.exercise === 'moon' || step.exercise === 'lights' || (step.exercise === 'button' && verified));
+  workshopMoon.disabled = !(moonStep && (verified || waitingForMoon));
+  workshopMoon.setAttribute('aria-label', workshopMoon.disabled ? 'Luna' : 'Luna. Cambia le luci della città');
+  const showCityLights = step.exercise === 'moon' || (step.exercise === 'lights' && verified);
+  drawingCanvas.toggleAttribute('data-city-interactive', showCityLights);
+  if (activeFrame.preview) {
+    previewLegend.hidden = true;
+    activeFrame.preview(interfacePreview, index + Number(verified), waitingForDemo || finished,
+      waitingForDemo ? completeDrawingStep : undefined, finished);
+  } else {
+    previewDrawingCode();
+  }
+}
+
+function previewDrawingCode() {
+  if (activeFrame.preview) return;
+  const step = activeFrame.steps[drawingProgress.index];
+  if (step.exercise && step.exercise !== 'moonDrawing') {
+    previewLegend.hidden = !drawCity(drawingCanvas, drawingProgress.index, [], drawingProgress.verified, drawingCanvas.hasAttribute('data-city-interactive'));
+    return;
+  }
+  try {
+    const commands = readDrawingCode(drawingEditor.value, step.exercise);
+    const haloReady = step.exercise === 'moonDrawing' && cityHaloMatches(drawingProgress.haloValues);
+    previewLegend.hidden = !activeFrame.draw(drawingCanvas, drawingProgress.index, commands,
+      drawingProgress.verified, !workshopMoon.hidden, haloReady);
+  } catch {
+    previewLegend.hidden = !activeFrame.draw(drawingCanvas, drawingProgress.index);
+  }
+}
+
+let allowDrawingFocusNavigation = false;
+drawingEditor.addEventListener('blur', () => { allowDrawingFocusNavigation = false; });
+drawingEditor.addEventListener('keydown', event => {
+  if (drawingEditor.readOnly || event.isComposing || event.ctrlKey || event.altKey || event.metaKey) return;
+  if (event.key === 'Escape') {
+    if (!event.repeat && allowDrawingFocusNavigation) return;
+    event.preventDefault();
+    allowDrawingFocusNavigation = true;
+    return;
+  }
+  const navigate = allowDrawingFocusNavigation;
+  allowDrawingFocusNavigation = false;
+  if (event.key !== 'Tab' || navigate) return;
+
+  event.preventDefault();
+  const { selectionStart: start, selectionEnd: end, value } = drawingEditor;
+  if (event.shiftKey) {
+    const lineStart = value.slice(0, start).lastIndexOf('\n') + 1;
+    const indent = /^(?:\t| {1,4})/.exec(value.slice(lineStart));
+    if (!indent) return;
+    drawingEditor.setRangeText('', lineStart, lineStart + indent[0].length, 'preserve');
+  } else {
+    const indent = '    ';
+    if (value.length + indent.length > drawingEditor.maxLength) return;
+    drawingEditor.setRangeText(indent, start, start, 'end');
+    if (end > start) drawingEditor.setSelectionRange(start + indent.length, end + indent.length);
+  }
+  drawingEditor.dispatchEvent(new Event('input', { bubbles: true }));
+});
+
+haloGuide.addEventListener('input', () => {
+  drawingProgress.haloValues = haloFields.map(field => field.value);
+  feedback.textContent = '';
+  previewDrawingCode();
+  saveDrawingProgress();
+});
+
+drawingEditor.addEventListener('input', () => {
+  drawingProgress.code = drawingEditor.value;
+  if (drawingProgress.checkedMoonCode !== undefined || drawingProgress.checkedPreviewCode !== undefined) {
+    delete drawingProgress.checkedMoonCode;
+    delete drawingProgress.checkedPreviewCode;
+    renderDrawingStep();
+  } else {
+    feedback.textContent = '';
+    previewDrawingCode();
+  }
+  saveDrawingProgress();
+});
+
+function drawingCodeMatches(frame, index, code) {
+  if (frame.checkCode) return frame.checkCode(index, code);
+  const { exercise } = frame.steps[index];
+  if (exercise === 'button') return cityButtonMatches(code);
+  if (exercise === 'moon') {
+    const source = code.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, ' ');
+    const listener = /^\s*luna\s*\.\s*addActionListener\s*\(\s*[a-zA-Z_$][\w$]*\s*->\s*\{([\s\S]*?)\}\s*\)\s*;\s*$/.exec(source);
+    return Boolean(listener && cityExerciseMatches(exercise, readDrawingCode(listener[1], exercise)));
+  }
+  const commands = readDrawingCode(code, exercise);
+  return exercise ? cityExerciseMatches(exercise, commands) : frame.drawing.matches(index, commands);
+}
+
+function runCityMoon(button) {
+  const frame = frames[2];
+  const inWorkshop = button === workshopMoon;
+  const progress = inWorkshop ? drawingProgress : loadDrawingProgress(frame);
+  const code = inWorkshop ? drawingEditor.value : progress.moonCode ?? citySteps[cityListenerStep].goal;
+  if (inWorkshop && !progress.verified && progress.checkedMoonCode !== code) return;
+  try {
+    if (!drawingCodeMatches(frame, cityListenerStep, code)) throw new Error('Prima di provare il clic, collega al pulsante il metodo del passaggio precedente.');
+    changeCityLights(progress);
+    if (inWorkshop && !progress.verified) {
+      progress.moonCode = code;
+      delete progress.checkedMoonCode;
+      completeDrawingStep();
+    }
+  } catch (error) {
+    if (inWorkshop) feedback.textContent = error.message;
+  }
+}
+
+function changeCityLights(progress) {
+  const code = progress.randomCode ?? citySteps[cityLightsStep].goal;
+  shuffleCityLights(drawingCodeMatches(frames[2], cityLightsStep, code) ? code : citySteps[cityLightsStep].goal);
+  for (const canvas of document.querySelectorAll('canvas[data-city-interactive]')) {
+    drawCity(canvas, citySteps.length, [], true, true);
+  }
+}
+
+function checkDrawing() {
+  const { index, verified } = drawingProgress;
+  const last = index === activeFrame.steps.length - 1;
+  if (verified) {
+    playEffect('click');
+    if (last) {
+      workshop.close();
+      return;
+    }
+    drawingProgress.index++;
+    drawingProgress.verified = false;
+    const nextStep = activeFrame.steps[drawingProgress.index];
+    const draft = {
+      button: drawingProgress.buttonDraft,
+      lights: drawingProgress.lightsDraft,
+      moon: restoreCityListener(drawingProgress.listenerDraft)
+    }[nextStep.exercise];
+    drawingProgress.code = draft ?? nextStep.starter ?? '';
+    if (nextStep.exercise === 'button') delete drawingProgress.buttonDraft;
+    if (nextStep.exercise === 'lights') delete drawingProgress.lightsDraft;
+    if (nextStep.exercise === 'moon') delete drawingProgress.listenerDraft;
+    renderDrawingStep();
+    saveDrawingProgress();
+    (haloGuide.hidden ? drawingEditor : haloFields[0]).focus();
+    return;
+  }
+
+  const step = activeFrame.steps[index];
+  try {
+    if (step.exercise === 'moonDrawing') {
+      if (!cityHaloMatches(drawingProgress.haloValues)) {
+        throw new Error('Controlla i tre campi della sfumatura. Leggi il centro sulla tela e usa metà del diametro come raggio.');
+      }
+      const issue = cityMoonDrawingIssue(readDrawingCode(drawingEditor.value, step.exercise));
+      if (issue) throw new Error(issue);
+    } else if (!drawingCodeMatches(activeFrame, index, drawingEditor.value)) {
+      const message = {
+        button: 'Crea il JButton luna e usa in setBounds() il riquadro del disco.',
+        lights: 'Assegna un valore casuale a ciascuna finestra, una volta sola.',
+        moon: 'Controlla che il pulsante richiami il metodo del passaggio precedente prima di repaint().'
+      }[step.exercise];
+      throw new Error(message ?? step.retry
+        ?? 'Il disegno non coincide con la sagoma. Controlla le coordinate o chiedi un aiuto a Vincent.');
+    }
+    if (step.exercise === 'lights') {
+      drawingProgress.randomCode = drawingEditor.value;
+      changeCityLights(drawingProgress);
+    }
+    if (activeFrame.preview && last) {
+      drawingProgress.code = drawingEditor.value;
+      drawingProgress.checkedPreviewCode = drawingEditor.value;
+      saveDrawingProgress();
+      renderDrawingStep();
+      interfacePreview.querySelector(activeFrame.demoFocus).focus();
+      return;
+    }
+    if (step.exercise === 'moon') {
+      drawingProgress.code = drawingEditor.value;
+      drawingProgress.checkedMoonCode = drawingEditor.value;
+      saveDrawingProgress();
+      renderDrawingStep();
+      workshopMoon.focus();
+      return;
+    }
+  } catch (error) {
+    feedback.textContent = error.message;
+    playEffect('retry');
+    return;
+  }
+  completeDrawingStep();
+}
+
+function completeDrawingStep() {
+  const last = drawingProgress.index === activeFrame.steps.length - 1;
+  drawingProgress.code = drawingEditor.value;
+  drawingProgress.verified = true;
+  delete drawingProgress.checkedPreviewCode;
+  if (last) drawingProgress.replaying = false;
+  saveDrawingProgress();
+  renderDrawingStep();
+  if (last) completeFrame();
+  else playEffect('success');
+}
+
+function resetDrawing() {
+  if (drawingProgress.verified && drawingProgress.index === activeFrame.steps.length - 1) {
+    drawingProgress.index = 0;
+    drawingProgress.replaying = true;
+  }
+  drawingProgress.verified = false;
+  drawingProgress.code = activeFrame.steps[drawingProgress.index].starter ?? '';
+  delete drawingProgress.haloValues;
+  delete drawingProgress.checkedMoonCode;
+  delete drawingProgress.checkedPreviewCode;
+  renderDrawingStep();
+  saveDrawingProgress();
+  (haloGuide.hidden ? drawingEditor : haloFields[0]).focus();
+}
+
+function openWorkshop(frame, restoring = false) {
+  if (!frame.id) return;
+  if (activeFrame !== frame && !activeFrame.steps) saveProgress();
+  activeFrame = frame;
+  const usesEditor = Boolean(frame.steps);
+  const hasInterface = Boolean(frame.preview);
+  workshopTitle.textContent = frame.title;
+  tourOpen.hidden = usesEditor;
+  codeEditor.hidden = usesEditor;
+  drawingEditor.hidden = !usesEditor;
+  houseCanvas.toggleAttribute('hidden', usesEditor);
+  drawingCanvas.hidden = !usesEditor || hasInterface;
+  interfacePreview.hidden = !hasInterface;
+  interfacePreview.className = frame.previewClass ?? '';
+  drawingViewport.toggleAttribute('data-interface', hasInterface);
+  if (hasInterface) {
+    drawingCoordinates.hidden = true;
+    drawingCursor.hidden = true;
+  } else {
+    resetDrawingCoordinates(usesEditor ? drawingCanvas : houseCanvas);
+  }
+  drawingCanvas.setAttribute('aria-label', frame.title + '. Usa le frecce per spostare il cursore e leggere le coordinate.');
+  if (usesEditor) {
+    drawingProgress = loadDrawingProgress(frame);
+    renderDrawingStep();
+  } else {
+    haloGuide.hidden = true;
+    haloGuide.disabled = true;
+    workshopMoon.hidden = true;
+    drawingCanvas.removeAttribute('data-city-interactive');
+    restoreProgress();
+  }
+
+  workshop.showModal();
+  try { sessionStorage.setItem(workshopOpenKey, frame.id); } catch {}
+  if (usesEditor) {
+    showDrawingIntro(frame);
+  } else if (!restoring && !tourSeen) {
+    startTour(fields[0]);
+  }
+  if (!restoring) playMusic();
+}
+
 restoreProgress();
 renderGalleryArtwork();
 
-let reopenWorkshop = false;
-try { reopenWorkshop = sessionStorage.getItem(workshopOpenKey) === 'yes'; } catch {}
-if (reopenWorkshop) workshop.showModal();
+let savedWorkshop;
+try { savedWorkshop = sessionStorage.getItem(workshopOpenKey); } catch {}
+const resumeIndex = frames.findIndex(frame => frame.id && frame.id === (savedWorkshop === 'yes' ? 'casa' : savedWorkshop));
+if (resumeIndex >= 0) {
+  if (resumeIndex !== frameIndex) showFrame(resumeIndex);
+  openWorkshop(frames[resumeIndex], true);
+}
