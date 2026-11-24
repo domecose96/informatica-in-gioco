@@ -465,6 +465,14 @@
   }
   $('phone-open').addEventListener('click', ()=>openPhone());
   const missionBuildings=['hospital','rescue','townhall','rescue'];
+  function chapterMissionCounts(chapter){
+    if(chapter===3)return [Number(Boolean(state.vlan?.complete)),1];
+    if(chapter===2){
+      const results=[state.routing?.complete,state.routing?.municipalComplete];
+      return [results.filter(Boolean).length,results.length];
+    }
+    return [state.completed,missions.length];
+  }
   function renderShell(){
     const [day, messageTime]=phoneMessages().at(-1)[2].split(' · ');
     const schoolEvening=awaitingDispatch()&&!state.graduationPending&&(state.stormStage??0)===0;
@@ -496,8 +504,7 @@
     document.querySelector('.profile-chip').hidden=!graduated();
     $('profile-rank').replaceChildren(document.createTextNode('Il tuo tesserino'),Object.assign(document.createElement('small'),{textContent:graduated()?(hasBadgeProfile()?`${rank} · ${xp()} XP`:'Da configurare'):`Da ottenere · ${state.studied.length}/${lessons.length} prove`}));
     document.querySelector('.profile-chip').setAttribute('aria-label',graduated()?'Apri il tuo tesserino da tecnico':`Il tuo tesserino: completa le ${lessons.length} prove della scuola`);
-    $('progress-label').textContent=dayThree?`INCARICHI · ${day.toUpperCase()}`:'PERCORSO';
-    $('progress-count').textContent=dayThree?'':state.completed+' / '+missions.length;
+    $('progress-count').textContent=chapterMissionCounts(vlanAvailable?3:dayThree?2:1).join(' / ');
     $('journey').replaceChildren();
     const stages=[{id:'school',title:'Scuola di reti',info:`${state.studied.length}/${lessons.length} prove`,done:graduated(),active:!graduated()},...missions.map((mission,index)=>({id:missionBuildings[index],missionIndex:index,title:index===3?mission.title:mission.site,info:!graduated()?'Richiede tesserino':index===state.completed?(index===3?'Protezione civile · VLSM':mission.title):'In attesa',done:index<state.completed,active:graduated()&&index===state.completed}))];
     if(dayThree&&!vlanAvailable){
@@ -1542,14 +1549,13 @@
     const cardTag=showSettings?'form':'section';
     const nextMission=awaitingDispatch()?null:missions[state.completed];
     const routingSchoolPassed=routingLessonResults(state.routing).filter(Boolean).length;
-    const routingMissions=[state.routing?.complete,state.routing?.municipalComplete];
-    const routingMissionsDone=routingMissions.filter(Boolean).length;
+    const [routingMissionsDone,routingMissionsTotal]=chapterMissionCounts(2);
     const chapterTwo=nextDayStarted();
     const chapterTwoComplete=chapterTwo&&Boolean(state.routing?.municipalComplete);
     const vlanAvailable=chapterTwoComplete&&!state.vlanMorningPending;
     const chapterLabel=vlanAvailable?'Cap. 03':chapterTwo?'Cap. 02':'Cap. 01';
     const chapterSchool=vlanAvailable?`${vlanPassed()}/${vlanSchoolCount}`:chapterTwo?`${routingSchoolPassed}/${routingLessons.length}`:`${state.studied.length}/${lessons.length}`;
-    const chapterMissions=vlanAvailable?`${Number(Boolean(state.vlan?.complete))}/1`:chapterTwo?`${routingMissionsDone}/${routingMissions.length}`:`${state.completed}/${missions.length}`;
+    const chapterMissions=chapterMissionCounts(vlanAvailable?3:chapterTwo?2:1).join('/');
     $('building-content').innerHTML=`<header class="badge-heading">
       <p class="eyebrow">CENTRALE OPERATIVA / VALLE NORD</p>
       <div class="badge-title-row"><h2 id="building-title">Il tuo tesserino</h2>${showSettings?'':'<button type="button" id="badge-settings" class="secondary">Impostazioni</button>'}</div>
@@ -1580,7 +1586,7 @@
             <small>${chapterLabel} · ${chapterSchool}</small>
           </span>
           <span>
-            <strong>${state.completed+routingMissionsDone+Number(Boolean(state.vlan?.complete))}/${missions.length+routingMissions.length+1}</strong>INTERVENTI TOTALI
+            <strong>${state.completed+routingMissionsDone+Number(Boolean(state.vlan?.complete))}/${missions.length+routingMissionsTotal+1}</strong>INTERVENTI TOTALI
             <small>${chapterLabel} · ${chapterMissions}</small>
           </span>
           <span><strong>${xp()}</strong>XP</span>
