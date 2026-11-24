@@ -518,9 +518,6 @@
         active:!state.vlan?.complete,done:state.vlan?.complete
       });
       currentAssignment=stages.at(-1);
-      $('instructions-title').textContent=currentAssignment.title;
-    }else{
-      $('instructions-title').textContent='Valle Nord';
     }
     stages.filter(stage=>(!awaitingDispatch() || stage.id==='school') && !(stage.active && awaitingFieldDispatch()) && (stage.missionIndex!==3||state.completed>=3) && (stage.id==='services'||isBuildingDiscovered(stage.id,state.completed,state.studied))).forEach((stage,i)=>{const b=makeButton('',()=>openBuilding(stage.id,false,stage.missionIndex),'journey-step'+(stage.active?' current':'')+(stage.done?' done':''));const num=document.createElement('span');num.className='step-number';num.textContent=stage.done?'✓':String(dayThree?i+1:i).padStart(2,'0');const text=document.createElement('span'),title=document.createElement('strong'),sub=document.createElement('small');title.textContent=stage.title;sub.textContent=stage.info;text.append(title,sub);b.append(num,text);$('journey').append(b);});
     $('world-status').textContent=!graduated()?'La scuola è aperta. Inizia da lì.':(awaitingDispatch()||awaitingFieldDispatch())?'In attesa di indicazioni dalla centrale.':state.completed<missions.length?`${missions[state.completed].site}: intervento disponibile.`:'Distretto riconnesso. Tutti gli interventi completati.';
