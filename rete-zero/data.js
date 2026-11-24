@@ -67,7 +67,7 @@ const lessons = [
 const buildings = [
  {id:'services',name:'Palazzo dei servizi',kind:'palazzo',badge:'CAPITOLO 03',label:'Palazzo dei servizi',position:[-24,3],color:'#a6cbbb',description:'Quattro piani, quattro VLAN e una rete da collaudare.'},
  {id:'school',name:'Istituto Galilei',kind:'scuola',badge:'FORMAZIONE',label:'Scuola di reti',position:[-25,-18],color:'#81c0d4',description:'Impara, calcola e prova. Qui inizi il tuo percorso da tecnico di rete.'},
- {id:'hq',name:'Centrale operativa',kind:'centrale',badge:'QUARTIER GENERALE',label:'Centrale',position:[7,3],color:'#a8d5c0',description:'Il punto di partenza. Elena coordina il ripristino delle tre sedi.'},
+ {id:'hq',name:'Centrale operativa',kind:'centrale',badge:'QUARTIER GENERALE',label:'Centrale',position:[7,1.1],color:'#a8d5c0',description:'Il punto di partenza. Elena coordina il ripristino delle tre sedi.'},
  {id:'hospital',name:'Ospedale San Luca',kind:'ospedale',badge:'EPISODIO 01',label:'Ospedale',position:[25,-20],color:'#e6aa8d',mission:0,description:'Il pronto soccorso è isolato: un terminale non raggiunge il server.'},
  {id:'rescue',name:'Protezione civile',kind:'soccorso',badge:'EPISODIO 02',label:'Protezione civile',position:[25,23],color:'#dfb45f',mission:1,description:'Le squadre non riescono a comunicare. Due apparati si contendono lo stesso IP.'},
  {id:'townhall',name:'Municipio',kind:'municipio',badge:'EPISODIO 03',label:'Municipio',position:[-24,23],color:'#b9add4',mission:2,description:'Due reparti, una rete da suddividere. La città ha bisogno di un piano.'}

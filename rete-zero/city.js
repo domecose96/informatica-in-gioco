@@ -41,13 +41,17 @@ root.RZCity = function(host, markers, onEnter){
     function box(parent,x,y,z,w,h,d,color,options={}){const mesh=new T.Mesh(new T.BoxGeometry(w,h,d),mat(color,options));mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;}
     function cylinder(parent,x,y,z,r,h,color,segments=16,top=r){const mesh=new T.Mesh(new T.CylinderGeometry(top,r,h,segments),mat(color));mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;}
     function tree(x,z,size=1){treeCandidates.push({x,z,size});}
-    function renderTree(x,z,size=1){const trunk=cylinder(city,x,.55,z,.10,.9,'#88765a',6);trunk.castShadow=false;const crown=new T.Mesh(new T.IcosahedronGeometry(.75*size,1),mat('#789b7c'));crown.position.set(x,1.4*size,z);crown.scale.y=1.3;city.add(crown);crown.castShadow=true;}
+    function renderTree(x,z,size=1,parent=city){const trunk=cylinder(parent,x,.55,z,.10,.9,'#88765a',6);trunk.castShadow=false;const crown=new T.Mesh(new T.IcosahedronGeometry(.75*size,1),mat('#789b7c'));crown.position.set(x,1.4*size,z);crown.scale.y=1.3;parent.add(crown);crown.castShadow=true;}
     // Una città estesa, con isolati abitati e cinque sole sedi operative.
     const roadsX=[-36,-15,15,36],roadsZ=[-29,-8,14,32];
+    const playground={x:25,z:3,width:14,depth:14};
     const riverX=z=>Math.sin(z*.09)*1.35;
+    const fountainZ=8.2,fountainX=riverX(fountainZ)+5.7;
     // L'area operativa è immersa in un tessuto urbano neutro, senza bordo del plastico.
-    const contextRoadsX=[...roadsX],contextRoadsZ=[...roadsZ];
-    for(let v=57;v<210;v+=21)contextRoadsX.push(-v,v);
+    // Gli assi stradali proseguono nella città sullo sfondo.
+    const contextRoadsX=[...roadsX,58,80],contextRoadsZ=[...roadsZ];
+    for(let x=-57;x>-210;x-=21)contextRoadsX.push(x);
+    for(let x=101;x<210;x+=21)contextRoadsX.push(x);
     for(let v=50;v<180;v+=18)contextRoadsZ.push(-v,v);
     const contextCanvas=document.createElement('canvas');contextCanvas.width=2048;contextCanvas.height=1770;const gc=contextCanvas.getContext('2d');
     const gx=x=>(x+215)/430*2048,gz=z=>(z+186)/372*1770;
@@ -85,7 +89,37 @@ root.RZCity = function(host, markers, onEnter){
       lit.push(box(g,x,y,-depth/2-.025,.42,.47,.045,'#66898e',{emissive:'#25424a',emissiveIntensity:.2}));
     }return lit;}
     function roof(g,y,w,d,color){box(g,0,y,0,w,.22,d,color);box(g,0,y+.2,0,w-.35,.18,d-.35,color);}
-    function cross(g,x,y,z,size,color){box(g,x,y,z,size,.10,size*.3,color);box(g,x,y,z,size*.3,.11,size,color);}
+    function addHospitalHelipad(hospital){
+      const padPaint='#f2eed6',rescueRed='#a95143',ivory='#f0dfbc',glass='#375c67';
+      const padX=1.1;
+      cylinder(hospital,padX,3.92,0,1.65,.09,'#68857e',40);
+      const outline=new T.Mesh(new T.RingGeometry(1.42,1.49,40),mat(padPaint));
+      outline.rotation.x=-Math.PI/2;outline.position.set(padX,3.973,0);hospital.add(outline);
+      for(const offset of [-.47,.47])box(hospital,padX+offset,3.975,0,.16,.018,1.38,padPaint);
+      box(hospital,padX,3.975,0,.78,.018,.16,padPaint);
+
+      const helicopter=new T.Group();
+      helicopter.position.set(padX,3.97,0);hospital.add(helicopter);
+      const cabin=new T.Mesh(new T.IcosahedronGeometry(.5,1),mat(ivory));
+      cabin.position.set(0,.43,.02);cabin.scale.set(.79,.61,1.28);cabin.castShadow=true;
+      helicopter.add(cabin);
+      const cockpit=new T.Mesh(new T.IcosahedronGeometry(.5,1),mat(glass));
+      cockpit.position.set(0,.49,.29);cockpit.scale.set(.72,.48,.68);cockpit.castShadow=true;
+      helicopter.add(cockpit);
+      for(const side of [-1,1]){
+        box(helicopter,side*.358,.40,-.06,.045,.13,.64,rescueRed);
+        box(helicopter,side*.29,.045,0,.065,.075,.91,glass);
+        for(const z of [-.27,.25])box(helicopter,side*.24,.16,z,.07,.24,.065,glass);
+      }
+      const boom=cylinder(helicopter,0,.42,-.81,.07,.94,ivory,8,.13);
+      boom.rotation.x=Math.PI/2-.12;
+      box(helicopter,0,.63,-1.23,.09,.38,.18,rescueRed).rotation.x=-.3;
+      box(helicopter,.08,.58,-1.24,.04,.34,.049,glass).rotation.x=.55;
+      cylinder(helicopter,0,.8,0,.038,.24,glass,8);
+      const rotor=new T.Group();rotor.position.y=.92;rotor.rotation.y=.28;helicopter.add(rotor);
+      box(rotor,0,0,0,2.16,.035,.085,glass);
+      for(const x of [-.98,.98])box(rotor,x,.004,0,.19,.037,.087,rescueRed);
+    }
     let servicesConstruction;
     function constructionSite(x,z){
       const site=new T.Group();
@@ -130,12 +164,36 @@ root.RZCity = function(host, markers, onEnter){
       box(site,1.75,4.18,mastZ,.16,.14,.07,steel);
       return site;
     }
+    const playArea=new T.Group();
+    playArea.position.set(playground.x,0,playground.z);
+    city.add(playArea);
+    layout.reserve(playground.x,playground.z,playground.width,playground.depth);
+    host.dataset.playgroundX=String(playground.x);
+    box(playArea,0,.005,0,14,.15,14,'#9eb994');
+    box(playArea,0,.09,0,10,.12,9,'#d6b48b');
+    for(const x of [-2.1,2.1])for(const z of [-2.1,-.65]){
+      cylinder(playArea,x,1.05,z,.075,2,'#56787d',8);
+    }
+    box(playArea,0,2.06,-1.37,4.45,.14,.12,'#56787d');
+    for(const x of [-.9,.9]){
+      for(const side of [-1,1])cylinder(playArea,x+side*.24,1.42,-1.37,.02,1.17,'#857469',6);
+      box(playArea,x,.81,-1.37,.62,.10,.37,'#cf8b55');
+    }
+    for(const x of [-3.15,-2.15])for(const z of [.95,1.75])cylinder(playArea,x,.9,z,.065,1.7,'#808866',8);
+    box(playArea,-2.65,1.76,1.35,1.25,.12,1.15,'#587f85');
+    const slide=box(playArea,-2.65,.92,2.52,.8,.12,2.2,'#ba6e50');
+    slide.rotation.x=.73;
+    for(const x of [2,3.45])cylinder(playArea,x,.5,2.4,.39,.72,'#759ea1',12);
+    box(playArea,2.75,1.05,2.4,2.2,.12,.28,'#c88956');
+    for(const x of [-5.6,5.6])for(const z of [-5.5,5.5])renderTree(x,z,1.2,playArea);
+    const parkPathStart=playground.z+playground.depth/2,parkPathEnd=14-1.5;
+    box(city,playground.x,-.075,(parkPathStart+parkPathEnd)/2,1.55,.11,parkPathEnd-parkPathStart,'#dcd9c6');
     buildings.forEach(site=>{
       const [x,z]=site.position,g=new T.Group();g.position.set(x,0,z);g.userData.siteId=site.id;city.add(g);groups.set(site.id,g);
       if(site.id!=='hq'){
         box(g,0,.04,0,8.1,.2,7.0,'#ced5c7');box(g,0,.17,2.9,8.3,.1,1.1,'#e4dfcc');
         const nearest=roadsZ.reduce((a,v)=>Math.abs(v-z)<Math.abs(a-z)?v:a,roadsZ[0]);
-        box(city,x,-.03,(z+nearest)/2,1.3,.08,Math.abs(z-nearest),'#d4d8c4');
+        if(site.id!=='services')box(city,x,-.03,(z+nearest)/2,1.3,.08,Math.abs(z-nearest),'#d4d8c4');
       }
       let labelHeight=5;
       if(site.id==='school'){
@@ -145,10 +203,15 @@ root.RZCity = function(host, markers, onEnter){
         const clock=cylinder(g,-.8,2.75,2.04,.32,.08,'#f3eacb',24);clock.rotation.x=Math.PI/2;box(g,-.8,2.79,2.09,.035,.22,.03,'#44656b');
         box(g,1.9,.25,2.8,2.3,.12,1.2,'#a8bba3');cylinder(g,-3.2,1.6,2.5,.035,2.8,'#7b8984',6);box(g,-2.84,2.65,2.5,.7,.43,.05,'#89c4c0');labelHeight=4.6;
       }else if(site.id==='hospital'){
-        box(g,0,1.8,0,6.5,3.3,3.6,'#e8dfc9');box(g,0,1,2.1,2.8,1.5,1.4,'#e7c8b3');roof(g,3.58,6.9,4,'#d9a18b');
-        windows.set(site.id,windowGrid(g,5.7,3.3,3.6,3,6));box(g,0,1.1,2.84,1.25,1.7,.08,'#5b8e97');
-        cylinder(g,1.6,3.93,0,1.18,.08,'#8a9f96',32);cross(g,1.6,4.02,0,1.2,'#edf0d9');
-        box(g,0,3.07,1.88,1.1,.7,.1,'#e7e5d4');box(g,0,3.07,1.96,.5,.15,.08,'#ae665a');box(g,0,3.07,1.96,.15,.5,.09,'#ae665a');labelHeight=5.1;
+        box(g,0,1.8,0,6.5,3.3,3.6,'#e8dfc9');roof(g,3.58,6.9,4,'#d9a18b');
+        windows.set(site.id,windowGrid(g,5.7,3.3,3.6,3,6));
+        box(g,0,1.1,2.18,2.55,1.82,1.18,'#d7c3ad');
+        box(g,0,1.05,2.79,1.44,1.53,.09,'#4d7983');
+        box(g,0,1.05,2.85,.045,1.53,.025,'#abbcb0');
+        box(g,0,2.03,2.58,2.84,.17,1.32,'#8ba7a3');
+        box(g,0,3.07,1.88,1.1,.7,.1,'#e7e5d4');box(g,0,3.07,1.96,.5,.15,.08,'#ae665a');box(g,0,3.07,1.96,.15,.5,.09,'#ae665a');
+        addHospitalHelipad(g);
+        labelHeight=6;
       }else if(site.id==='rescue'){
         box(g,0,1.15,0,6.3,2,4.1,'#d8b66d');roof(g,2.28,6.6,4.5,'#a47d57');
         for(let i=-1;i<=1;i++){box(g,i*1.8,1,2.1,1.3,1.5,.08,'#466a70');for(let j=0;j<4;j++)box(g,i*1.8,.5+j*.3,2.16,1.28,.025,.02,'#91aaa5');}
@@ -156,6 +219,21 @@ root.RZCity = function(host, markers, onEnter){
         cylinder(g,-2.3,3.7,-1,.04,3,'#69827d',6);for(let i=0;i<3;i++){const ring=new T.Mesh(new T.TorusGeometry(.5+i*.2,.025,5,20),mat('#758d83'));ring.position.set(-2.3,4.45+i*.13,-1);ring.rotation.x=Math.PI/2;g.add(ring);}labelHeight=5.6;
       }else if(site.id==='services'){
         servicesConstruction=constructionSite(x,z);
+        // L'ingresso si raccorda al marciapiede della strada laterale.
+        const paving='#9e9a86',joint='#858572',walkWidth=2.2;
+        const turnZ=z+6,turnStart=turnZ-walkWidth/2,entrance=z+3.4;
+        const west=x-walkWidth/2,sidewalk=roadsX.find(road=>road>x)-2.2;
+        const steps=[
+          {x,z:(turnStart+entrance)/2,width:walkWidth,depth:turnStart-entrance},
+          {x:(west+sidewalk)/2,z:turnZ,width:sidewalk-west,depth:walkWidth}
+        ];
+        for(const step of steps){
+          layout.reserve(step.x,step.z,step.width,step.depth);
+          box(city,step.x,-.052,step.z,step.width,.12,step.depth,paving);
+        }
+        for(let seam=x+1.1;seam<sidewalk-.25;seam+=1.2){
+          box(city,seam,.009,turnZ,.035,.01,walkWidth-.14,joint);
+        }
         g.name=site.name;
         g.visible=false;
         box(g,0,2.7,0,5.8,5.2,4,'#cbd7cc');
@@ -194,8 +272,11 @@ root.RZCity = function(host, markers, onEnter){
     const roofMesh=new T.InstancedMesh(new T.BoxGeometry(1,1,1),mat('#9ca99d'),240);roofMesh.castShadow=true;city.add(roofMesh);
     const rng=(a,b)=>{const v=Math.sin(a*12.9898+b*78.233)*43758.5453;return v-Math.floor(v);};
     for(let x=-42;x<=43;x+=4.8)for(let z=-35;z<=36;z+=4.8){
+      if(Math.hypot(x-fountainX,z-fountainZ)<5.2)continue;
       if(nearRoad(x,z,3.2)||Math.abs(x-riverX(z))<4.8||nearSite(x,z,6.4))continue;
       if((x<-17&&z>0&&z<12)||(x>17&&z>-3&&z<10)){tree(x,z,1.2);tree(x+1.3,z+1,1);continue;}
+      // Le fasce di raccordo al confine est rimangono libere.
+      if(x>roadsX.at(-1)&&[-19,23].some(centre=>Math.abs(z-centre)<6.5))continue;
       const r=rng(x,z),h=(z<-20?5:2.6)+r*(z<-20?7:4),w=2.7+r*.65,d=2.6+rng(z,x)*.65;
       layout.reserve(x,z,w+.2,d+.2);
       const group=apartmentGroups[Math.floor(r*facades.length)];dummy.position.set(x,h/2-.05,z);dummy.scale.set(w,h,d);dummy.rotation.set(0,0,0);dummy.updateMatrix();group.mesh.setMatrixAt(group.count++,dummy.matrix);
@@ -215,6 +296,40 @@ root.RZCity = function(host, markers, onEnter){
       dummy.position.y=h;dummy.scale.set(w+.15,.2,d+.15);dummy.updateMatrix();contextRoofs.setMatrixAt(contextCount++,dummy.matrix);
     }
     contextGroups.forEach(({mesh,count})=>{mesh.count=count;mesh.instanceMatrix.needsUpdate=true;});contextRoofs.count=contextCount;contextRoofs.instanceMatrix.needsUpdate=true;host.dataset.contextBuildings=String(contextCount);
+    const flowerColors=['#d8a4a6','#ecce85','#c4a9cc','#e7dfbc'];
+    const flowerShape=new T.IcosahedronGeometry(.23,0);
+    layout.reserve(fountainX,fountainZ,5.2,5.2);
+    const fountain=new T.Group();
+    fountain.position.set(fountainX,0,fountainZ);
+    city.add(fountain);
+    cylinder(fountain,0,-.05,0,2.6,.18,'#c4baa2',40);
+    cylinder(fountain,0,.025,0,2.45,.09,'#73966d',40);
+    for(let i=0;i<20;i++){
+      const angle=i*Math.PI/10;
+      const radius=i%2===0?2.17:1.98;
+      const flower=new T.Mesh(flowerShape,mat(flowerColors[Math.floor(i/2)%flowerColors.length]));
+      flower.position.set(Math.cos(angle)*radius,.24,Math.sin(angle)*radius);
+      flower.scale.y=.72;
+      fountain.add(flower);
+    }
+    cylinder(fountain,0,-.015,0,1.64,.15,'#d9d2b9',32);
+    cylinder(fountain,0,.14,0,1.4,.27,'#bbbba9',32);
+    const water='#5497a6';
+    cylinder(fountain,0,.28,0,1.25,.035,water,32);
+    const basinRim=new T.Mesh(new T.TorusGeometry(1.31,.083,8,32),mat('#d3cdb8'));
+    basinRim.rotation.x=-Math.PI/2;basinRim.position.y=.31;basinRim.castShadow=true;fountain.add(basinRim);
+    cylinder(fountain,0,.55,0,.19,.55,'#babaa7',12,.13);
+    cylinder(fountain,0,.85,0,.42,.14,'#c8c5ad',20,.51);
+    cylinder(fountain,0,.93,0,.42,.035,water,24);
+    for(let i=0;i<4;i++){
+      const angle=i*Math.PI/2+Math.PI/4,dx=Math.cos(angle),dz=Math.sin(angle);
+      const arc=new T.QuadraticBezierCurve3(
+        new T.Vector3(dx*.16,.94,dz*.16),
+        new T.Vector3(dx*.7,1.63,dz*.7),
+        new T.Vector3(dx*1.05,.30,dz*1.05)
+      );
+      fountain.add(new T.Mesh(new T.TubeGeometry(arc,10,.032,6,false),mat('#84bdc9')));
+    }
     // Lungofiume e parchi: alberi senza invadere strade o piazzali operativi.
     for(let z=-35;z<37;z+=4.8)for(const side of [-1,1]){const x=riverX(z)+side*5.7;if(!nearRoad(x,z,2.4)&&!nearSite(x,z,5))tree(x,z,1.15);}
     for(let x=-43;x<45;x+=7.6)for(const z of [-36.5,36.5])if(!nearRoad(x,z,2.6)&&!nearSite(x,z,5))tree(x,z,1.1);
@@ -222,6 +337,64 @@ root.RZCity = function(host, markers, onEnter){
     // Campetto della scuola, parcheggi e aiuole civiche.
     const school=buildings.find(b=>b.id==='school').position;layout.reserve(school[0]-6,school[1],3.4,6.2);box(city,school[0]-6,.01,school[1],3.2,.13,6,'#88aa9b');box(city,school[0]-6,.1,school[1],.06,.02,5.7,'#e7e6cd');
     for(const site of buildings.filter(b=>b.id!=='hq')){const [x,z]=site.position;for(let i=0;i<4;i++)box(city,x+5.2,-.02,z-1.5+i*.85,1.8,.04,.045,'#e7e5ca');tree(x-5.3,z+2,1.05);}
+    function flowerBed(parent,x,z){
+      box(parent,x,-.013,z,2.2,.23,.82,'#9c9273');
+      box(parent,x,.116,z,1.96,.035,.59,'#648566');
+      for(let i=0;i<5;i++){
+        const flower=new T.Mesh(flowerShape,mat(flowerColors[i%flowerColors.length]));
+        flower.position.set(x-.75+i*.375,.32,z+(i%2?.12:-.12));
+        flower.scale.y=.82;
+        parent.add(flower);
+      }
+    }
+    const [hospitalX,hospitalZ]=buildings.find(site=>site.id==='hospital').position;
+    const frontWalkStart=hospitalZ+3.4;
+    const hospitalSidewalk=roadsZ.find(road=>road>hospitalZ)-2.2;
+    const frontWalkDepth=hospitalSidewalk-frontWalkStart;
+    layout.reserve(hospitalX,frontWalkStart+frontWalkDepth/2,1.6,frontWalkDepth);
+    box(city,hospitalX,-.051,frontWalkStart+frontWalkDepth/2,1.6,.12,frontWalkDepth,'#c8c5b3');
+
+    const bayX=hospitalX+6.1,bayZ=hospitalZ+6.25;
+    const bayStart=bayZ-1.75,bayDepth=hospitalSidewalk-bayStart;
+    layout.reserve(bayX,bayStart+bayDepth/2,2.15,bayDepth);
+    box(city,bayX,-.055,bayStart+bayDepth/2,2.15,.11,bayDepth,'#aab4aa');
+    const ambulance=new T.Group();
+    ambulance.position.set(bayX,0,bayZ);city.add(ambulance);
+    const body='#ece9d4',stripe='#aa5046',tire='#374e52';
+    box(ambulance,0,.61,-.32,1.02,.82,1.39,body);
+    box(ambulance,0,.48,.68,.93,.54,.67,body);
+    box(ambulance,0,.76,.52,.88,.43,.49,body);
+    box(ambulance,0,.81,.77,.77,.27,.026,'#527680');
+    box(ambulance,0,.53,1.022,.76,.13,.045,tire);
+    box(ambulance,0,.99,.49,.63,.085,.16,'#477ca3');
+    for(const side of [-1,1]){
+      box(ambulance,side*.519,.56,-.3,.028,.16,1.35,stripe);
+      box(ambulance,side*.448,.79,.59,.031,.23,.28,'#527680');
+      box(ambulance,side*.34,.52,1.05,.15,.1,.032,'#f2dda2');
+      box(ambulance,side*.38,.62,-1.025,.1,.17,.03,stripe);
+      for(const z of [-.66,.65]){
+        const wheel=cylinder(ambulance,side*.47,.198,z,.19,.15,tire,12);
+        wheel.rotation.z=Math.PI/2;
+      }
+    }
+
+    const benchX=hospitalX-3,benchZ=hospitalZ+4.1;
+    const wood='#8d633e',metal='#506764';
+    layout.reserve(benchX,benchZ,1.8,.7);
+    for(const offset of [-.65,.65]){
+      box(city,benchX+offset,.13,benchZ,.1,.46,.49,metal);
+      box(city,benchX+offset,.42,benchZ-.22,.08,.6,.08,metal);
+    }
+    for(const offset of [-.16,0,.16])box(city,benchX,.39,benchZ+offset,1.72,.09,.14,wood);
+    for(const height of [.59,.75])box(city,benchX,height,benchZ-.24,1.72,.115,.07,wood);
+    for(const [dx,dz] of [[-3,5.45],[2.8,4.8]]){
+      layout.reserve(hospitalX+dx,hospitalZ+dz,2.2,.82);
+      flowerBed(city,hospitalX+dx,hospitalZ+dz);
+    }
+    const [rescueX,rescueZ]=buildings.find(site=>site.id==='rescue').position;
+    tree(rescueX-5.5,rescueZ-4.6,1.2);
+    tree(rescueX-6.3,rescueZ+5.6,1.35);
+    tree(rescueX+5.6,rescueZ+4.7,1.2);
     // Si piantano gli alberi solo dopo aver registrato tutti i volumi degli edifici.
     for(const candidate of treeCandidates){const {x,z,size}=candidate,radius=.75*size;
       if(nearRoad(x,z,radius+1.6)||Math.abs(x-riverX(z))<2.65+radius)continue;
