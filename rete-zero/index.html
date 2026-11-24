@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101c22">
 <meta name="description" content="Una città 3D da riconnettere. Studia reti e subnetting alla scuola Galilei e diventa tecnico sul campo.">
 <title>Rete Zero · La città isolata</title>
-<link rel="icon" href="assets/favicon.svg?v=36" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=93"><link rel="stylesheet" href="school-v2.css?v=147">
+<link rel="icon" href="assets/favicon.svg?v=36" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=94"><link rel="stylesheet" href="school-v2.css?v=148">
 <script src="vendor/three.min.js" defer></script><script src="network.js?v=18" defer></script><script src="data.js?v=59" defer></script><script src="spatial.js?v=11" defer></script><script src="city.js?v=29" defer></script><script src="routing.js?v=9" defer></script><script src="vlan.js?v=11" defer></script><script src="vlan-ui.js?v=56" defer></script><script src="stp.js?v=11" defer></script><script src="game.js?v=339" defer></script><script src="ui.js?v=13" defer></script>
 </head>
 <body>
@@ -27,7 +27,11 @@
 <button id="compass-reset" class="compass" aria-label="Orienta la mappa verso nord" title="Orienta verso nord"><svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="31" class="compass-ring"/><path class="compass-ticks" d="M36 7v4m0 50v4M7 36h4m50 0h4"/><g id="compass-needle"><text x="36" y="20" text-anchor="middle">N</text><path class="needle-north" d="M36 25 44 48 36 43 28 48Z"/><path class="needle-south" d="m36 43 0-18 8 23Z"/></g></svg></button>
 <div class="navigation-tools"><div class="pan-controls" aria-label="Spostamento della mappa"><button id="pan-up" aria-label="Sposta la visuale in alto">↑</button><button id="pan-left" aria-label="Sposta la visuale a sinistra">←</button><button id="pan-home" aria-label="Centra Valle Nord">⌖</button><button id="pan-right" aria-label="Sposta la visuale a destra">→</button><button id="pan-down" aria-label="Sposta la visuale in basso">↓</button></div><div class="map-controls" aria-label="Controlli mappa"><button id="zoom-in" aria-label="Avvicina la mappa">+</button><button id="zoom-out" aria-label="Allontana la mappa">−</button><span></span><button id="rotate-left" aria-label="Ruota la città a sinistra" title="Ruota a sinistra"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1.5 7M4 4v6h6"/></svg></button><button id="rotate-right" aria-label="Ruota la città a destra" title="Ruota a destra"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10a8 8 0 1 0-1.5 7M20 4v6h-6"/></svg></button><button id="reset-camera" aria-label="Ripristina la vista iniziale">⌖</button></div></div>
 <div class="map-instructions">Trascina per spostarti <span>·</span> Shift + trascina per ruotare</div></div>
-<div class="world-bottom"><div class="legend"><span><i class="legend-dot school"></i> Scuola</span><span><i class="legend-dot task"></i> Interventi</span><span><i class="legend-dot restored"></i> Online</span></div></div><div id="world-status" class="visually-hidden" role="status">La scuola è aperta.</div>
+<div class="world-bottom"><div class="legend" role="group" aria-label="Avanzamento sulla mappa">
+  <span><i class="legend-ring" aria-hidden="true"></i> Da iniziare</span>
+  <span><i class="legend-ring partial" aria-hidden="true"></i> In corso</span>
+  <span><i class="legend-ring complete" aria-hidden="true"></i> Completato</span>
+</div></div><div id="world-status" class="visually-hidden" role="status">La scuola è aperta.</div>
 </section>
 </main>
 <dialog id="help-dialog" class="help-dialog" aria-labelledby="help-title">

@@ -1,9 +1,31 @@
 /* Percorso didattico esteso e laboratorio CLI. */
-.city-markers .city-marker {
+.city-markers .city-marker,
+.legend-ring {
   --progress: 0%;
-  border: 0;
   background: conic-gradient(from -90deg, #68be8f var(--progress), #d4eee0 0);
 }
+
+.city-markers .city-marker {
+  border: 0;
+}
+
+.legend-ring {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.legend-ring::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: #102a30;
+}
+
+.legend-ring.partial { --progress: 50%; }
+.legend-ring.complete { --progress: 100%; }
 
 .city-markers .city-marker::before {
   content: "";
