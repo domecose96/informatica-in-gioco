@@ -499,7 +499,7 @@
     $('progress-label').textContent=dayThree?`INCARICHI · ${day.toUpperCase()}`:'PERCORSO';
     $('progress-count').textContent=dayThree?'':state.completed+' / '+missions.length;
     $('journey').replaceChildren();
-    const stages=[{id:'school',title:'Scuola di reti',info:graduated()?'Completata ✓':`${state.studied.length}/${lessons.length} prove`,done:graduated(),active:!graduated()},...missions.map((mission,index)=>({id:missionBuildings[index],missionIndex:index,title:index===3?mission.title:mission.site,info:index<state.completed?'Online ✓':!graduated()?'Richiede tesserino':index===state.completed?(index===3?'Protezione civile · VLSM':mission.title):'In attesa',done:index<state.completed,active:graduated()&&index===state.completed}))];
+    const stages=[{id:'school',title:'Scuola di reti',info:`${state.studied.length}/${lessons.length} prove`,done:graduated(),active:!graduated()},...missions.map((mission,index)=>({id:missionBuildings[index],missionIndex:index,title:index===3?mission.title:mission.site,info:!graduated()?'Richiede tesserino':index===state.completed?(index===3?'Protezione civile · VLSM':mission.title):'In attesa',done:index<state.completed,active:graduated()&&index===state.completed}))];
     if(dayThree&&!vlanAvailable){
       const trained=Boolean(state.routing?.ripComplete);
       stages.splice(0,stages.length,{id:'school',title:schoolUpdateTitle,info:'Routing statico e RIP',active:!trained,done:trained});
@@ -509,7 +509,7 @@
     let currentAssignment;
     if(vlanAvailable){
       const trained=vlanTrained();
-      const trainingInfo=trained?'Completata ✓':vlanPassed()===vlanLessons.length?RZStp.title:'Switch, trunk e routing';
+      const trainingInfo=vlanPassed()===vlanLessons.length?RZStp.title:'Switch, trunk e routing';
       stages.splice(0,stages.length,{
         id:'school',title:vlanSchoolMessage[0],info:trainingInfo,active:!trained,done:trained
       });
@@ -519,7 +519,7 @@
       });
       currentAssignment=stages.at(-1);
     }
-    stages.filter(stage=>(!awaitingDispatch() || stage.id==='school') && !(stage.active && awaitingFieldDispatch()) && (stage.missionIndex!==3||state.completed>=3) && (stage.id==='services'||isBuildingDiscovered(stage.id,state.completed,state.studied))).forEach((stage,i)=>{const b=makeButton('',()=>openBuilding(stage.id,false,stage.missionIndex),'journey-step'+(stage.active?' current':'')+(stage.done?' done':''));const num=document.createElement('span');num.className='step-number';num.textContent=stage.done?'✓':String(dayThree?i+1:i).padStart(2,'0');const text=document.createElement('span'),title=document.createElement('strong'),sub=document.createElement('small');title.textContent=stage.title;sub.textContent=stage.info;text.append(title,sub);b.append(num,text);$('journey').append(b);});
+    stages.filter(stage=>(!awaitingDispatch() || stage.id==='school') && !(stage.active && awaitingFieldDispatch()) && (stage.missionIndex!==3||state.completed>=3) && (stage.id==='services'||isBuildingDiscovered(stage.id,state.completed,state.studied))).forEach((stage,i)=>{const b=makeButton('',()=>openBuilding(stage.id,false,stage.missionIndex),'journey-step'+(stage.active?' current':'')+(stage.done?' done':''));const num=document.createElement('span');num.className='step-number';num.textContent=stage.done?'✓':String(dayThree?i+1:i).padStart(2,'0');const text=document.createElement('span'),title=document.createElement('strong'),sub=document.createElement('small');title.textContent=stage.title;sub.textContent=stage.done?(stage.id==='school'?'Completata ✓':'Online ✓'):stage.info;text.append(title,sub);b.append(num,text);$('journey').append(b);});
     $('world-status').textContent=!graduated()?'La scuola è aperta. Inizia da lì.':(awaitingDispatch()||awaitingFieldDispatch())?'In attesa di indicazioni dalla centrale.':state.completed<missions.length?`${missions[state.completed].site}: intervento disponibile.`:'Distretto riconnesso. Tutti gli interventi completati.';
     $('brief-instruction').textContent=!graduated()?'Completa la scuola, poi ripristina le tre sedi.':(awaitingDispatch()||awaitingFieldDispatch())?'Attendi il messaggio di Elena.':state.completed<missions.length?'Scegli la sede segnalata per il prossimo intervento.':'Le tre sedi sono di nuovo online.';
     if(graduated()&&!hasBadgeProfile()){
