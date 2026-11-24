@@ -1008,53 +1008,56 @@
 .badge-awards-title { margin: 0 0 8px; }
 .badge-awards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
-  gap: 7px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 4px 8px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .badge-award {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px;
-  border: 1px solid #41645a;
-  border-radius: 4px;
+  min-width: 0;
   color: #a9c1b8;
   font-size: 11px;
+  line-height: 1.35;
+}
+.badge-award:not(.earned), .badge-replay {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  padding: 3px 2px;
 }
 .badge-award-mark {
-  flex: 0 0 56px;
-  width: 56px;
-  height: 56px;
+  width: min(100%, 68px);
+  height: auto;
+  aspect-ratio: 1;
   object-fit: contain;
 }
-.badge-award:not(.earned) .badge-award-mark {
+.badge-award:not(.earned) img {
   filter: grayscale(1);
   opacity: .48;
 }
-.badge-award.earned {
-  padding: 0;
-  background: #1b3936;
-  border-color: #6f998b;
-  color: #d4eadf;
+.badge-award-placeholder {
+  position: relative;
+  background: #46665c;
+  clip-path: polygon(50% 4%, 87% 26%, 87% 74%, 50% 96%, 13% 74%, 13% 26%);
 }
-.badge-award small { display: block; margin-top: 3px; }
+.badge-award-placeholder::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  background: #142b30;
+  clip-path: inherit;
+}
+.badge-award.earned { color: #d4eadf; }
 .badge-replay {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  gap: 7px;
   width: 100%;
-  min-width: 0;
-  padding: 8px;
+  height: 100%;
   border: 0;
-  border-radius: inherit;
+  border-radius: 4px;
   background: transparent;
   color: inherit;
   font: inherit;
-  text-align: left;
 }
 .badge-replay:hover { background: #d4eadf16; }
 
@@ -1136,15 +1139,15 @@
 }
 
 .badge-heading {
-  padding: 22px clamp(16px, 3vw, 38px);
+  padding: 12px clamp(16px, 3vw, 38px);
   border-bottom: 1px solid #35534d;
 }
 .badge-heading h2 { margin: 6px 0 0; font-size: clamp(25px, 3vw, 36px); }
 .badge-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr);
-  gap: 18px;
-  padding: 20px clamp(16px, 3vw, 38px) 26px;
+  gap: 10px 18px;
+  padding: 12px clamp(16px, 3vw, 38px) 14px;
   align-items: start;
 }
 .badge-layout .credential {
@@ -1156,6 +1159,9 @@
 .badge-layout .credential :is(.card-top, .card-person small, .card-person p, .card-stats) { color: #28554b; }
 .badge-layout .credential .card-stats { border-color: #6f998b; }
 .badge-layout .card-person { margin: 16px 0; }
+.badge-layout > section.credential { padding-block: clamp(14px, 2vw, 20px); }
+.badge-layout > section.credential .card-person { margin-block: 12px; }
+.badge-layout > section.credential .card-stats { padding-block-start: 14px; }
 .badge-layout .credential-photo { flex-basis: clamp(74px, 10vw, 128px); }
 .credential-photo img {
   display: block;
@@ -1164,10 +1170,18 @@
   object-fit: cover;
 }
 .badge-options, .badge-next {
-  padding: 16px;
+  padding: 10px 16px;
   border: 1px solid #41645a;
   border-radius: 6px;
   background: #10252a;
+}
+@media (min-width: 761px) {
+  .badge-layout > section.credential,
+  .badge-layout > .badge-options { align-self: stretch; }
+  .badge-layout > .badge-options {
+    display: grid;
+    grid-template-rows: auto 1fr;
+  }
 }
 .badge-options .badge-avatar-choice { margin: 0 0 16px; }
 .badge-next {
@@ -1180,14 +1194,17 @@
 }
 .badge-next h3, .badge-next p { margin: 5px 0 0; }
 .badge-next-actions {
-  position: relative;
+  display: grid;
+  justify-items: center;
 }
-.badge-next-actions > small {
-  position: absolute;
-  inset: calc(100% + 3px) 0 auto;
+.badge-next-actions:has(.badge-next-notice) {
+  grid-template-rows: 1fr auto 1fr;
+  row-gap: 3px;
+}
+.badge-next-actions:has(.badge-next-notice)::before { content: ""; }
+.badge-next-notice {
+  color: var(--muted);
   font-size: 11px;
-  line-height: 12px;
-  text-align: center;
 }
 
 @media (max-width: 760px) {
@@ -1238,6 +1255,9 @@
 }
 .badge-layout .credential-portrait {
   flex: 0 0 clamp(74px, 16vw, 128px);
+}
+.badge-layout > section.credential .credential-portrait {
+  flex-basis: clamp(74px, 13vw, 112px);
 }
 .badge-portrait-controls {
   display: flex;
@@ -1408,7 +1428,10 @@
 .mission-screen #mission-lock:empty,
 .mission-screen #mission-next:empty { display: none; }
 .mission-screen .fields { gap: 14px; }
-.mission-screen .fields:has(input[name='dns']) { gap: 9px; }
+.mission-screen .fields:has(input[name='dns']),
+.mission-screen .mission-field-column > .fields:has(> label:nth-child(4) > input[readonly]) {
+  gap: 9px;
+}
 .mission-screen .fields input { min-height: 42px; }
 .mission-screen #mission-fields > label:has(> input[readonly]),
 .mission-screen .routing-readonly-field {
@@ -1616,6 +1639,11 @@
   max-height: min(260px, 36dvh);
   overflow: auto;
 }
+.vlan-access-reference { width: 100%; margin-top: 6px; border-collapse: collapse; text-align: left; }
+.vlan-access-reference th,
+.vlan-access-reference td { padding: 4px; border-bottom: 1px solid var(--line); }
+.vlan-access-reference th[scope="row"] { font-weight: normal; }
+#routing-sheet:has(.vlan-access-reference) p { margin: 8px 0 0; }
 .mission-screen .mission-terminal-output {
   height: clamp(60px, calc(100dvh - 650px), 160px);
   min-height: 0;
@@ -1752,21 +1780,50 @@ body:has(#map-stage:not(.night)) #phone-dialog::backdrop {
 .radio-title #phone-open:hover { background: #254840; }
 .radio-title #phone-open svg { width: 16px; height: 16px; }
 
-.vlan-config {
-  display: grid;
-  gap: 12px;
-  min-width: 0;
+.vlan-field-topology { margin-bottom: 12px; }
+.vlan-field-topology .vlan-lab-controls h3 { margin: 0; font-size: 14px; }
+.vlan-field-topology .routing-school-network > .vlan-lab-topology { height: auto; min-height: 104px; }
+
+.training-device-view ol { justify-content: center; }
+.training-device-view li { flex: 0 1 170px; }
+
+.stp-topology .stp-devices {
+  --stp-link-offset: 7px;
 }
-.vlan-config details, .vlan-config fieldset {
-  border: 1px solid #41645a;
-  border-radius: 6px;
-  padding: 10px;
+.stp-topology .stp-devices li:nth-child(3)::before { content: none; }
+.stp-topology .stp-devices .routing-device-node { position: relative; }
+.stp-topology li > .stp-link {
+  position: absolute;
+  inset: calc(var(--routing-link-y) - var(--stp-link-offset)) 100% auto auto;
+  width: 18px;
+  min-height: 0;
+  height: 0;
+  padding: 0;
+  border: 0;
+  border-top: 1px dashed #7c978f;
+  background: transparent;
+  pointer-events: none;
 }
-.vlan-config summary { cursor: pointer; font-weight: 700; }
-.vlan-config label { display: block; margin: 6px 0; }
-.vlan-config .secondary { margin-top: 6px; }
-.vlan-config .feedback { white-space: pre-wrap; }
-.vlan-tags { display: flex; flex-wrap: wrap; gap: 4px 12px; }
-.vlan-floors { padding-inline-start: 20px; }
-.vlan-floors li { padding-block: 5px; }
-.vlan-intervention .mission-workspace.with-prompt { display: block; }
+.stp-topology li > .stp-link + .stp-link { top: calc(var(--routing-link-y) + var(--stp-link-offset)); }
+.stp-port {
+  position: absolute;
+  top: calc(var(--routing-link-y) - var(--stp-link-offset));
+  right: 2px;
+  transform: translateY(-50%);
+  color: var(--mint);
+  font: 9px ui-monospace, monospace;
+}
+[data-stp-device="1"] > .stp-port { left: 2px; right: auto; }
+.stp-port + .stp-port { top: calc(var(--routing-link-y) + var(--stp-link-offset)); }
+.routing-device-node[aria-pressed="false"] > .stp-port { visibility: hidden; }
+.stp-topology li > .stp-link[data-enabled="false"] { border-top-color: var(--amber); }
+.stp-port[data-enabled="false"] { color: var(--amber); }
+@container (max-width: 360px) {
+  .stp-topology .stp-devices .routing-device-node { padding-bottom: 15px; }
+  .stp-topology .routing-device-node > .stp-port {
+    inset: auto 50% 3px auto;
+    transform: none;
+    font-size: 7px;
+  }
+  .stp-topology .routing-device-node > .stp-port + .stp-port { inset: auto auto 3px 50%; }
+}
