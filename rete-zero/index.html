@@ -4,8 +4,8 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101c22">
 <meta name="description" content="Una città 3D da riconnettere. Studia reti e subnetting alla scuola Galilei e diventa tecnico sul campo.">
 <title>Rete Zero · La città isolata</title>
-<link rel="icon" href="assets/favicon.svg?v=36" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=75"><link rel="stylesheet" href="school-v2.css?v=124">
-<script src="vendor/three.min.js" defer></script><script src="network.js?v=18" defer></script><script src="data.js?v=59" defer></script><script src="spatial.js?v=11" defer></script><script src="city.js?v=28" defer></script><script src="routing.js?v=9" defer></script><script src="vlan.js?v=1" defer></script><script src="vlan-ui.js?v=11" defer></script><script src="game.js?v=292" defer></script><script src="ui.js?v=13" defer></script>
+<link rel="icon" href="assets/favicon.svg?v=36" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=92"><link rel="stylesheet" href="school-v2.css?v=143">
+<script src="vendor/three.min.js" defer></script><script src="network.js?v=18" defer></script><script src="data.js?v=59" defer></script><script src="spatial.js?v=11" defer></script><script src="city.js?v=29" defer></script><script src="routing.js?v=9" defer></script><script src="vlan.js?v=11" defer></script><script src="vlan-ui.js?v=56" defer></script><script src="stp.js?v=11" defer></script><script src="game.js?v=334" defer></script><script src="ui.js?v=13" defer></script>
 </head>
 <body>
 <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
@@ -114,6 +114,7 @@
       <div class="cli-reference-tabs" role="tablist" aria-label="Tipo di dispositivo">
         <button id="cli-pc-tab" type="button" role="tab" aria-selected="true" aria-controls="cli-pc-panel">PC</button>
         <button id="cli-router-tab" type="button" role="tab" aria-selected="false" aria-controls="cli-router-panel" tabindex="-1">Router</button>
+        <button id="cli-switch-tab" type="button" role="tab" aria-selected="false" aria-controls="cli-switch-panel" tabindex="-1">Switch</button>
       </div>
       <div class="cli-reference-panels">
         <div id="cli-pc-panel" class="cli-device-panel" role="tabpanel" aria-labelledby="cli-pc-tab" tabindex="0">
@@ -185,11 +186,13 @@
                     Esempi <code>interface Gi0/0</code> e <code>interface Fa0/0</code>.
                   </dd>
                 </div>
+                <div><dt><code>interface &lt;porta&gt;.&lt;numero&gt;</code></dt><dd>Seleziona una sottointerfaccia per il routing tra VLAN. Esempio <code>interface Gi0/0.10</code>.</dd></div>
               </dl>
             </section>
             <section id="cli-router-interface" class="cli-mode">
               <h3><span>Configurazione interfaccia</span><code>Router(config-if)#</code></h3>
               <dl>
+                <div><dt><code>encapsulation dot1Q &lt;ID&gt;</code></dt><dd>Associa la sottointerfaccia a una VLAN. Esempio <code>encapsulation dot1Q 10</code> su <code>Gi0/0.10</code>. Imposta l’incapsulamento prima dell’indirizzo IP.</dd></div>
                 <div><dt><code>ip address &lt;IP&gt; &lt;maschera&gt;</code></dt><dd>Assegna un indirizzo IPv4 e una maschera all’interfaccia selezionata.</dd></div>
                 <div><dt><code>no shutdown</code> / <code>shutdown</code></dt><dd><code>no shutdown</code> abilita l’interfaccia. <code>shutdown</code> la disabilita.</dd></div>
               </dl>
@@ -211,6 +214,73 @@
             </section>
           </div>
         </div>
+        <div id="cli-switch-panel" class="cli-device-panel" role="tabpanel" aria-labelledby="cli-switch-tab" tabindex="0" inert>
+          <div class="cli-mode-picker" role="group" aria-label="Filtra per modalità dello switch">
+            <button type="button" aria-controls="cli-switch-modes" aria-pressed="true">Tutti i comandi</button>
+            <button type="button" aria-controls="cli-switch-user" aria-pressed="false">Utente</button>
+            <button type="button" aria-controls="cli-switch-privileged" aria-pressed="false">Privilegiata</button>
+            <button type="button" aria-controls="cli-switch-global cli-switch-navigation" aria-pressed="false">Globale</button>
+            <button type="button" aria-controls="cli-switch-interface cli-switch-navigation" aria-pressed="false">Interfaccia</button>
+            <button type="button" aria-controls="cli-switch-vlan cli-switch-navigation" aria-pressed="false">VLAN</button>
+          </div>
+          <div id="cli-switch-modes" class="cli-command-list" tabindex="0" role="region" aria-label="Tabella dei comandi Switch">
+            <section id="cli-switch-user" class="cli-mode">
+              <h3><span>Modalità utente</span><code>Switch&gt;</code></h3>
+              <dl>
+                <div><dt><code>enable</code></dt><dd>Passa alla modalità privilegiata.</dd></div>
+                <div><dt><code>show interfaces trunk</code></dt><dd>Mostra i trunk, le VLAN native e le VLAN ammesse.</dd></div>
+              </dl>
+            </section>
+            <section id="cli-switch-privileged" class="cli-mode">
+              <h3><span>Modalità privilegiata</span><code>Switch#</code></h3>
+              <dl>
+                <div><dt><code>configure terminal</code></dt><dd>Entra nella configurazione globale.</dd></div>
+                <div><dt><code>show vlan brief</code></dt><dd>Mostra ID, nome, stato e porte access di ciascuna VLAN.</dd></div>
+                <div><dt><code>show interfaces trunk</code></dt><dd>Mostra i trunk, le VLAN native e le VLAN ammesse.</dd></div>
+                <div><dt><code>show spanning-tree</code></dt><dd>Mostra lo switch radice e i ruoli e gli stati delle porte STP.</dd></div>
+                <div><dt><code>show spanning-tree vlan &lt;ID&gt;</code></dt><dd>Mostra STP per una VLAN. Nel laboratorio usa <code>show spanning-tree vlan 30</code>. <code>Root FWD</code> indica la porta verso la radice e <code>Altn BLK</code> la porta di riserva bloccata.</dd></div>
+                <div><dt><code>exit</code></dt><dd>Torna alla modalità utente.</dd></div>
+              </dl>
+            </section>
+            <section id="cli-switch-global" class="cli-mode">
+              <h3><span>Configurazione globale</span><code>Switch(config)#</code></h3>
+              <dl>
+                <div><dt><code>interface &lt;porta&gt;</code></dt><dd>Entra nella configurazione della porta indicata.</dd></div>
+                <div><dt><code>interface range &lt;prima porta&gt; - &lt;ultima porta&gt;</code></dt><dd>Seleziona più porte consecutive dello stesso switch.</dd></div>
+                <div><dt><code>vlan &lt;ID&gt;</code></dt><dd>Crea o seleziona la VLAN indicata ed entra nella sua configurazione.</dd></div>
+                <div><dt><code>no vlan &lt;ID&gt;</code></dt><dd>Elimina la VLAN dallo switch.</dd></div>
+              </dl>
+            </section>
+            <section id="cli-switch-interface" class="cli-mode">
+              <h3><span>Configurazione interfaccia</span><code>Switch(config-if)#</code></h3>
+              <dl>
+                <div><dt><code>switchport mode access</code></dt><dd>Imposta una porta verso una postazione in modalità access.</dd></div>
+                <div><dt><code>switchport access vlan &lt;ID&gt;</code></dt><dd>Assegna la porta access a una VLAN.</dd></div>
+                <div><dt><code>switchport mode trunk</code></dt><dd>Imposta la modalità trunk sulla porta di collegamento.</dd></div>
+                <div><dt><code>switchport trunk allowed vlan &lt;elenco&gt;</code></dt><dd>Sostituisce le VLAN ammesse. Separa gli ID con virgole.</dd></div>
+                <div><dt><code>switchport trunk allowed vlan add &lt;elenco&gt;</code></dt><dd>Aggiunge VLAN alla lista esistente.</dd></div>
+                <div><dt><code>switchport trunk native vlan &lt;ID&gt;</code></dt><dd>Imposta la VLAN dei frame senza tag sul trunk.</dd></div>
+                <div><dt><code>shutdown</code> / <code>no shutdown</code></dt><dd>Disabilita o riabilita la porta selezionata. Nella prova STP usa questi comandi per verificare il percorso di riserva.</dd></div>
+              </dl>
+            </section>
+            <section id="cli-switch-vlan" class="cli-mode">
+              <h3><span>Configurazione VLAN</span><code>Switch(config-vlan)#</code></h3>
+              <dl>
+                <div><dt><code>name &lt;nome&gt;</code></dt><dd>Assegna un nome alla VLAN selezionata. Usa fino a 32 caratteri senza spazi.</dd></div>
+              </dl>
+            </section>
+            <section id="cli-switch-navigation" class="cli-mode">
+              <h3>Navigazione nel terminale</h3>
+              <dl>
+                <div><dt><code>exit</code></dt><dd>Torna al livello precedente.</dd></div>
+                <div><dt><code>end</code></dt><dd>Torna direttamente a <code>Switch#</code> dalla configurazione.</dd></div>
+                <div><dt><code>?</code></dt><dd>Mostra un aiuto rapido sui comandi.</dd></div>
+                <div><dt><code>sw &lt;numero&gt;</code></dt><dd>Passa al terminale dello switch del piano indicato.</dd></div>
+                <div><dt><code>pc &lt;numero&gt;</code></dt><dd>Passa al terminale della postazione indicata.</dd></div>
+              </dl>
+            </section>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -221,10 +291,13 @@
     <fieldset>
       <legend>Da quale capitolo vuoi ripartire?</legend>
       <label><input type="radio" name="chapter" value="1" required>
-        <span><strong>Capitolo 01 · Formazione di base</strong><small id="restart-chapter-one-note"></small></span>
+        <span class="restart-chapter">Cap. 01</span><span><strong>Formazione di base</strong><small>Azzera tutti i progressi di gioco.</small></span>
       </label>
       <label><input type="radio" name="chapter" value="2" required>
-        <span><strong>Capitolo 02 · Oltre la rete locale</strong><small id="restart-chapter-two-note"></small></span>
+        <span class="restart-chapter">Cap. 02</span><span><strong>Oltre la rete locale</strong><small id="restart-chapter-two-note"></small></span>
+      </label>
+      <label hidden><input type="radio" name="chapter" value="3" disabled>
+        <span class="restart-chapter">Cap. 03</span><span><strong>Un palazzo, quattro VLAN</strong><small>Azzera le prove VLAN e l’intervento al Palazzo dei servizi.</small></span>
       </label>
     </fieldset>
     <p>Nome, età e avatar del tesserino restano salvati.</p>

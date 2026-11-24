@@ -229,8 +229,57 @@ root.RZCity = function(host, markers, onEnter){
     }
     host.dataset.treeCount=String(layout.treeCount);host.dataset.treeCollisions=String(layout.treeOverlaps());
     function car(color){const g=new T.Group();box(g,0,.32,0,.72,.38,1.25,color);box(g,0,.6,-.12,.62,.32,.65,color);box(g,0,.63,.22,.54,.2,.02,'#466f79');for(const x of [-.36,.36])for(const z of [-.38,.38]){const wheel=cylinder(g,x,.21,z,.14,.09,'#33484a',8);wheel.rotation.z=Math.PI/2;}return g;}
+    function trafficRoute(left,right,top,bottom,direction){
+      const lane=direction*.7;
+      const radius=2-lane;
+      const corners=[
+        new T.Vector3(left+lane,.13,top+lane),
+        new T.Vector3(right-lane,.13,top+lane),
+        new T.Vector3(right-lane,.13,bottom-lane),
+        new T.Vector3(left+lane,.13,bottom-lane)
+      ];
+      if(direction<0)corners.reverse();
+
+      const offsetCorner=(corner,neighbor)=>corner.clone().lerp(neighbor,radius/corner.distanceTo(neighbor));
+      const entries=corners.map((corner,i)=>offsetCorner(corner,corners[(i+3)%4]));
+      const exits=corners.map((corner,i)=>offsetCorner(corner,corners[(i+1)%4]));
+      const path=new T.CurvePath();
+      corners.forEach((corner,i)=>{
+        path.add(new T.QuadraticBezierCurve3(entries[i],corner,exits[i]));
+        path.add(new T.LineCurve3(exits[i],entries[(i+1)%4]));
+      });
+      return path;
+    }
     const traffic=[];
-    for(let i=0;i<9;i++){const vehicle=car(['#b77e60','#dae0cb','#7e98a1'][i%3]);city.add(vehicle);traffic.push({vehicle,road:roadsZ[i%roadsZ.length],offset:i*11,speed:.4+(i%3)*.16});}
+    const carColors=['#b77e60','#dae0cb','#7e98a1'];
+    const blocks=[
+      [roadsX[1],roadsX[2],roadsZ[0],roadsZ[1]],
+      [roadsX[0],roadsX[1],roadsZ[2],roadsZ[3]],
+      [roadsX[2],roadsX[3],roadsZ[2],roadsZ[3]]
+    ];
+    blocks.forEach((bounds,index)=>{
+      for(const direction of [1,-1]){
+        const path=trafficRoute(...bounds,direction);
+        const length=path.getLength();
+        const speed=1.25+(index%3)*.35+(direction<0?.2:0);
+        const phase=index*.19+(direction<0?.37:0);
+        const offsets=direction===1?[phase,phase+.5]:[phase];
+        for(const offset of offsets){
+          const vehicle=car(carColors[traffic.length%carColors.length]);
+          city.add(vehicle);
+          traffic.push({vehicle,path,offset,length,speed});
+        }
+      }
+    });
+    function placeTraffic(elapsed){
+      for(const {vehicle,path,offset,length,speed} of traffic){
+        const progress=(offset+elapsed*speed/length)%1;
+        vehicle.position.copy(path.getPoint(progress));
+        const heading=path.getTangent(progress);
+        vehicle.rotation.y=Math.atan2(heading.x,heading.z);
+      }
+    }
+    placeTraffic(0);
     const van=car('#dfad5f');box(van,0,.93,-.15,.7,.2,.7,'#dce6d8');const headquarters=buildings.find(b=>b.id==='hq').position;van.position.set(headquarters[0],.13,headquarters[1]+2);city.add(van);
     let vanRoute=[],selected=null,angle=.43,elevation=.85,desiredAngle=angle,desiredElevation=elevation,zoom=1.4,desiredZoom=zoom,last=0,disposed=false,fitRadius=125;
     const reducedMotion=root.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -263,7 +312,7 @@ root.RZCity = function(host, markers, onEnter){
       host.dataset.panX=target.x.toFixed(2);host.dataset.panZ=target.z.toFixed(2);host.dataset.bearing=angle.toFixed(3);document.getElementById('compass-needle').setAttribute('transform',`rotate(${-angle*180/Math.PI} 36 36)`);host.dataset.zoom=zoom.toFixed(3);host.dataset.elevation=elevation.toFixed(3);
       const radius=fitRadius/zoom;camera.position.set(target.x+Math.sin(angle)*Math.cos(elevation)*radius,Math.sin(elevation)*radius,target.z+Math.cos(angle)*Math.cos(elevation)*radius);camera.lookAt(target);camera.updateMatrixWorld();
       if(vanRoute.length){const dest=vanRoute[0],delta=dest.clone().sub(van.position);if(delta.length()<.25)vanRoute.shift();else {van.rotation.y=Math.atan2(delta.x,delta.z);van.position.add(delta.normalize().multiplyScalar(reducedMotion?.5:dt*6));}}
-      if(!reducedMotion)traffic.forEach((v,i)=>{v.vehicle.position.set(((elapsed*v.speed*3+v.offset)%86)-43,.13,v.road+(i%2?.55:-.55));v.vehicle.rotation.y=Math.PI/2;});
+      if(!reducedMotion)placeTraffic(elapsed);
       const placed=[];
       for(const site of buildings){if(!discovered.has(site.id)){leaders.get(site.id).style.display='none';rings.get(site.id).visible=false;continue;}rings.get(site.id).visible=true;const g=groups.get(site.id);anchor.set(g.position.x,g.userData.labelHeight+.7,g.position.z).project(camera);const button=buttons.get(site.id),width=host.clientWidth,height=host.clientHeight,bw=button.offsetWidth||150,bh=button.offsetHeight||45;
         let x=(anchor.x+1)/2*width,y=(-anchor.y+1)/2*height;const anchorX=x,anchorY=y;
@@ -296,7 +345,7 @@ root.RZCity = function(host, markers, onEnter){
       rings.get(site.id).material.color.set(currentColor??(mission?(done?'#72bb9a':'#e2ac76'):site.color));
       if(!mission)return;beacons.get(site.id).visible=discovered.has(site.id);cables.get(site.id).visible=discovered.has(site.id);const color=currentColor??(done?'#72bb9a':'#e2ac76');beacons.get(site.id).material=mat(color,{emissive:color,emissiveIntensity:.4});cables.get(site.id).material.color.set(color);cables.get(site.id).material.dashSize=(dayThreeMarkers?site.id!=='school'&&siteComplete:done)?100:.3;for(const pane of windows.get(site.id)||[])pane.material=mat(done?'#bfdfc6':'#66898e',{emissive:done?'#83946a':'#25424a',emissiveIntensity:done?.5:.1});});}};
   }catch(error){console.warn('Rete Zero: vista alternativa attiva.',error.message);fallback();}
-  return {setLighting(mode){engine?.setLighting(mode);},focus(id){engine?.travel(id);},locate(id){engine?.locate(id);},update(state,awaitingDispatch=false,dayThreeMarkers=null,servicesBuilt=false){
+  return {setLighting(mode){engine?.setLighting(mode);},focus(id){engine?.travel(id);},locate(id){engine?.locate(id);},update(state,awaitingDispatch=false,dayThreeMarkers=null){
     const graduated=state.studied.length===RZData.lessons.length;
     const routingLessonsCompleted=state.routing?.ripComplete?3:state.routing?.diagnosisComplete||state.routing?.trained?2:state.routing?.labConfigured?1:0;
     const chapterComplete=Boolean(state.routing?.complete);
@@ -323,7 +372,7 @@ root.RZCity = function(host, markers, onEnter){
       }
       button.classList.toggle('chapter-intervention',Boolean(dayThreeMarkers?.has(site.id)&&site.id!=='school'&&!siteComplete));
       button.style.setProperty('--progress',progress+'%');button.dataset.progress=String(progress);button.querySelector('small').textContent=status;button.setAttribute('aria-label',site.name+' — '+status);button.classList.toggle('progress-complete',progress===100&&(!dayThreeMarkers||site.id!=='school'));button.classList.toggle('repaired',dayThreeMarkers?site.id!=='school'&&siteComplete:done);button.classList.toggle('locked',Number.isInteger(site.mission)&&!RZData.canEnterMission(site.mission,state.completed,state.studied));
-    }engine?.update(state.completed,dayThreeMarkers,chapterComplete,municipalComplete,servicesBuilt&&Boolean(state.vlan?.complete),servicesBuilt);
+    }engine?.update(state.completed,dayThreeMarkers,chapterComplete,municipalComplete,Boolean(state.vlan?.complete),municipalComplete&&!state.vlanMorningPending);
   }};
 };
 })(typeof globalThis!=='undefined'?globalThis:this);

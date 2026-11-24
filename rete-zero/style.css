@@ -135,31 +135,36 @@ html,body{height:100%;min-height:0;overflow:hidden}.icon-definitions{position:ab
 /* Strumenti a destra; tesserino e meteo sovrapposti in un unico gruppo. */
 .topbar nav{margin-left:auto;margin-right:0}.district-info{position:absolute;right:24px;top:103px;z-index:4;display:flex;flex-direction:column;gap:10px;min-width:195px}.district-info .profile-chip{display:flex;width:100%;margin:0;padding:13px 15px;gap:10px;border:1px solid #d6eddd25;border-radius:7px;background:#0a171bc7;backdrop-filter:blur(12px);box-shadow:0 4px 18px #06110e12;font-size:11px;color:#e0ecdf}.district-info .profile-chip small{font:8px/1.6 ui-monospace,monospace;color:#aac3b4;margin-top:3px}.district-info .profile-badge{display:grid;width:26px;height:30px}.district-info .profile-badge svg{width:25px;height:25px}.district-info .weather{position:static;display:flex;width:100%;margin:0;padding:10px 15px}.district-info .weather-icon{flex-shrink:0}@media(max-height:760px){.district-info{top:96px}}@media(max-width:800px){.topbar nav{margin-left:auto;margin-right:0}.district-info{right:12px;top:87px;min-width:155px;gap:8px}.district-info .profile-chip{padding:10px;font-size:10px;gap:8px}.district-info .profile-chip small{font-size:7px}.district-info .weather{padding:9px 10px}}@media(max-width:540px){.district-info{min-width:140px}.district-info .profile-chip{font-size:9px;padding:9px 8px}.district-info .profile-badge{width:22px}.district-info .profile-badge svg{width:22px;height:22px}.district-info .profile-chip small{font-size:6px}.district-info .weather{padding:8px}}
 
-#restart-dialog { width: min(440px, 92vw); }
+#restart-dialog { width: min(480px, calc(100vw - 24px)); }
 #instructions-panel { overflow-y: auto; }
 #reset-progress { color: var(--mint); }
 #reset-progress:hover { text-decoration: underline; }
-#restart-form { padding: clamp(16px, 5vw, 28px); }
-#restart-form h2 { margin: 0 0 10px; font-size: 24px; }
-#restart-form fieldset { display: grid; gap: 8px; border: 0; padding: 0; margin: 0; min-width: 0; }
-#restart-form legend { padding: 0; margin-bottom: 12px; }
+#restart-form { padding: clamp(16px, 4vw, 24px); }
+#restart-form h2 { margin: 0 0 6px; font-size: 22px; }
+#restart-form fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+#restart-form legend { padding: 0; margin-bottom: 12px; font-size: 14px; }
 #restart-form label {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
+  display: grid;
+  grid-template-columns: auto max-content minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
+  padding: 9px 8px;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
 }
-#restart-form label:has(input:checked) { border-color: var(--mint); background: #203d3a; }
 #restart-form label[hidden] { display: none; }
-#restart-form label:hover { border-color: var(--mint); }
-#restart-form label { cursor: pointer; }
+#restart-form label:hover { background: #1b3436; }
+#restart-form label:has(input:checked) { background: #203d3a; }
 #restart-form input { margin: 2px 0 0; accent-color: var(--mint); }
-#restart-form small { display: block; margin-top: 4px; }
-#restart-form small, #restart-form p { color: var(--muted); line-height: 1.5; }
-#restart-form p { font-size: 12px; }
-#restart-form .practice-actions { justify-content: flex-end; }
+#restart-form .restart-chapter {
+  color: var(--mint);
+  font: 10px/17px ui-monospace, monospace;
+}
+#restart-form strong { display: block; font-size: 13px; line-height: 17px; }
+#restart-form small { display: block; margin-top: 2px; }
+#restart-form small, #restart-form p { color: var(--muted); font-size: 12px; line-height: 1.5; }
+#restart-form p { border-top: 1px solid var(--line); margin: 0; padding-top: 10px; }
+#restart-form .practice-actions { justify-content: flex-end; margin-top: 14px; }
 #confirm-restart:disabled { opacity: .5; }
 
 .calculator-dialog {
@@ -608,9 +613,19 @@ button[aria-pressed="true"] .routing-router-ports { display: block; }
   color: var(--mint);
   font: 12px/1.4 ui-monospace, monospace;
 }
-.routing-school-practice .routing-path { padding: 8px 10px; }
+.routing-school-network > .routing-path {
+  display: grid;
+  align-content: safe center;
+  block-size: 104px;
+  box-sizing: border-box;
+  padding: 8px 10px;
+}
+@media (max-width: 420px) {
+  .routing-school-network > .routing-path { block-size: 112px; }
+}
 .routing-school-practice .routing-path li > * { min-height: 26px; }
 .routing-school-network {
+  container-type: inline-size;
   min-height: 0;
   overflow: auto;
 }
@@ -628,10 +643,10 @@ button[aria-pressed="true"] .routing-router-ports { display: block; }
   margin: 0;
   overflow-wrap: anywhere;
 }
-.school-workspace[data-school-chapter="2"] .theory-card > #concept-text {
+.school-workspace:is([data-school-chapter="2"], [data-school-chapter="3"]) .theory-card > #concept-text {
   min-height: 0;
 }
-.school-workspace[data-school-chapter="2"] #concept-text:not([hidden]) + #concept-commands:not([hidden]) {
+.school-workspace:is([data-school-chapter="2"], [data-school-chapter="3"]) #concept-text:not([hidden]) + #concept-commands:not([hidden]) {
   margin-top: 10px;
 }
 .school-workspace[data-school-chapter="2"] .worked-example strong { overflow-wrap: anywhere; }
@@ -710,7 +725,19 @@ button[aria-pressed="true"] .routing-router-ports { display: block; }
   border-color: var(--amber);
 }
 
-.routing-school-practice .routing-path { --routing-link-y: 25px; }
+.routing-school-network > .routing-path {
+  --device-icon-size: clamp(28px, 9cqi, 44px);
+  --routing-link-y: calc(5px + var(--device-icon-size) / 2);
+}
+.routing-school-network > .routing-path:has(#routing-nodes > li:nth-child(5)) {
+  --device-icon-size: clamp(24px, 7cqi, 38px);
+}
+.routing-school-network > .vlan-lab-topology {
+  --device-icon-size: clamp(30px, 12cqi, 48px);
+}
+.routing-school-network > .vlan-lab-topology:has(.vlan-pc-right:not([hidden])):not(:has(#vlan-floor-view[hidden])) {
+  --device-icon-size: clamp(28px, 10cqi, 44px);
+}
 .routing-school-practice .routing-router-ports > span {
   padding: 1px 2px;
   font-size: 9px;
@@ -721,39 +748,97 @@ button[aria-pressed="true"] .routing-router-ports { display: block; }
   left: 2px;
   right: auto;
 }
-.routing-path ol.vlan-lab-topology {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-template-rows: auto;
-  gap: 0 18px;
-  --routing-link-y: 50%;
+.routing-school-practice .vlan-switch-ports > .vlan-port-right {
+  right: 2px;
+  left: auto;
 }
-.routing-path ol.vlan-lab-topology.vlan-two-pcs { grid-template-rows: repeat(2, 1fr); }
-.vlan-lab-topology [data-vlan-node="pc"] { grid-column: 1; }
-.vlan-lab-topology [data-vlan-node="floor"] { grid-column: 2; }
-.vlan-lab-topology [data-vlan-node="core"] { grid-column: 3; }
-.vlan-lab-topology [data-vlan-node="router"] { grid-column: 4; }
-.vlan-lab-topology [data-vlan-node]:not([data-vlan-node="pc"]) { grid-row: 1 / -1; }
-.routing-path .vlan-lab-topology :is([data-vlan-node="pc"], [data-vlan-node="floor"])::before { content: none; }
-.vlan-lab-topology [data-vlan-node="pc"]::after {
+.vlan-lab-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.vlan-floor-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+  color: var(--muted);
+  font-size: 12px;
+}
+.vlan-floor-picker select {
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #10252a;
+  color: var(--ink);
+  font: inherit;
+}
+.routing-path .vlan-floor-devices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.routing-path .vlan-floor-devices:has(.vlan-pc-right:not([hidden])) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.vlan-floor-devices [data-vlan-node] { grid-row: 1; }
+.vlan-floor-devices [data-vlan-node="pc"] { grid-column: 1; }
+.vlan-floor-devices [data-vlan-node="floor"] { grid-column: 2; }
+.vlan-floor-devices [data-vlan-node="pc"].vlan-pc-right { grid-column: 3; }
+.routing-path .vlan-floor-devices li::before { content: none; }
+.routing-path .vlan-floor-devices li:not([hidden])[data-vlan-node="pc"]::after {
   content: '';
   position: absolute;
-  inset: 50% auto auto 100%;
+  inset: var(--routing-link-y) auto auto 100%;
   width: 18px;
   border-top: 1px dashed #7c978f;
   pointer-events: none;
 }
-.routing-school-practice .vlan-lab-topology li:not([data-vlan-node="pc"]) > .routing-device-node { justify-content: center; }
-.vlan-two-pcs [data-vlan-device="floor"] .vlan-port-left:first-child { top: 25%; }
-.vlan-two-pcs [data-vlan-device="floor"] .vlan-port-left:nth-child(2) { top: 75%; }
-
+.routing-path .vlan-floor-devices li:not([hidden])[data-vlan-node="pc"].vlan-pc-right::after {
+  right: 100%;
+  left: auto;
+}
+.vlan-atrium-uplinks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.vlan-atrium-uplinks > div {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.routing-school-practice .vlan-switch-ports > .vlan-port-bottom {
+  inset: auto auto 2px var(--port-position, 50%);
+  transform: translateX(-50%);
+}
+.routing-school-practice .vlan-switch-ports > .vlan-port-top {
+  inset: 2px auto auto var(--port-position);
+  transform: translateX(-50%);
+}
+#vlan-atrium-view { --routing-link-y: calc(14px + var(--device-icon-size) / 2); }
+.routing-school-practice .routing-path #vlan-atrium-view .routing-device-node {
+  padding-top: 13px;
+}
+.routing-school-practice .vlan-lab-topology [data-vlan-device="floor"].routing-device-node {
+  padding-bottom: 13px;
+}
+.vlan-floor-uplink {
+  height: 8px;
+  width: 0;
+  margin: 0 auto;
+  border-left: 1px dashed #7c978f;
+}
+#vlan-floor-view:has(.vlan-floor-devices):not(:has(.vlan-pc-right:not([hidden]))) > .vlan-floor-uplink {
+  margin-left: calc(75% + 4.5px);
+}
 .routing-school-practice .routing-path li > .routing-device-node {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  gap: 3px;
-  padding: 5px 2px;
+  gap: 1px;
+  padding: 4px 2px;
   border: 1px solid transparent;
   border-radius: 4px;
   background: transparent;
@@ -761,9 +846,9 @@ button[aria-pressed="true"] .routing-router-ports { display: block; }
   overflow-wrap: anywhere;
 }
 
-.routing-device-node img {
-  width: 36px;
-  height: 36px;
+.routing-school-network .routing-device-node img {
+  width: var(--device-icon-size);
+  height: var(--device-icon-size);
   object-fit: contain;
 }
 
@@ -771,7 +856,8 @@ button[aria-pressed="true"] .routing-router-ports { display: block; }
   border-color: var(--mint);
 }
 
-.routing-school-practice .routing-path li > button[aria-pressed="true"] {
+.routing-school-practice .routing-path li > .routing-device-node:is([aria-pressed="true"], [aria-current="true"]) {
+  border-color: var(--mint);
   background: #203d3a;
   box-shadow: 0 0 9px #a5d8c04d;
 }

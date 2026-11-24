@@ -2,7 +2,6 @@
 (() => {
   const {missions,lessons,buildings,practice,isLessonUnlocked,canEnterMission,isBuildingDiscovered}=RZData;
   const $=id=>document.getElementById(id), storageKey='rete-zero-city-v2',curriculumVersion=3;
-  const vlanReleased=false;
   const avatars={
     uomo:{file:'avatar-tecnico.png',role:'Tecnico'},
     donna:{file:'avatar-tecnica.png',role:'Tecnica'},
@@ -23,7 +22,13 @@
       if(Number.isInteger(raw.badgeAge)&&raw.badgeAge>=1&&raw.badgeAge<=120)state.badgeAge=raw.badgeAge;
       if(Object.hasOwn(avatars,raw.avatar))state.avatar=raw.avatar;
       if(raw.vlanMorningPending===true)state.vlanMorningPending=true;
-      if(raw.vlan&&Array.isArray(raw.vlan.passed))state.vlan=raw.vlan;
+      if(raw.vlan&&Array.isArray(raw.vlan.passed)){
+        for(const net of [raw.vlan.lab,raw.vlan.field])RZVlan.migrateLegacyNetwork(net);
+        RZVlan.upgradePalace(raw.vlan.field,raw.vlan.complete);
+        RZVlanUI.prepareCourse(raw.vlan);
+        raw.vlan.passed=[...new Set(raw.vlan.passed.filter(index=>Number.isInteger(index)&&index>=0&&index<RZVlanUI.lessons.length))];
+        state.vlan=raw.vlan;
+      }
       if(raw.routing&&typeof raw.routing==='object')state.routing=raw.routing;
       state.highestChapter=raw.highestChapter===2||raw.chapterSelectionUnlocked===true||state.routing?.municipalComplete===true?2:1;
       if(raw.lessonDrafts&&typeof raw.lessonDrafts==='object'&&!Array.isArray(raw.lessonDrafts))state.lessonDrafts=raw.lessonDrafts;
@@ -52,18 +57,37 @@
       }
     }
   } catch (_) {}
-  if(location.protocol==='file:'&&location.hash==='#ripristina-partita-completa'){
+  const startChapterThree=location.protocol==='file:'&&(
+    new URL(location.href).searchParams.get('capitolo')==='3'||location.hash==='#inizio-capitolo-3'
+  );
+  window.addEventListener('hashchange',()=>{
+    if(location.protocol==='file:'&&location.hash==='#inizio-capitolo-3')location.reload();
+  });
+  if(startChapterThree||(location.protocol==='file:'&&location.hash==='#ripristina-partita-completa')){
     state.completed=missions.length;
     state.studied=lessons.map(lesson=>lesson.id);
     state.stormStage=state.fieldStage=state.nextDayStage=2;
     state.welcomeRead=true;
     state.highestChapter=2;
-    if(!state.vlan)state.vlanMorningPending=true;
+    if(startChapterThree){
+      state.vlan={passed:[]};
+      delete state.vlanMorningPending;
+      delete state.graduationPending;
+    }else if(!state.vlan)state.vlanMorningPending=true;
     state.badgeName||='Tecnico di Valle Nord';
     state.badgeAge??=18;
     state.avatar||='uomo';
     Object.assign(state.routing??={},{labConfigured:true,diagnosisComplete:true,ripComplete:true,trained:true,complete:true,municipalComplete:true});
-    history.replaceState(null,'',location.href.split('#')[0]);
+    if(startChapterThree){
+      delete state.routing.municipalDispatchPending;
+      delete state.routing.municipalMedalPending;
+    }
+    const restoredUrl=new URL(location.href);
+    restoredUrl.hash='';
+    if(startChapterThree){
+      for(const key of ['capitolo','anteprima-fine-scuola','anteprima-fine-vlsm','anteprima-fine-assistenza','rifai-municipio'])restoredUrl.searchParams.delete(key);
+    }
+    history.replaceState(null,'',restoredUrl);
   }
   const previewSchoolEnding=location.protocol==='file:'
     &&new URL(location.href).searchParams.has('anteprima-fine-scuola');
@@ -147,7 +171,7 @@
   }
   let activeBuilding=null,activeLesson=0,returnFocus=null;
   const graduated=()=>state.studied.length===lessons.length;
-  const xp=()=>state.studied.length*25+state.completed*100+(state.routing?.complete?100:0)+(state.routing?.municipalComplete?100:0)+vlanPassed()*25+(vlanComplete()?100:0);
+  const xp=()=>state.studied.length*25+state.completed*100+(state.routing?.complete?100:0)+(state.routing?.municipalComplete?100:0)+vlanPassed()*25+(state.vlan?.complete?100:0);
   function save(){if(previewSchoolEnding||previewVlsmEnding||previewRoutingEnding)return;try{localStorage.setItem(storageKey,JSON.stringify({...state,fieldCurriculum:2}));}catch(_){}}
   save();
   function makeButton(text,action,className='primary'){const b=document.createElement('button');b.type='button';b.className=className;b.textContent=text;b.addEventListener('click',action);return b;}
@@ -269,15 +293,15 @@
     }
     scheduleNextDay();
   });
-  const chapterThreeComingSoon=['Capitolo 3 in arrivo','Valle Nord è di nuovo collegata. La formazione sulle VLAN al Galilei sarà disponibile nel prossimo capitolo.','Giorno 04 · 08:00'];
-  const vlanSchoolMessage=['Formazione VLAN','Torna al Galilei. Ti serviranno VLAN, trunk e regole di accesso per separare i quattro reparti del Palazzo dei servizi.','Giorno 04 · 08:00'];
-  const vlanMissionMessage=['Palazzo dei servizi','I quattro piani condividono gli switch. Separa i reparti, collega le due postazioni tecniche e applica i permessi indicati nella scheda. Collauda anche le richieste che devono essere bloccate.','Giorno 04 · 10:30'];
-  const vlanDoneMessage=['Collaudo completato','I reparti comunicano secondo i permessi previsti. Le due postazioni tecniche si raggiungono anche da piani diversi.','Giorno 04 · 12:00'];
-  const vlanPassed=()=>vlanReleased?(state.vlan?.passed.length??0):0;
-  const vlanTrained=()=>vlanReleased&&vlanPassed()===RZVlanUI.lessons.length;
-  const vlanAvailable=()=>vlanReleased&&nextDayStarted()&&state.routing?.municipalComplete&&!state.vlanMorningPending;
-  const vlanComplete=()=>vlanReleased&&Boolean(state.vlan?.complete);
-  const vlanMorningMessage=vlanReleased?vlanSchoolMessage:chapterThreeComingSoon;
+  const vlanSchoolMessage=['Formazione VLAN','Torna al Galilei. Impara a separare i quattro reparti del Palazzo dei servizi con le VLAN e a collegarli con trunk e routing.','Giorno 04 · 08:00'];
+  const vlanSchoolComplete=['Formazione VLAN completata','Hai completato la formazione al Galilei. Hai configurato VLAN, trunk e gateway e verificato il percorso di riserva con STP.','Giorno 04 · 10:15'];
+  const vlanMissionMessage=['Palazzo dei servizi','Dopo la manutenzione alcune postazioni del Palazzo sono rimaste isolate. Individua i guasti su porte access e trunk, attiva i gateway e collauda i collegamenti della scheda tecnica.','Giorno 04 · 14:00'];
+  const vlanDoneMessage=['Collaudo completato','Il Palazzo dei servizi è operativo. I collegamenti tra i piani e il routing tra VLAN sono stati verificati. Hai ottenuto la medaglia Tecnico di distretto.','Giorno 04 · 15:30'];
+  const vlanLessons=RZVlanUI.lessons;
+  const vlanSchoolCount=vlanLessons.length+1;
+  const vlanPassed=()=> (state.vlan?.passed.length??0)+Number(Boolean(state.vlan?.stpComplete));
+  const vlanTrained=()=>vlanPassed()===vlanSchoolCount;
+  const vlanFieldAvailable=()=>vlanTrained()||Boolean(state.vlan?.complete);
   const municipalMedalPending=()=>Boolean(state.routing?.municipalComplete&&state.routing.municipalMedalPending&&state.vlanMorningPending);
   const awaitingVlanMorning=()=>state.routing?.municipalComplete&&state.vlanMorningPending&&!municipalMedalPending();
   let vlanMorningTimer;
@@ -290,7 +314,7 @@
       delete state.vlanMorningPending;
       save();
       renderShell();
-      openPhone(vlanMorningMessage,{withHistory:true});
+      openPhone(vlanSchoolMessage,{withHistory:true});
     },1000);
   }
   function showMunicipalCompletion(){
@@ -306,6 +330,19 @@
       });
     },{once:true});
     openPhone(municipalReport,{withHistory:true});
+  }
+  const vlanMedalPending=()=>Boolean(state.vlan?.complete&&state.vlan.medalPending);
+  function showVlanCompletion(){
+    const chapter=state.vlan;
+    $('phone-dialog').addEventListener('close',()=>{
+      if(state.vlan!==chapter||!vlanMedalPending())return;
+      celebrateMedal('distretto',()=>{
+        if(state.vlan!==chapter)return;
+        delete chapter.medalPending;
+        save();
+      });
+    },{once:true});
+    openPhone(vlanDoneMessage,{withHistory:true});
   }
   document.addEventListener('close',scheduleVlanMorning,true);
   function phoneMessages(){
@@ -332,9 +369,10 @@
       }
       if(state.routing?.municipalComplete){
         messages.push(municipalReport);
-        if(!state.vlanMorningPending)messages.push(vlanMorningMessage);
-        if(vlanTrained())messages.push(vlanMissionMessage);
-        if(vlanComplete())messages.push(vlanDoneMessage);
+        if(!state.vlanMorningPending)messages.push(vlanSchoolMessage);
+        if(vlanTrained())messages.push(vlanSchoolComplete);
+        if(vlanFieldAvailable())messages.push(vlanMissionMessage);
+        if(state.vlan?.complete)messages.push(vlanDoneMessage);
       }
     }
     return messages;
@@ -347,8 +385,10 @@
       document.dispatchEvent(new Event('retezero:message'));
     }
   }
-  function openPhone(focusedMessage,{withHistory=false}={}){
-    const messages=!focusedMessage||withHistory?phoneMessages():[focusedMessage];
+  function openPhone(focusedMessage,{withHistory=false,throughFocused=false}={}){
+    const history=!focusedMessage||withHistory||throughFocused?phoneMessages():[focusedMessage];
+    const focusIndex=throughFocused?history.indexOf(focusedMessage):-1;
+    const messages=focusIndex>=0?history.slice(0,focusIndex+1):history;
     if(!state.welcomeRead&&messages.includes(welcomeMessage)){
       state.welcomeRead=true;
       save();
@@ -380,6 +420,18 @@
     } else {
       list.scrollTop = list.scrollHeight;
     }
+  }
+  function scheduleSchoolDispatch(message,isPending){
+    const showRequest=()=>{
+      if(!isPending())return;
+      const phone=$('phone-dialog');
+      if(phone.open){
+        phone.addEventListener('close',showRequest,{once:true});
+        return;
+      }
+      if(!document.querySelector('dialog[open]'))openPhone(message,{withHistory:true});
+    };
+    window.setTimeout(showRequest,2000);
   }
   function scheduleSchoolMessage(chapter,delay=1000){
     const showMessage=()=>{
@@ -418,7 +470,7 @@
     const schoolEvening=awaitingDispatch()&&!state.graduationPending&&(state.stormStage??0)===0;
     const afterMunicipioNight=districtRestored()&&(state.nextDayStage===1||awaitingVlanMorning());
     const dayThree=nextDayStarted();
-    const vlanOpen=vlanAvailable();
+    const vlanAvailable=dayThree&&state.routing?.municipalComplete&&!state.vlanMorningPending;
     const map=$('map-stage');
     map.classList.toggle('storm',schoolEvening);
     const night=schoolEvening||afterMunicipioNight;
@@ -439,7 +491,7 @@
       document.createTextNode(weather.label),
       Object.assign(document.createElement('small'), {textContent:`${day.toUpperCase()} · ${time} · VALLE NORD`})
     );
-    const rank=state.routing?.municipalComplete?'Tecnico specialista':graduated()?(districtRestored()?'Tecnico di distretto':'Tecnico di rete'):'In formazione';
+    const rank=state.vlan?.complete?'Tecnico di distretto':state.routing?.municipalComplete?'Tecnico specialista':graduated()?(districtRestored()?'Tecnico di distretto':'Tecnico di rete'):'In formazione';
     $('phone-open').hidden=false;
     document.querySelector('.profile-chip').hidden=!graduated();
     $('profile-rank').replaceChildren(document.createTextNode('Il tuo tesserino'),Object.assign(document.createElement('small'),{textContent:graduated()?(hasBadgeProfile()?`${rank} · ${xp()} XP`:'Da configurare'):`Da ottenere · ${state.studied.length}/${lessons.length} prove`}));
@@ -448,17 +500,17 @@
     $('progress-count').textContent=dayThree?'':state.completed+' / '+missions.length;
     $('journey').replaceChildren();
     const stages=[{id:'school',title:'Scuola di reti',info:graduated()?'Completata ✓':`${state.studied.length}/${lessons.length} prove`,done:graduated(),active:!graduated()},...missions.map((mission,index)=>({id:missionBuildings[index],missionIndex:index,title:index===3?mission.title:mission.site,info:index<state.completed?'Online ✓':!graduated()?'Richiede tesserino':index===state.completed?(index===3?'Protezione civile · VLSM':mission.title):'In attesa',done:index<state.completed,active:graduated()&&index===state.completed}))];
-    if(dayThree&&!vlanOpen){
+    if(dayThree&&!vlanAvailable){
       const trained=Boolean(state.routing?.ripComplete);
       stages.splice(0,stages.length,{id:'school',title:schoolUpdateTitle,info:'Routing statico e RIP',active:!trained,done:trained});
       if(trained)stages.push({id:'hospital',title:'Richiesta di assistenza',info:'Ospedale · Centrale · Protezione civile',active:!state.routing.complete,done:state.routing.complete});
       if(trained&&state.routing.complete&&!municipalDispatchPending())stages.push({id:'townhall',title:municipalTitle,info:'Routing dinamico · RIPv2',active:!state.routing.municipalComplete,done:state.routing.municipalComplete});
     }
     let currentAssignment;
-    if(vlanOpen){
+    if(vlanAvailable){
       currentAssignment=vlanTrained()
         ?{id:'services',title:vlanMissionMessage[0],info:'Quattro piani · Quattro VLAN',active:!state.vlan?.complete,done:state.vlan?.complete}
-        :{id:'school',title:vlanSchoolMessage[0],info:'Switch e permessi',active:true,done:false};
+        :{id:'school',title:vlanSchoolMessage[0],info:vlanPassed()===vlanLessons.length?RZStp.title:'Switch, trunk e routing',active:true,done:false};
       stages.splice(0,stages.length,currentAssignment);
       $('instructions-title').textContent=currentAssignment.title;
     }else{
@@ -478,7 +530,7 @@
       $('brief-instruction').textContent=instruction;
     }
     if(state.routing?.municipalComplete){
-      const instruction=municipalMedalPending()?'Il Municipio comunica con Ospedale e Protezione civile.':state.vlanMorningPending?'Attendi il messaggio di Elena al mattino.':!vlanReleased?'Capitolo 3 in arrivo.':vlanComplete()?'Palazzo dei servizi collaudato.':vlanTrained()?'Raggiungi il Palazzo dei servizi.':'Elena ti aspetta al Galilei per la formazione VLAN.';
+      const instruction=municipalMedalPending()?'Il Municipio comunica con Ospedale e Protezione civile.':state.vlanMorningPending?'Attendi il messaggio di Elena al mattino.':vlanTrained()?(state.vlan?.complete?'Palazzo dei servizi collaudato.':'Raggiungi il Palazzo dei servizi.'):vlanPassed()===vlanLessons.length?'Torna al Galilei per la prova su STP.':'Elena ti aspetta al Galilei per la formazione VLAN.';
       $('world-status').textContent=instruction;
       $('brief-instruction').textContent=instruction;
     }
@@ -499,10 +551,12 @@
     const visibleMarkers=currentAssignment
       ?new Map([[currentAssignment.id,currentAssignment.title]])
       :dayThreeMarkers;
-    city.update(state,awaitingDispatch(),visibleMarkers,vlanOpen);
+    if(vlanAvailable&&state.vlan?.complete)visibleMarkers.set('services',vlanMissionMessage[0]);
+    if(vlanAvailable&&vlanTrained())visibleMarkers.set('school','Formazione VLAN completata ✓');
+    city.update(state,awaitingDispatch(),visibleMarkers);
   }
   function openBuilding(id,showBadge=false,missionIndex){
-    const site=buildings.find(b=>b.id===id);if(!site)return;if(id==='services'?!(vlanAvailable()&&vlanTrained()):id!=='hq'&&!isBuildingDiscovered(id,state.completed,state.studied))return;
+    const site=buildings.find(b=>b.id===id);if(!site)return;if(id==='services'?!(state.routing?.municipalComplete&&vlanFieldAvailable()):id!=='hq'&&!isBuildingDiscovered(id,state.completed,state.studied))return;
     const index=missionIndex??(id==='rescue'&&state.completed>=3?3:site.mission);
     if(index===3&&state.completed<3)return;
     if (Number.isInteger(site.mission) && !hasBadgeProfile()) {
@@ -518,7 +572,7 @@
     const routingLab=nextDayStarted()&&id==='school';
     const routingField=nextDayStarted()&&state.routing?.ripComplete&&routingSite>=0&&!showBadge;
     const municipalField=nextDayStarted()&&state.routing?.ripComplete&&state.routing.complete&&id==='townhall';
-    if(id==='services'||(id==='school'&&vlanAvailable())){
+    if(id==='services'||(id==='school'&&state.routing?.municipalComplete&&!state.vlanMorningPending)){
       $('building-dialog').classList.toggle('mission-screen',id==='services');
       renderVlan(id==='services');
     }else if(routingLab||routingField||municipalField){
@@ -746,6 +800,17 @@
   }
   function renderTrainingTerminal(lesson,onComplete){
     const form=$('practice-form'),fields=$('practice-fields'),calculator=$('practice-calculator'),feedback=$('practice-feedback');calculator.hidden=true;fields.className='training-terminal';fields.replaceChildren();
+    const routerLesson=lesson.id==='cli-router';
+    const topology=document.createElement('div');
+    topology.className='routing-school-network';
+    const [icon,label]=routerLesson?['router','Router']:['pc','PC della LAN'];
+    topology.innerHTML=`<div class="routing-path training-device-view"><ol aria-label="Dispositivo della prova">
+      <li><div class="routing-device-node" aria-current="true">
+        <img src="assets/icons/${icon}.png" alt=""><span>${label}</span>
+      </div></li>
+    </ol></div>`;
+    form.classList.add('routing-school-practice');
+    fields.before(topology);
     const screen=document.createElement('div');screen.className='terminal-screen';screen.setAttribute('aria-live','polite');
     const terminalRevision=lesson.id==='cli'?4:2;
     const saved=state.lessonDrafts[lesson.id]&&typeof state.lessonDrafts[lesson.id]==='object'?state.lessonDrafts[lesson.id]:{};let step=saved.terminalRevision===terminalRevision?Math.min(Number(saved.terminalStep)||0,lesson.terminal.steps.length):0;
@@ -755,7 +820,7 @@
     question.setAttribute('aria-live','polite');
     function updateInstruction(){
       const current=lesson.terminal.steps[step];
-      const completedTitle=lesson.id==='cli-router'?'Configurazione del router completata.':'Configurazione del PC completata.';
+      const completedTitle=routerLesson?'Configurazione del router completata.':'Configurazione del PC completata.';
       question.textContent=current?.goal||completedTitle;
       if(!current)feedback.textContent=lesson.explanation;
       else feedback.textContent=`Passaggio ${step+1} di ${lesson.terminal.steps.length}`;
@@ -867,18 +932,20 @@
       const label=document.createElement('label'),input=document.createElement('input');label.textContent=field.label;input.type=field.type||'text';input.placeholder=field.placeholder||'';input.autocomplete='off';input.spellcheck=false;if(input.type==='number'){input.min='0';input.step='1';}else input.inputMode='decimal';input.name=field.key;input.value=saved;label.append(input);container.append(label);
     });
   }
-  async function runPcPing(destination,ttl,input,print){
+  async function runPcPing(destination,ttl,control,print){
     const sent=4;
     const success=ttl!==null;
     const received=success?sent:0;
     const lost=sent-received;
     const times=[12,39,48,40];
-    input.readOnly=true;
+    const lock=control instanceof HTMLButtonElement?'disabled':'readOnly';
+    const wasLocked=control[lock];
+    control[lock]=true;
     try{
       print(`Pinging ${destination} with 32 bytes of data:\n`);
       for(let attempt=0;attempt<sent;attempt++){
         await new Promise(resolve=>setTimeout(resolve,success?(attempt===0?250:650):1000));
-        if(!input.isConnected||!$('building-dialog').open)return false;
+        if(!control.isConnected||!$('building-dialog').open)return false;
         print(success
           ?`Reply from ${destination}: bytes=32 time=${times[attempt]}ms TTL=${ttl}`
           :'Request timed out.');
@@ -895,7 +962,7 @@
       print(lines.join('\n'));
       return success;
     }finally{
-      input.readOnly=false;
+      control[lock]=wasLocked;
     }
   }
   function setupFieldRouter(index, config, allowed){
@@ -1300,7 +1367,7 @@
       : [['router',usesRouter?'Router':terminalLabel]];
     const nodeTag=index===3?'button':'span';
     const localTopology=usesRouter?`<div class="routing-path field-local-path">
-      <h3>Schema di rete</h3>
+      <h3>Architettura di rete</h3>
       <ol>
         <li><${nodeTag} class="routing-node routing-local-node"${index===3?' type="button" data-field-device="0" aria-pressed="false"':''}><img src="assets/icons/pc.png" alt="" width="56" height="56">${lanLabels[0]}</${nodeTag}></li>
         <li><button class="routing-node routing-local-node field-local-router" type="button" data-field-device="router" aria-pressed="true">
@@ -1310,7 +1377,7 @@
         <li><${nodeTag} class="routing-node routing-local-node"${index===3?' type="button" data-field-device="1" aria-pressed="false"':''}><img src="assets/icons/pc.png" alt="" width="56" height="56">${lanLabels[1]}</${nodeTag}></li>
       </ol>
     </div>`:`<div class="routing-path field-local-path">
-      <h3>Schema di rete</h3>
+      <h3>Architettura di rete</h3>
       <ol>
         <li><button type="button" class="routing-node routing-local-node" data-field-device="router" aria-pressed="true"><img src="assets/icons/${isRadio?'radio':'pc'}.png" alt="" width="56" height="56">${terminalLabel}</button></li>
         <li${isRadio?' class="field-radio-link"':''}>
@@ -1426,7 +1493,9 @@
     base:{label:'Tecnico di base',message:'Hai superato tutte le prove della formazione di base al Galilei.'},
     operativo:{label:'Tecnico operativo',message:'Hai ripristinato le comunicazioni nelle tre sedi di Valle Nord.'},
     specialista:{label:'Tecnico specialista',message:'Hai collegato il Municipio alla rete di Valle Nord. Ora le tre sedi possono coordinarsi.'},
-    distretto:{label:'Tecnico di distretto'}
+    distretto:{label:'Tecnico di distretto',message:'Hai collaudato la rete del Palazzo dei servizi. I quattro piani possono comunicare attraverso VLAN e gateway.'},
+    'servizi-rete':{label:'Tecnico dei servizi di rete'},
+    'servizi-applicativi':{label:'Tecnico dei servizi applicativi'}
   };
   function celebrateMedal(image,afterClose){
     const medal=medals[image];
@@ -1443,18 +1512,21 @@
       {image:'base', earned:graduated(), requirement:'Completa la scuola'},
       {image:'operativo', earned:state.completed>=missions.length, requirement:`Completa tutti gli interventi · ${state.completed}/${missions.length}`},
       {image:'specialista', earned:Boolean(state.routing?.municipalComplete), requirement:'Completa gli interventi del Capitolo 2'},
-      {image:'distretto', earned:false, requirement:'Prossime attività'}
+      {image:'distretto', earned:Boolean(state.vlan?.complete), requirement:'Completa il collaudo del Palazzo dei servizi'},
+      {image:'servizi-rete', earned:false, requirement:'Prossimamente'},
+      {image:'servizi-applicativi', earned:false, requirement:'Prossimamente'}
     ];
+    const reservedCount=9-awards.length;
+    const reserved='<li class="badge-award"><span class="badge-award-mark badge-award-placeholder" aria-hidden="true"></span><span class="visually-hidden">Posto riservato per una futura medaglia</span></li>';
     return awards.map(({image,earned,requirement}) => {
-      const content=`<img class="badge-award-mark" src="assets/medaglia-${image}.png" alt="" width="56" height="56">
-        <span><strong>${medals[image].label}</strong><small>${earned?'Ottenuta':requirement}</small></span>`;
+      const label=medals[image].label;
+      const content=`<img class="badge-award-mark" src="assets/medaglia-${image}.png" alt="" width="68" height="68">`;
       return `<li class="badge-award${earned?' earned':''}">
-        ${earned?`<button class="badge-replay" type="button" data-medal="${image}" aria-label="Rivedi la medaglia ${medals[image].label}" aria-haspopup="dialog">${content}</button>`:content}
+        ${earned?`<button class="badge-replay" type="button" data-medal="${image}" aria-label="Rivedi la medaglia ${label}" aria-haspopup="dialog">${content}</button>`:`${content}<span class="visually-hidden">${label}. ${requirement}</span>`}
       </li>`;
-    }).join('');
+    }).join('')+reserved.repeat(reservedCount);
   }
   const hasBadgeProfile=()=>Boolean(state.badgeName&&state.badgeAge&&state.avatar);
-  const upcomingChaptersMessage='Nuovi capitoli in arrivo';
   function renderHeadquarters(editing=false){
     const isNew=graduated()&&!hasBadgeProfile();
     const showSettings=isNew||editing;
@@ -1465,10 +1537,10 @@
     const routingMissionsDone=routingMissions.filter(Boolean).length;
     const chapterTwo=nextDayStarted();
     const chapterTwoComplete=chapterTwo&&Boolean(state.routing?.municipalComplete);
-    const vlanOpen=vlanAvailable();
-    const chapterLabel=vlanOpen?'Cap. 03':chapterTwo?'Cap. 02':'Cap. 01';
-    const chapterSchool=vlanOpen?`${vlanPassed()}/${RZVlanUI.lessons.length}`:chapterTwo?`${routingSchoolPassed}/${routingLessons.length}`:`${state.studied.length}/${lessons.length}`;
-    const chapterMissions=vlanOpen?`${Number(Boolean(state.vlan?.complete))}/1`:chapterTwo?`${routingMissionsDone}/${routingMissions.length}`:`${state.completed}/${missions.length}`;
+    const vlanAvailable=chapterTwoComplete&&!state.vlanMorningPending;
+    const chapterLabel=vlanAvailable?'Cap. 03':chapterTwo?'Cap. 02':'Cap. 01';
+    const chapterSchool=vlanAvailable?`${vlanPassed()}/${vlanSchoolCount}`:chapterTwo?`${routingSchoolPassed}/${routingLessons.length}`:`${state.studied.length}/${lessons.length}`;
+    const chapterMissions=vlanAvailable?`${Number(Boolean(state.vlan?.complete))}/1`:chapterTwo?`${routingMissionsDone}/${routingMissions.length}`:`${state.completed}/${missions.length}`;
     $('building-content').innerHTML=`<header class="badge-heading">
       <p class="eyebrow">CENTRALE OPERATIVA / VALLE NORD</p>
       <div class="badge-title-row"><h2 id="building-title">Il tuo tesserino</h2>${showSettings?'':'<button type="button" id="badge-settings" class="secondary">Impostazioni</button>'}</div>
@@ -1495,11 +1567,11 @@
         </div>
         <div class="card-stats">
           <span>
-            <strong>${state.studied.length+routingSchoolPassed+vlanPassed()}/${lessons.length+routingLessons.length+(vlanReleased?RZVlanUI.lessons.length:0)}</strong>PROVE SCUOLA TOTALI
+            <strong>${state.studied.length+routingSchoolPassed+vlanPassed()}/${lessons.length+routingLessons.length+vlanSchoolCount}</strong>PROVE SCUOLA TOTALI
             <small>${chapterLabel} · ${chapterSchool}</small>
           </span>
           <span>
-            <strong>${state.completed+routingMissionsDone+Number(vlanComplete())}/${missions.length+routingMissions.length+Number(vlanReleased)}</strong>INTERVENTI TOTALI
+            <strong>${state.completed+routingMissionsDone+Number(Boolean(state.vlan?.complete))}/${missions.length+routingMissions.length+1}</strong>INTERVENTI TOTALI
             <small>${chapterLabel} · ${chapterMissions}</small>
           </span>
           <span><strong>${xp()}</strong>XP</span>
@@ -1514,12 +1586,12 @@
         <ul class="badge-awards">${renderBadgeAwards()}</ul>
       </section>`}
       ${showSettings?'':`<section class="badge-next">
-        <div><span class="eyebrow">${vlanComplete()?'CAPITOLO 03 COMPLETATO':chapterTwoComplete?'CAPITOLO 02 COMPLETATO':'IL PROSSIMO PASSO'}</span>
-        <h3>${vlanComplete()?'Palazzo dei servizi in rete':chapterTwoComplete?'Valle Nord è di nuovo online':!graduated()?'Scuola di reti':awaitingDispatch()?'Mappa di Valle Nord':nextMission?nextMission.site:'Primo distretto completato'}</h3>
-        <p>${vlanComplete()?'I reparti comunicano secondo i permessi previsti.':chapterTwoComplete?'Il Municipio è ora collegato all’ospedale e alla Protezione civile.':!graduated()?'Completa la formazione per ottenere l’abilitazione.':awaitingDispatch()?'Torna in città e attendi le indicazioni di Elena.':nextMission?nextMission.title:'Le tre sedi di Valle Nord sono di nuovo collegate.'}</p></div>
+        <div><span class="eyebrow">${state.vlan?.complete?'CAPITOLO 03 COMPLETATO':chapterTwoComplete?'CAPITOLO 02 COMPLETATO':'IL PROSSIMO PASSO'}</span>
+        <h3>${state.vlan?.complete?'Palazzo dei servizi in rete':chapterTwoComplete?'Valle Nord è di nuovo online':!graduated()?'Scuola di reti':awaitingDispatch()?'Mappa di Valle Nord':nextMission?nextMission.site:'Primo distretto completato'}</h3>
+        <p>${state.vlan?.complete?'I collegamenti tra i piani e il routing tra VLAN sono operativi.':chapterTwoComplete?'Il Municipio è ora collegato all’ospedale e alla Protezione civile.':!graduated()?'Completa la formazione per ottenere l’abilitazione.':awaitingDispatch()?'Torna in città e attendi le indicazioni di Elena.':nextMission?nextMission.title:'Le tre sedi di Valle Nord sono di nuovo collegate.'}</p></div>
         <div class="badge-next-actions">
           <div id="hq-action"></div>
-          ${vlanComplete()?`<small>${upcomingChaptersMessage}</small>`:chapterTwoComplete&&!vlanReleased?'<small>Capitolo 3 in arrivo</small>':''}
+          ${state.vlan?.complete?'<small class="badge-next-notice">Nuovo capitolo in arrivo</small>':''}
         </div>
       </section>`}
     </div>`;
@@ -1585,16 +1657,16 @@
     document.querySelectorAll('.badge-replay').forEach(button=>{
       button.addEventListener('click',()=>celebrateMedal(button.dataset.medal));
     });
-    $('hq-action').append(makeButton(graduated()?'Vai alla mappa':'Entra nella scuola',
-      ()=>graduated()?closeBuilding():openBuilding('school'),'primary action-triangle'));
+    const openSchool=!graduated()||(vlanAvailable&&!vlanTrained());
+    $('hq-action').append(makeButton(openSchool?'Entra nella scuola':'Vai alla mappa',
+      ()=>openSchool?openBuilding('school'):closeBuilding(),'primary action-triangle'));
   }
   function addSchoolChapterNavigation(nav, active){
     const chapters=document.createElement('nav');
     chapters.className='school-chapters';
     chapters.setAttribute('aria-label','Capitoli del Galilei');
     const titles=['Formazione di base','Oltre la rete locale'];
-    if(vlanAvailable())titles.push('Un palazzo, quattro VLAN');
-    else if(!vlanReleased&&state.routing?.municipalComplete&&!state.vlanMorningPending)titles.push('In arrivo');
+    if(state.routing?.municipalComplete&&!state.vlanMorningPending)titles.push('Un palazzo, quattro VLAN');
     titles.forEach((title,index)=>{
       const chapter=index+1;
       const button=makeButton('',()=>{
@@ -1610,7 +1682,6 @@
         document.querySelector('.school-chapter-button[aria-current]').focus();
       },'school-chapter-button');
       button.dataset.chapter=chapter;
-      if(chapter===3&&!vlanReleased)button.disabled=true;
       if(chapter===active)button.setAttribute('aria-current','true');
       const label=document.createElement('span');
       label.textContent='Capitolo '+String(chapter).padStart(2,'0');
@@ -1636,80 +1707,162 @@
       trigger.focus({preventScroll:true});
     });
   }
-  function renderVlan(field,index=Math.min(vlanPassed(),RZVlanUI.lessons.length-1)){
-    const {lessons:course,panel,bind,schoolLab,bindSchoolLab}=RZVlanUI;
+  function addVlanLessonNavigation(index){
+    const nav=document.querySelector('.course-nav');
+    const chapter=state.vlan;
+    const firstPending=vlanLessons.findIndex((_,i)=>!chapter.passed.includes(i));
+    addSchoolChapterNavigation(nav,3);
+    [...vlanLessons,RZStp].forEach(({title},i)=>{
+      const done=i===vlanLessons.length?chapter.stpComplete:chapter.passed.includes(i);
+      const button=makeButton('',()=>renderVlan(false,i),'course-button'+(i===index?' active':''));
+      const marker=document.createElement('span');
+      marker.textContent=done?'✓':String(i+1).padStart(2,'0');
+      const label=document.createElement('span');
+      label.textContent=title;
+      button.append(marker,label);
+      button.disabled=firstPending>=0&&i>firstPending&&!done;
+      button.classList.toggle('locked',button.disabled);
+      if(i===index)button.setAttribute('aria-current','step');
+      nav.append(button);
+    });
+  }
+  function bindVlanConcepts(concepts){
+    $('concept-prev').innerHTML='<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M11.5 4 6.5 9l5 5"/></svg>';
+    $('concept-next').innerHTML='<svg viewBox="0 0 18 18" aria-hidden="true"><path d="m6.5 4 5 5-5 5"/></svg>';
+    let concept=0;
+    function showConcept(){
+      const [heading,body,intro]=concepts[concept];
+      $('concept-title').textContent=heading;
+      renderConceptBody(body,intro);
+      $('concept-count').textContent=`${concept+1} / ${concepts.length}`;
+      $('concept-dots').textContent=concepts.map((_,i)=>i===concept?'●':'○').join(' ');
+      $('concept-prev').disabled=concept===0;
+      $('concept-next').disabled=concept===concepts.length-1;
+    }
+    $('concept-prev').onclick=()=>{concept--;showConcept();};
+    $('concept-next').onclick=()=>{concept++;showConcept();};
+    showConcept();
+  }
+  function renderStp(){
+    const chapter=state.vlan;
+    if(chapter.passed.length<vlanLessons.length)return;
+    const {title,concepts,tasks,createLab,step,markup,bind}=RZStp;
+    let done=Boolean(chapter.stpComplete);
+    const lab=chapter.stpLab??=createLab(done);
+    $('building-content').innerHTML=schoolLayout({
+      chapter:3,title,score:`${vlanPassed()} / ${vlanSchoolCount}`,
+      status:done?'SUPERATA ✓':`PROVA ${vlanSchoolCount} / ${vlanSchoolCount}`,
+      question:done?'Prova superata. Puoi consultare la configurazione dal terminale.':tasks[0],
+      practiceContent:markup()+`
+        <footer class="practice-footer">
+          <div id="stp-progress" class="feedback" role="status"></div>
+          <div class="practice-actions routing-actions">
+            <button type="button" id="stp-tools" class="secondary">Strumenti</button>
+            <button type="button" id="stp-finish" class="primary action-triangle">${done?'Vai alla mappa':'Verifica'}</button>
+          </div>
+        </footer>`
+    });
+    addVlanLessonNavigation(vlanLessons.length);
+    const example=document.querySelector('.worked-example');
+    example.innerHTML='<div><span class="eyebrow">ESEMPIO / SPANNING TREE</span><strong>Switch di esempio</strong></div><div class="example-result"><span>Comando<strong>show spanning-tree vlan 120</strong></span><span>Porta alternativa<strong>Gi0/8 · Altn BLK</strong></span></div>';
+    document.querySelector('.elena-tip').innerHTML='<strong>Elena</strong> Confronta i ruoli delle porte prima e dopo aver disabilitato la porta attiva.';
+    bindVlanConcepts(concepts);
+    bindSchoolViews();
+    bindSchoolSheet();
+    $('stp-tools').addEventListener('click',()=>openCalculator());
+    const finish=$('stp-finish');
+    finish.addEventListener('click',()=>{
+      if(done){
+        closeBuilding();
+        if(!chapter.complete)scheduleSchoolDispatch(vlanMissionMessage,()=>state.vlan===chapter&&!chapter.complete);
+        return;
+      }
+      if(!lab.verified)return;
+      chapter.stpComplete=true;
+      done=true;
+      refresh();
+      renderShell();
+      document.querySelector('.course-button[aria-current="step"]').firstChild.textContent='✓';
+      document.querySelector('.school-seal strong').textContent=`${vlanPassed()} / ${vlanSchoolCount}`;
+      document.querySelector('.practice-status').textContent='SUPERATA ✓';
+      finish.textContent='Vai alla mappa';
+      openPhone(vlanSchoolComplete,{throughFocused:true});
+    });
+    function refresh(){
+      save();
+      if(done){
+        $('practice-question').textContent='Prova superata. Puoi consultare la configurazione dal terminale.';
+        $('stp-progress').textContent='Prova completata';
+        return;
+      }
+      const position=step(lab);
+      let question=tasks[position];
+      if(position===0&&!lab.links.every(Boolean))question='Su SW-2 riabilita entrambi i trunk. Poi controlla lo spanning tree della VLAN 30.';
+      if(position===1&&!lab.links[1])question='Su SW-2 riabilita la porta alternativa.';
+      else if(position===1&&!lab.links[0])question='Su SW-2 controlla di nuovo lo spanning tree. Verifica che la porta alternativa sia diventata la porta radice.';
+      $('practice-question').textContent=question;
+      $('stp-progress').textContent=lab.verified?'Obiettivo raggiunto':`Passaggio ${position+1} di ${tasks.length}`;
+      finish.disabled=!lab.verified;
+    }
+    bind(lab,refresh,setupCommandHistory($('stp-command'),[]),runPcPing,()=>done);
+  }
+  function renderVlan(field,index){
+    const {lessons:course,prepareCourse,labPanel,labTopology,labConsole,bindLab,fieldReference,fieldHostNames}=RZVlanUI;
     const chapter=state.vlan??={passed:[]};
+    prepareCourse(chapter);
+    const firstPending=course.findIndex((_,i)=>!chapter.passed.includes(i));
+    index??=field?course.length-1:firstPending<0?course.length:firstPending;
+    if(!field&&index===course.length){renderStp();return;}
     const lesson=course[index];
     const done=field?Boolean(chapter.complete):chapter.passed.includes(index);
-    const net=field?(chapter.field??=RZVlan.fresh()):(chapter.lab??=RZVlan.fresh());
+    const net=field?(chapter.field??=RZVlan.freshPalace()):(chapter.lab??=RZVlan.fresh());
+    const practiceStep=()=>lesson.step?.(net)??0;
     const action='<button id="vlan-finish" type="button" class="primary"></button>';
-    const scheme=`<ol class="vlan-floors">${RZVlan.floors.map((name,i)=>`<li><strong>Piano ${i+1} · ${name}</strong><span> VLAN ${RZVlan.vlans[i]}</span></li>`).join('')}</ol>`;
-    const instructions=`<p>Ogni piano ha uno switch collegato alla Centrale. Il piano 1 ospita anche una postazione tecnica su Fa0/2.</p>
-      <p>Usa la VLAN nativa 99 su entrambi i lati di ogni trunk. Ammetti solo le VLAN delle postazioni di quel piano e la VLAN 99.</p>
-      <p>Consenti solo queste richieste tra VLAN: Accoglienza → Servizi al pubblico e Amministrazione → Ufficio tecnico.</p>`;
     if(field){
       $('building-content').innerHTML=missionLayout({
         header:{eyebrow:'GIORNO 04 · VALLE NORD',title:'Palazzo dei servizi',story:vlanMissionMessage[1],reference:'CAPITOLO 03 · VLAN',done},
-        extraClass:'vlan-intervention',
-        hint:'<p>Prima correggi le porte access, poi confronta i due estremi dei trunk. Esegui i ping solo dopo aver applicato il filtro.</p>',
-        sheet:instructions,
-        ticket:`${scheme}<ul class="mission-steps" id="vlan-checks"></ul>`,
-        terminalTitle:'Switch e router del palazzo',
-        fields:panel(net,[0,1,2,3]),terminal:'',footer:'',actions:action
+        extraClass:'routing-intervention vlan-intervention',
+        hint:net.palaceScenario>=2
+          ?'<p>Usa <code>show vlan brief</code> sui primi due piani. Al piano 1 confronta le VLAN presenti con la scheda tecnica. Al piano 2 usa <code>interface range</code> sulle porte consecutive del banco. Con <code>show interfaces trunk</code> confronta le VLAN ammesse e la VLAN nativa ai due estremi.</p>'
+          :'<p>Controlla le porte access e confronta i due estremi dei trunk. Verifica i gateway prima dei ping tra VLAN.</p>',
+        sheet:fieldReference(net),
+        ticket:`<div class="routing-school-practice vlan-field-topology">${labTopology(true)}</div>
+          <ul class="mission-steps" id="vlan-checks" aria-label="Passaggi dell’intervento"></ul>`,
+        terminalTitle:'Terminale',
+        fields:'<div id="vlan-device-details" class="fields"></div>',
+        terminal:labConsole(true),
+        footer:'<div id="vlan-field-feedback" class="feedback" role="status"></div>',
+        actions:'<button type="button" id="vlan-tools" class="secondary">Strumenti</button>'+action
       });
       setupMissionHint();
       $('mission-phone').addEventListener('click',()=>openPhone(vlanMissionMessage, {withHistory:true}));
+      $('vlan-tools').addEventListener('click',()=>openCalculator());
     }else{
       $('building-content').innerHTML=schoolLayout({
-        chapter:3,title:lesson.title,score:`${vlanPassed()} / ${course.length}`,
-        status:done?'SUPERATA ✓':`PROVA ${index+1} / ${course.length}`,
-        question:done?'Prova superata. Puoi consultare la configurazione dal terminale.':lesson.task,practiceContent:schoolLab()+`
+        chapter:3,title:lesson.title,score:`${vlanPassed()} / ${vlanSchoolCount}`,
+        status:done?'SUPERATA ✓':`PROVA ${index+1} / ${vlanSchoolCount}`,
+        question:done?'Prova superata. Puoi consultare la configurazione dal terminale.':lesson.steps?.[practiceStep()]??lesson.task,practiceContent:labPanel()+`
           <footer class="practice-footer">
             <div id="vlan-progress" class="feedback" role="status"></div>
             <div class="practice-actions routing-actions"><button type="button" id="vlan-tools" class="secondary">Strumenti</button>${action}</div>
           </footer>`
       });
-      const nav=document.querySelector('.course-nav');
-      addSchoolChapterNavigation(nav,3);
-      course.forEach(({title},i)=>{
-        const button=makeButton('',()=>renderVlan(false,i),'course-button'+(i===index?' active':''));
-        const marker=document.createElement('span');
-        marker.textContent=chapter.passed.includes(i)?'✓':String(i+1).padStart(2,'0');
-        const label=document.createElement('span');
-        label.textContent=title;
-        button.append(marker,label);
-        button.disabled=i>vlanPassed();
-        button.classList.toggle('locked',button.disabled);
-        if(i===index)button.setAttribute('aria-current','step');
-        nav.append(button);
-      });
-      $('concept-prev').innerHTML='<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M11.5 4 6.5 9l5 5"/></svg>';
-      $('concept-next').innerHTML='<svg viewBox="0 0 18 18" aria-hidden="true"><path d="m6.5 4 5 5-5 5"/></svg>';
+      addVlanLessonNavigation(index);
       bindSchoolSheet();
       $('vlan-tools').addEventListener('click',()=>openCalculator());
       const workedExample=document.querySelector('.worked-example');
       const examples=[
-        ['PORTA ACCESS','SW-2 · Fa0/1','switchport access vlan 20','VLAN assegnata','20 · Amministrazione'],
-        ['TRUNK','SW-2 · Gi0/1','switchport trunk allowed vlan 20,99','VLAN ammesse','20 e 99'],
-        ['SOTTOINTERFACCIA','Router · Gi0/0.30','encapsulation dot1Q 30','Tag 802.1Q','30'],
-        ['FILTRO ICMP','Router · Gi0/0.20','ip access-group REPARTI in','Direzione','In ingresso']
+        ['CREAZIONE VLAN','Switch di esempio','vlan 120','Risultato','VLAN 120 creata sullo switch'],
+        ['PORTE ACCESS','Switch(config)#','interface range Fa0/5 - 8','Porte selezionate','Da Fa0/5 a Fa0/8'],
+        ['TRUNK','Switch(config-if)#','switchport trunk allowed vlan 120,130,200','VLAN ammesse','120, 130 e 200'],
+        ['SOTTOINTERFACCIA','Router · Gi0/0.120','encapsulation dot1Q 120','VLAN associata','120']
       ];
       const [topic,device,example,label,result]=examples[index];
       workedExample.innerHTML=`<div><span class="eyebrow">ESEMPIO / ${topic}</span><strong>${device}</strong></div><div class="example-result"><span>Comando<strong>${example}</strong></span><span>${label}<strong>${result}</strong></span></div>`;
-      document.querySelector('.elena-tip').innerHTML='<strong>Elena</strong> Usa la scheda tecnica per individuare porte, VLAN e indirizzi. Dal prompt puoi cambiare piano con <code>sw &lt;numero&gt;</code> o scegliere una postazione con <code>pc &lt;numero&gt;</code>.';
-      let concept=0;
-      function showConcept(){
-        const [title,body]=lesson.concepts[concept];
-        $('concept-title').textContent=title;
-        renderConceptBody(body);
-        $('concept-count').textContent=`${concept+1} / ${lesson.concepts.length}`;
-        $('concept-dots').textContent=lesson.concepts.map((_,i)=>i===concept?'●':'○').join(' ');
-        $('concept-prev').disabled=concept===0;
-        $('concept-next').disabled=concept===lesson.concepts.length-1;
-      }
-      $('concept-prev').onclick=()=>{concept--;showConcept();};
-      $('concept-next').onclick=()=>{concept++;showConcept();};
-      showConcept();
+      document.querySelector('.elena-tip').innerHTML=index===0
+        ?'<strong>Elena</strong> Dopo aver dato il nome alla VLAN, usa <code>exit</code> per tornare alla configurazione globale.'
+        :'<strong>Elena</strong> Usa la scheda tecnica per individuare porte, VLAN e indirizzi. Dal prompt puoi cambiare piano con <code>sw &lt;numero&gt;</code> o scegliere una postazione con <code>pc &lt;numero&gt;</code>.';
+      bindVlanConcepts(lesson.concepts);
       bindSchoolViews();
     }
     const finish=$('vlan-finish');
@@ -1717,48 +1870,54 @@
     function refresh(){
       save();
       finish.disabled=!done&&!ready(net);
-      if(!field)$('vlan-progress').textContent=done?'Prova completata':finish.disabled?'Passaggio '+(index+1)+' di '+course.length:'Obiettivo raggiunto';
+      if(!field){
+        if(!done&&lesson.steps){
+          const step=practiceStep();
+          $('practice-question').textContent=lesson.steps[step];
+          $('vlan-progress').textContent=finish.disabled?`Passaggio ${step+1} di ${lesson.steps.length}`:'Obiettivo raggiunto';
+        }else $('vlan-progress').textContent=done?'Prova completata':finish.disabled?'Passaggio '+(index+1)+' di '+course.length:'Obiettivo raggiunto';
+      }
       if(field){
+        $('vlan-field-feedback').textContent=done?'Intervento completato. Puoi consultare la configurazione.':finish.disabled?'Completa la configurazione e verifica i collegamenti indicati.':'Collegamenti verificati. Conferma il collaudo.';
         const checks=[
-          [RZVlan.accessReady(net),'Assegna le porte access ai reparti'],
+          [RZVlan.accessReady(net),net.palaceScenario>=2?'Ripristina VLAN e porte access dei piani 1 e 2':'Assegna le porte access ai reparti'],
           [RZVlan.trunksReady(net),'Ripristina i trunk dei quattro piani'],
           [RZVlan.routingReady(net),'Attiva i quattro gateway'],
-          [RZVlan.policyReady(net),'Applica i permessi tra VLAN'],
-          ...RZVlan.checks.map(([, ,ok,label],i)=>[net.verified.includes(i),`${label} · ${ok?'consentito':'bloccato'}`])
+          ...RZVlan.checksFor(net).map(([from,to],i)=>[net.verified.includes(i),`Ping da ${fieldHostNames[from]} a ${fieldHostNames[to]}`])
         ];
         $('vlan-checks').replaceChildren(...checks.map(([ok,label])=>{
           const item=document.createElement('li');
-          item.textContent=(ok?'✓ ':'○ ')+label;
+          const marker=document.createElement('span');
+          marker.className='mission-step-status';
+          marker.setAttribute('role','img');
+          marker.setAttribute('aria-label',ok?'Completato':'Da completare');
+          marker.textContent=ok?'✓':'';
+          item.append(marker,Object.assign(document.createElement('span'),{textContent:label}));
           item.classList.toggle('is-complete',ok);
           return item;
         }));
       }
     }
-    finish.textContent=field?(done?'Torna in città':'Conferma il collaudo'):index===course.length-1?'Torna in città':'Lezione successiva';
+    finish.textContent=field?(done?'Torna in città':'Conferma il collaudo'):'Lezione successiva';
     finish.addEventListener('click',()=>{
       if(!done&&!ready(net))return;
       if(field){
+        if(chapter.complete){closeBuilding();return;}
         chapter.complete=true;
+        chapter.medalPending=true;
         save();
         closeBuilding();
         renderShell();
-        if(!done)openPhone(vlanDoneMessage, {withHistory:true});
+        showVlanCompletion();
       }else{
         if(!done)chapter.passed.push(index);
         save();
         renderShell();
-        if(index<course.length-1)renderVlan(false,index+1);
-        else{
-          closeBuilding();
-          if(!done)openPhone(vlanMissionMessage, {withHistory:true});
-        }
+        renderVlan(false,index+1);
       }
     });
-    if(field)bind(net,refresh,done);
-    else {
-      finish.classList.add('action-triangle');
-      bindSchoolLab(net,refresh,index,setupCommandHistory($('vlan-command'),[]),done);
-    }
+    finish.classList.add('action-triangle');
+    bindLab(net,refresh,field?null:index,setupCommandHistory($('vlan-command'),[]),done,runPcPing);
     refresh();
   }
   const routingLessons=[
@@ -1949,7 +2108,7 @@
     const histories=new Map();
     const title=isLab?routingLessons[lessonIndex].title:municipal?municipalTitle:'Richiesta di assistenza';
     const routingPath=`<div class="routing-path${municipal?' municipal-lan-path':''}">
-            <h3>Percorso del pacchetto</h3>
+            ${isLab?'':'<h3>Architettura di rete</h3>'}
             <ol id="routing-nodes"></ol>
             ${isLab?'<p id="routing-status" class="visually-hidden" role="status"></p>':''}
           </div>`;
@@ -2535,16 +2694,7 @@
       if(done()){
         closeBuilding();
         if(isLab&&rip&&!chapter.complete){
-          const showRequest=()=>{
-            if(state.routing!==chapter||chapter.complete)return;
-            const phone=$('phone-dialog');
-            if(phone.open){
-              phone.addEventListener('close',showRequest,{once:true});
-              return;
-            }
-            if(!document.querySelector('dialog[open]'))openPhone(routingRequest,{withHistory:true});
-          };
-          window.setTimeout(showRequest,2000);
+          scheduleSchoolDispatch(routingRequest,()=>state.routing===chapter&&!chapter.complete);
         }
         return;
       }
@@ -2605,8 +2755,8 @@
     tab.addEventListener('click',()=>selectCliTab(tab));
     tab.addEventListener('keydown',event=>{
       const destinations={
-        ArrowLeft:cliTabs.length-1-index,
-        ArrowRight:cliTabs.length-1-index,
+        ArrowLeft:(index+cliTabs.length-1)%cliTabs.length,
+        ArrowRight:(index+1)%cliTabs.length,
         Home:0,
         End:cliTabs.length-1
       };
@@ -2682,7 +2832,10 @@
   const restartDialog=$('restart-dialog'),restartForm=$('restart-form');
   const confirmRestart=$('confirm-restart');
   const highestChapter=()=>districtRestored()?2:(state.highestChapter??1);
-  const canRestartChapter=chapter=>Number(chapter)<=highestChapter();
+  const canRestartChapter=chapter=>{
+    if(chapter==='3')return nextDayStarted()&&state.routing?.municipalComplete&&!state.vlanMorningPending;
+    return chapter==='1'||(chapter==='2'&&highestChapter()>=2);
+  };
   $('reset-progress').addEventListener('click',()=>{
     restartForm.reset();
     confirmRestart.disabled=true;
@@ -2690,11 +2843,8 @@
       option.disabled=!canRestartChapter(option.value);
       option.closest('label').hidden=option.disabled;
     }
-    $('restart-chapter-one-note').textContent=highestChapter()===1
-      ?'Azzera le prove e gli interventi del Capitolo 01.'
-      :'Azzera prove e interventi di entrambi i capitoli.';
     $('restart-chapter-two-note').textContent=districtRestored()
-      ?'Azzera solo i progressi del Capitolo 02.'
+      ?'Azzera i progressi dal Capitolo 02 in poi.'
       :'Il Capitolo 01 risulterà completato.';
     restartDialog.showModal();
   });
@@ -2703,7 +2853,17 @@
   restartForm.addEventListener('submit',event=>{
     event.preventDefault();
     const chapter=new FormData(restartForm).get('chapter');
-    if((chapter!=='1'&&chapter!=='2')||!canRestartChapter(chapter))return;
+    if(!canRestartChapter(chapter))return;
+    if(chapter==='3'){
+      delete state.vlan;
+      state.vlanMorningPending=true;
+      deliveredMessages.delete(JSON.stringify(vlanSchoolMessage.slice(0,2)));
+      save();
+      restartDialog.close();
+      renderShell();
+      scheduleVlanMorning();
+      return;
+    }
     state.highestChapter=highestChapter();
     for(const timer of [dispatchTimer,fieldTimer,nextDayTimer,vlanMorningTimer])window.clearTimeout(timer);
     dispatchTimer=fieldTimer=nextDayTimer=vlanMorningTimer=undefined;
@@ -2739,7 +2899,9 @@
     button.textContent=collapsed?'+':'−';button.setAttribute('aria-expanded',String(!collapsed));button.setAttribute('aria-label',collapsed?'Espandi istruzioni':'Riduci istruzioni');
   });
   renderShell();
-  if(previewSchoolEnding){
+  if(startChapterThree){
+    openBuilding('school');
+  }else if(previewSchoolEnding){
     openBuilding('school');
     activeLesson=lessons.length-1;
     renderSchool();
@@ -2751,7 +2913,8 @@
   }else scheduleDispatch();
   scheduleFieldDispatch();
   scheduleNextDay();
-  if(municipalMedalPending())showMunicipalCompletion();
+  if(vlanMedalPending())showVlanCompletion();
+  else if(municipalMedalPending())showMunicipalCompletion();
   else if(municipalDispatchPending())showRoutingCompletion(state.routing);
   else if(resumeDayThree&&!resumeAfterSchool)openPhone();
   scheduleWelcomeMessage();
