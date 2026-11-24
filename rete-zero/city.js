@@ -44,6 +44,7 @@ root.RZCity = function(host, markers, onEnter){
     function renderTree(x,z,size=1,parent=city){const trunk=cylinder(parent,x,.55,z,.10,.9,'#88765a',6);trunk.castShadow=false;const crown=new T.Mesh(new T.IcosahedronGeometry(.75*size,1),mat('#789b7c'));crown.position.set(x,1.4*size,z);crown.scale.y=1.3;parent.add(crown);crown.castShadow=true;}
     // Una città estesa, con isolati abitati e cinque sole sedi operative.
     const roadsX=[-36,-15,15,36],roadsZ=[-29,-8,14,32];
+    const asphalt='#6d8380';
     const playground={x:25,z:3,width:14,depth:14};
     const riverX=z=>Math.sin(z*.09)*1.35;
     const fountainZ=8.2,fountainX=riverX(fountainZ)+5.7;
@@ -66,7 +67,7 @@ root.RZCity = function(host, markers, onEnter){
     // Piazze e lotti: un fondale cartografico ad alta risoluzione, con ombre reali.
     for(let x=-45;x<44;x+=11)for(let z=-38;z<38;z+=11){ctx.fillStyle=(Math.round(x+z)%3===0)?'#b3c5a9':'#c5cdb6';ctx.fillRect(px(x),pz(z),10*sx,10*sz);}
     ctx.fillStyle='#d5d9c9';for(const x of roadsX)ctx.fillRect(px(x-2.2),0,4.4*sx,1736);for(const z of roadsZ)ctx.fillRect(0,pz(z-2.2),2048,4.4*sz);
-    ctx.fillStyle='#6d8380';for(const x of roadsX)ctx.fillRect(px(x-1.5),0,3*sx,1736);for(const z of roadsZ)ctx.fillRect(0,pz(z-1.5),2048,3*sz);
+    ctx.fillStyle=asphalt;for(const x of roadsX)ctx.fillRect(px(x-1.5),0,3*sx,1736);for(const z of roadsZ)ctx.fillRect(0,pz(z-1.5),2048,3*sz);
     ctx.strokeStyle='#d2d8bc';ctx.lineWidth=1.2;ctx.setLineDash([14,18]);for(const x of roadsX){ctx.beginPath();ctx.moveTo(px(x),0);ctx.lineTo(px(x),1736);ctx.stroke();}for(const z of roadsZ){ctx.beginPath();ctx.moveTo(0,pz(z));ctx.lineTo(2048,pz(z));ctx.stroke();}ctx.setLineDash([]);
     ctx.fillStyle='#e5e4ce';for(const x of roadsX)for(const z of roadsZ){for(let i=0;i<5;i++){ctx.fillRect(px(x-1.15+i*.47),pz(z-2.5),.23*sx,.65*sz);ctx.fillRect(px(x-1.15+i*.47),pz(z+1.85),.23*sx,.65*sz);}}
     ctx.fillStyle='#869e8d';ctx.font='500 17px monospace';ctx.fillText('QUARTIERE GALILEI',px(-34),pz(-33));ctx.fillText('BORGO SAN LUCA',px(17),pz(-33));ctx.fillText('CENTRO STORICO',px(-34),pz(36));ctx.fillText('DISTRETTO EST',px(17),pz(36));
@@ -74,7 +75,108 @@ root.RZCity = function(host, markers, onEnter){
     const ground=new T.Mesh(new T.PlaneGeometry(92,78),new T.MeshStandardMaterial({map:groundTexture,roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.13;ground.receiveShadow=true;city.add(ground);
     const riverShape=new T.Shape();for(let z=-39;z<=39;z+=1){const x=riverX(z)-2.5;if(z===-39)riverShape.moveTo(x,z);else riverShape.lineTo(x,z);}for(let z=39;z>=-39;z-=1)riverShape.lineTo(riverX(z)+2.5,z);riverShape.closePath();
     const river=new T.Mesh(new T.ShapeGeometry(riverShape),mat('#739fa3',{metalness:.15,roughness:.35}));river.rotation.x=Math.PI/2;river.position.y=-.08;river.material.side=T.DoubleSide;city.add(river);
-    for(const z of roadsZ){const x=riverX(z);box(city,x,.02,z,8.7,.30,3.3,'#9bada6');box(city,x,.20,z-1.65,9,.34,.14,'#c9d1bc');box(city,x,.20,z+1.65,9,.34,.14,'#c9d1bc');box(city,x,.18,z,8.5,.035,2.95,'#6d8380');for(let i=-3;i<=3;i+=2)box(city,x+i,.21,z,.65,.02,.05,'#e0dec5');}
+    const groundY=-.13,deckY=.94,bridgeSpan=3.15,bridgeEnd=6.3;
+    const profileX=[-bridgeEnd,-bridgeSpan,bridgeSpan,bridgeEnd];
+    function bridgeHeight(offset){
+      const ramp=T.MathUtils.clamp((bridgeEnd-Math.abs(offset))/(bridgeEnd-bridgeSpan),0,1);
+      return T.MathUtils.lerp(groundY,deckY,ramp);
+    }
+    function bridgeOffset(x,z){
+      const crossing=roadsZ.find(road=>Math.abs(z-road)<=1.55);
+      if(crossing===undefined)return 0;
+      return bridgeHeight(x-riverX(crossing))-groundY;
+    }
+    function addBridgeDeck(parent,width,thickness,offset,color){
+      const outline=new T.Shape();
+      profileX.forEach((x,i)=>{
+        const height=bridgeHeight(x)+offset;
+        if(i===0)outline.moveTo(x,height);else outline.lineTo(x,height);
+      });
+      for(const x of [...profileX].reverse())outline.lineTo(x,bridgeHeight(x)+offset-thickness);
+      outline.closePath();
+      const deck=new T.Mesh(new T.ExtrudeGeometry(outline,{depth:width,bevelEnabled:false}),mat(color));
+      deck.position.z=-width/2;deck.castShadow=deck.receiveShadow=true;parent.add(deck);
+      return deck;
+    }
+    function addRail(parent,curve,radius,color){
+      const rail=new T.Mesh(new T.TubeGeometry(curve,16,radius,6,false),mat(color));
+      rail.castShadow=true;parent.add(rail);
+    }
+    for(const z of roadsZ){
+      const bridge=new T.Group();
+      bridge.name='Ponte sul fiume';
+      bridge.position.set(riverX(z),0,z);city.add(bridge);
+      const deck=addBridgeDeck(bridge,4.4,.24,0,'#c6bfa9');
+      deck.name='Impalcato del ponte';
+      addBridgeDeck(bridge,3,.035,.012,asphalt);
+      for(const x of [-5.2,-3.85,-2.5,-1.25,0,1.25,2.5,3.85,5.2]){
+        const stripe=box(bridge,x,bridgeHeight(x)+.023,0,.52,.018,.055,'#e0dec5');
+        stripe.rotation.z=Math.atan2(bridgeHeight(x+.04)-bridgeHeight(x-.04),.08);
+      }
+      for(const x of [-3.2,3.2]){
+        box(bridge,x,.31,0,.62,.88,4.12,'#a7a28b');
+        box(bridge,x,.66,0,.76,.15,4.22,'#beb7a0');
+      }
+      const railColor='#486d70';
+      for(const side of [-1,1]){
+        const railZ=side*2.06;
+        for(const x of [-5.85,-4.5,-bridgeSpan,bridgeSpan,4.5,5.85]){
+          const height=bridgeHeight(x);
+          box(bridge,x,height+.24,railZ,.1,.48,.1,railColor);
+          box(bridge,x,height+.09,railZ,.17,.16,.17,'#b3ac95');
+        }
+        for(const direction of [-1,1]){
+          addRail(bridge,new T.LineCurve3(
+            new T.Vector3(direction*5.85,bridgeHeight(5.85)+.45,railZ),
+            new T.Vector3(direction*bridgeSpan,deckY+.45,railZ)
+          ),.044,railColor);
+        }
+        addRail(bridge,new T.QuadraticBezierCurve3(
+          new T.Vector3(-bridgeSpan,deckY+.45,railZ),
+          new T.Vector3(0,deckY+1.6,railZ),
+          new T.Vector3(bridgeSpan,deckY+.45,railZ)
+        ),.055,railColor);
+        addRail(bridge,new T.LineCurve3(
+          new T.Vector3(-bridgeSpan,deckY+.23,railZ),
+          new T.Vector3(bridgeSpan,deckY+.23,railZ)
+        ),.031,railColor);
+        for(const x of [-2.1,-1.05,0,1.05,2.1]){
+          const archHeight=1.025-.575*(x/bridgeSpan)**2;
+          box(bridge,x,deckY+archHeight/2,railZ,.05,archHeight,.052,railColor);
+        }
+      }
+    }
+    const boat=new T.Group();
+    boat.name='Barchetta sul fiume';
+    city.add(boat);
+    const hullOutline=new T.Shape();
+    hullOutline.moveTo(0,-.89);hullOutline.lineTo(-.33,-.49);hullOutline.lineTo(-.36,.65);
+    hullOutline.lineTo(.36,.65);hullOutline.lineTo(.33,-.49);hullOutline.closePath();
+    const hull=new T.Mesh(new T.ExtrudeGeometry(hullOutline,{
+      depth:.16,bevelEnabled:true,bevelThickness:.035,bevelSize:.042,bevelSegments:1
+    }),mat('#88654c'));
+    hull.rotation.x=-Math.PI/2;hull.castShadow=true;boat.add(hull);
+    const boatDeck=new T.Mesh(new T.ShapeGeometry(hullOutline),mat('#d5b382'));
+    boatDeck.rotation.x=-Math.PI/2;boatDeck.position.y=.196;boatDeck.scale.set(.86,.91,1);boat.add(boatDeck);
+    box(boat,0,.26,.06,.48,.14,.55,'#e7d2a9');
+    box(boat,0,.34,.24,.44,.14,.055,'#4c777f');
+    box(boat,0,.24,-.38,.49,.086,.16,'#a77157');
+    const wake=new T.Group();boat.add(wake);
+    for(const side of [-1,1])for(let i=0;i<2;i++){
+      const streak=box(wake,side*(.32+i*.15),.005,-.92-i*.44,.024,.005,.42,
+        '#d0ebe1',{transparent:true,opacity:i===0?.67:.36,depthWrite:false});
+      streak.rotation.y=-side*.32;streak.castShadow=false;
+    }
+    function moveBoat(elapsed,animated){
+      const phase=Math.PI+.08+(animated?elapsed*.118:0);
+      const z=36.5*Math.sin(phase);
+      const alongRiver=36.5*Math.cos(phase);
+      const sideways=-.58*Math.sin(phase)+1.35*.09*Math.cos(z*.09)*alongRiver;
+      boat.position.set(riverX(z)+.58*Math.cos(phase),-.08+(animated?Math.sin(elapsed*3)*.014:0),z);
+      boat.rotation.y=Math.atan2(sideways,alongRiver);
+      wake.visible=animated;
+      wake.position.y=-.08-boat.position.y;
+    }
     function nearRoad(x,z,margin=3.6){return roadsX.some(v=>Math.abs(x-v)<margin)||roadsZ.some(v=>Math.abs(z-v)<margin);}
     function nearSite(x,z,margin=7){return buildings.some(b=>Math.abs(x-b.position[0])<margin&&Math.abs(z-b.position[1])<margin);}
     function roadRoute(start,end){
@@ -256,7 +358,17 @@ root.RZCity = function(host, markers, onEnter){
       g.userData.labelHeight=labelHeight;g.traverse(mesh=>{if(mesh.isMesh)mesh.userData.siteId=site.id;});
       // I collegamenti di servizio seguono la rete stradale.
       if(Number.isInteger(site.mission)){
-        const line=new T.Line(new T.BufferGeometry().setFromPoints([...roadRoute(buildings.find(b=>b.id==='hq').position,[x,z]).map(([rx,rz])=>new T.Vector3(rx,.24,rz))]),new T.LineDashedMaterial({color:0xb58c60,dashSize:.3,gapSize:.22}));line.computeLineDistances();scene.add(line);cables.set(site.id,line);
+        const route=roadRoute(buildings.find(b=>b.id==='hq').position,[x,z]);
+        const points=[new T.Vector3(route[0][0],.24,route[0][1])];
+        for(let i=1;i<route.length;i++){
+          const [fromX,fromZ]=route[i-1],[toX,toZ]=route[i];
+          const steps=Math.ceil(Math.hypot(toX-fromX,toZ-fromZ)/.4);
+          for(let step=1;step<=steps;step++){
+            const rx=T.MathUtils.lerp(fromX,toX,step/steps),rz=T.MathUtils.lerp(fromZ,toZ,step/steps);
+            points.push(new T.Vector3(rx,.24+bridgeOffset(rx,rz),rz));
+          }
+        }
+        const line=new T.Line(new T.BufferGeometry().setFromPoints(points),new T.LineDashedMaterial({color:0xb58c60,dashSize:.3,gapSize:.22}));line.computeLineDistances();scene.add(line);cables.set(site.id,line);
       }
     });
     // Facciate locali generate una sola volta: molti edifici, pochi draw call.
@@ -444,18 +556,29 @@ root.RZCity = function(host, markers, onEnter){
         }
       }
     });
+    function followRoad(vehicle,dx,dz){
+      const {x,z}=vehicle.position;
+      const rise=bridgeOffset(x,z);
+      vehicle.position.y=.13+rise*(deckY-.11)/(deckY-groundY);
+      vehicle.rotation.order='YXZ';
+      vehicle.rotation.y=Math.atan2(dx,dz);
+      const length=Math.hypot(dx,dz);
+      const stepX=dx/length*.32,stepZ=dz/length*.32;
+      vehicle.rotation.x=-Math.atan2(bridgeOffset(x+stepX,z+stepZ)-bridgeOffset(x-stepX,z-stepZ),.64);
+    }
     function placeTraffic(elapsed){
       for(const {vehicle,path,offset,length,speed} of traffic){
         const progress=(offset+elapsed*speed/length)%1;
         vehicle.position.copy(path.getPoint(progress));
         const heading=path.getTangent(progress);
-        vehicle.rotation.y=Math.atan2(heading.x,heading.z);
+        followRoad(vehicle,heading.x,heading.z);
       }
     }
     placeTraffic(0);
     const van=car('#dfad5f');box(van,0,.93,-.15,.7,.2,.7,'#dce6d8');const headquarters=buildings.find(b=>b.id==='hq').position;van.position.set(headquarters[0],.13,headquarters[1]+2);city.add(van);
     let vanRoute=[],selected=null,angle=.43,elevation=.85,desiredAngle=angle,desiredElevation=elevation,zoom=1.4,desiredZoom=zoom,last=0,disposed=false,fitRadius=125;
     const reducedMotion=root.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    moveBoat(0,!reducedMotion);
     const target=new T.Vector3(0,0,0),desiredTarget=target.clone();
     const pointer=new T.Vector2(),ray=new T.Raycaster();let pressed=null,dragging=false,hovered=null;
     function resize(){const {width,height}=host.getBoundingClientRect();if(!width||!height)return;renderer.setSize(width,height,false);camera.aspect=width/height;fitRadius=125*Math.max(1,1.15/camera.aspect);const offset=width>800?145:0;camera.setViewOffset(width,height,-offset,0,width,height);camera.updateProjectionMatrix();}
@@ -484,8 +607,20 @@ root.RZCity = function(host, markers, onEnter){
       document.getElementById('zoom-in').disabled=desiredZoom>=cameraLimits.maxZoom-.001;document.getElementById('zoom-out').disabled=desiredZoom<=cameraLimits.minZoom+.001;
       host.dataset.panX=target.x.toFixed(2);host.dataset.panZ=target.z.toFixed(2);host.dataset.bearing=angle.toFixed(3);document.getElementById('compass-needle').setAttribute('transform',`rotate(${-angle*180/Math.PI} 36 36)`);host.dataset.zoom=zoom.toFixed(3);host.dataset.elevation=elevation.toFixed(3);
       const radius=fitRadius/zoom;camera.position.set(target.x+Math.sin(angle)*Math.cos(elevation)*radius,Math.sin(elevation)*radius,target.z+Math.cos(angle)*Math.cos(elevation)*radius);camera.lookAt(target);camera.updateMatrixWorld();
-      if(vanRoute.length){const dest=vanRoute[0],delta=dest.clone().sub(van.position);if(delta.length()<.25)vanRoute.shift();else {van.rotation.y=Math.atan2(delta.x,delta.z);van.position.add(delta.normalize().multiplyScalar(reducedMotion?.5:dt*6));}}
-      if(!reducedMotion)placeTraffic(elapsed);
+      if(vanRoute.length){
+        const delta=vanRoute[0].clone().sub(van.position);
+        delta.y=0;
+        const distance=delta.length();
+        if(distance<.25)vanRoute.shift();
+        else{
+          van.position.addScaledVector(delta,(reducedMotion?.5:dt*6)/distance);
+          followRoad(van,delta.x,delta.z);
+        }
+      }
+      if(!reducedMotion){
+        placeTraffic(elapsed);
+        moveBoat(elapsed,true);
+      }
       const placed=[];
       for(const site of buildings){if(!discovered.has(site.id)){leaders.get(site.id).style.display='none';rings.get(site.id).visible=false;continue;}rings.get(site.id).visible=true;const g=groups.get(site.id);anchor.set(g.position.x,g.userData.labelHeight+.7,g.position.z).project(camera);const button=buttons.get(site.id),width=host.clientWidth,height=host.clientHeight,bw=button.offsetWidth||150,bh=button.offsetHeight||45;
         let x=(anchor.x+1)/2*width,y=(-anchor.y+1)/2*height;const anchorX=x,anchorY=y;
