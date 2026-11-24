@@ -1737,14 +1737,16 @@ body:has(#map-stage:not(.night)) #phone-dialog::backdrop {
 #phone-title:focus { outline: none; }
 .phone-header small { color: #a9cbb9; }
 .phone-header form { margin-left: auto; }
+.elena-avatar {
+  display: block;
+  flex-shrink: 0;
+  object-fit: cover;
+}
 .phone-avatar {
-  display: grid;
-  place-items: center;
   flex: 0 0 30px;
   height: 30px;
   border-radius: 50%;
   background: #285249;
-  font-size: 11px;
 }
 #phone-messages {
   flex: 1;
