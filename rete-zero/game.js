@@ -508,10 +508,16 @@
     }
     let currentAssignment;
     if(vlanAvailable){
-      currentAssignment=vlanTrained()
-        ?{id:'services',title:vlanMissionMessage[0],info:'Quattro piani · Quattro VLAN',active:!state.vlan?.complete,done:state.vlan?.complete}
-        :{id:'school',title:vlanSchoolMessage[0],info:vlanPassed()===vlanLessons.length?RZStp.title:'Switch, trunk e routing',active:true,done:false};
-      stages.splice(0,stages.length,currentAssignment);
+      const trained=vlanTrained();
+      const trainingInfo=trained?'Completata ✓':vlanPassed()===vlanLessons.length?RZStp.title:'Switch, trunk e routing';
+      stages.splice(0,stages.length,{
+        id:'school',title:vlanSchoolMessage[0],info:trainingInfo,active:!trained,done:trained
+      });
+      if(trained)stages.push({
+        id:'services',title:vlanMissionMessage[0],info:'Quattro piani · Quattro VLAN',
+        active:!state.vlan?.complete,done:state.vlan?.complete
+      });
+      currentAssignment=stages.at(-1);
       $('instructions-title').textContent=currentAssignment.title;
     }else{
       $('instructions-title').textContent='Valle Nord';
