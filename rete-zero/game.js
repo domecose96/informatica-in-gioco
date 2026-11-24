@@ -1528,6 +1528,12 @@
   }
   const hasBadgeProfile=()=>Boolean(state.badgeName&&state.badgeAge&&state.avatar);
   function renderHeadquarters(editing=false){
+    const dialog=$('building-dialog');
+    if(editing){
+      dialog.style.setProperty('--badge-overview-height',`${dialog.getBoundingClientRect().height}px`);
+    }else{
+      dialog.style.removeProperty('--badge-overview-height');
+    }
     const isNew=graduated()&&!hasBadgeProfile();
     const showSettings=isNew||editing;
     const cardTag=showSettings?'form':'section';

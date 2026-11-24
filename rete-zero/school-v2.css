@@ -1217,7 +1217,7 @@
   flex-wrap: wrap;
   gap: 12px;
 }
-.badge-title-row { justify-content: space-between; }
+.badge-title-row { min-height: 42px; justify-content: space-between; }
 #badge-setup h3 { margin: 0 0 7px; }
 #badge-setup p { margin: 0; }
 .badge-identity-fields {
@@ -1253,6 +1253,23 @@
   grid-template-columns: minmax(0, 620px);
   justify-content: center;
 }
+#building-dialog[open]:has(.badge-layout-editing) {
+  display: flex;
+  flex-direction: column;
+  height: var(--badge-overview-height, auto);
+}
+#building-dialog[open]:has(.badge-layout-editing) #building-content {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+.badge-layout-editing { flex: 1; align-items: center; }
+.badge-layout-editing #badge-setup {
+  padding-block: 16px;
+}
+.badge-layout-editing #badge-setup .card-person { margin-block: 10px; }
+.badge-layout-editing #badge-setup .card-stats { padding-block-start: 12px; }
+.badge-layout-editing #badge-setup .badge-setup-actions { margin-top: 10px; padding-top: 8px; }
 .badge-layout .credential-portrait {
   flex: 0 0 clamp(74px, 16vw, 128px);
 }
